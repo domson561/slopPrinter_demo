@@ -14,9 +14,7 @@ Ustalone 2026-10-03, szczegóły w `E:\DJANGO\graphic_house\demo_docs\scope.md`,
 - Dane kupującego tylko na etykiecie PDF, nigdy w polach zlecenia.
 - Pliki dla GH przez podpisane, wygasające linki z sumą kontrolną, nie z publicznego `/media/`.
 - GH zna statusy: nowe, w realizacji, gotowe, wysłane. Odrzucenia, wady i dodruki obsługuje sklep.
-- Miejsce podpięcia GH: `printing/providers.py` (`PrintProvider`). Atrapa GH zastąpi `MockPrintProvider`.
-
-`docs/architektura-sklepy-gh.md` (27.09, sklep w repo GH, wspólna baza) jest NIEAKTUALNY.
+- Miejsce podpięcia GH: `apps/printing/providers.py` (`PrintProvider`). Atrapa GH zastąpi `MockPrintProvider`.
 
 ## Plan
 Mapa zadań: `E:\OBSIDIAN VAULTS\PROJECT_VAULTS\slopPrinter.canvas`, zmiany tylko przez skill `canvas`.

@@ -8,8 +8,8 @@ media/
 staticfiles/
 .pytest_cache/
 .env
-demo/images/*.png
-demo/images/*.jpg
+apps/demo/images/*.png
+apps/demo/images/*.jpg
 
 # assets/: prywatne materiały (prezentacje, grafiki, paczki), nie kod aplikacji
 assets/*.png

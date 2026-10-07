@@ -18,7 +18,7 @@ def _fast_demo_settings(settings, tmp_path):
 
 @pytest.fixture(autouse=True)
 def _reset_mock_provider():
-    from printing.providers import MockPrintProvider
+    from apps.printing.providers import MockPrintProvider
 
     MockPrintProvider.fail_next_submits = 0
     yield

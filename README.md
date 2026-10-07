@@ -43,27 +43,32 @@ idempotencja `submit` i callbacku płatności, webhook z błędnym podpisem, pe�
 
 ## Struktura
 
-| Aplikacja  | Zawartość |
-|------------|-----------|
-| `catalog`  | formaty, papiery, dostawa, `ShopSettings` (progi DPI, auto-zatwierdzanie, auto-symulacja), cennik |
-| `assets`   | upload i walidacja, `AnalysisService` (Pillow), `MockContentSafety`, `MockUpscale`, `CropService`, `PrepressService` (PDF ze spadami, reportlab), `MockupService`, `run_pipeline`, komenda `cleanup_assets` |
-| `orders`   | `Order`/`OrderItem`/`OrderStatusEvent`/`Payment`/`Shipment`/`Complaint`, maszyna stanów (`services.transition`, `force_transition`), `MockPaymentProvider`, powiadomienia, zadanie `process_order_task` |
-| `printing` | `PrintJob`, `MockPrintProvider` (+ puste `HotFolder`/`Email`/`Http`), spec JSON, submit z retry, webhook HMAC `POST /api/printer/events/`, pulpit mock drukarni `/mock-printer/` |
-| `ops`      | panel operatora O1-O5 (`is_staff`) |
-| `web`      | widoki klienta S1-S8, kadrowanie i cena na żywo (vanilla JS) |
-| `demo`     | `seed_demo`, `make_demo_images` (obrazki rysowane Pillow) |
+| Aplikacja       | Zawartość |
+|-----------------|-----------|
+| `apps/catalog`  | formaty, papiery, dostawa, `ShopSettings` (progi DPI, auto-zatwierdzanie, auto-symulacja), cennik |
+| `apps/assets`   | upload i walidacja, `AnalysisService` (Pillow), `MockContentSafety`, `MockUpscale`, `CropService`, `PrepressService` (PDF ze spadami, reportlab), `MockupService`, `run_pipeline`, komenda `cleanup_assets` |
+| `apps/orders`   | `Order`/`OrderItem`/`OrderStatusEvent`/`Payment`/`Shipment`/`Complaint`, maszyna stanów (`services.transition`, `force_transition`), `MockPaymentProvider`, powiadomienia, zadanie `process_order_task` |
+| `apps/printing` | `PrintJob`, `MockPrintProvider` (+ puste `HotFolder`/`Email`/`Http`), spec JSON, submit z retry, webhook HMAC `POST /api/printer/events/`, pulpit mock drukarni `/mock-printer/` |
+| `apps/ops`      | panel operatora O1-O5 (`is_staff`) |
+| `apps/web`      | widoki klienta S1-S8, kadrowanie i cena na żywo (vanilla JS) |
+| `apps/demo`     | `seed_demo`, `make_demo_images` (obrazki rysowane Pillow) |
 
 Logika biznesowa jest w `services.py` każdej aplikacji; widoki są cienkie. Wygląd: `static/css/tokens.css`
 (zmienne) + `static/css/base.css` (wireframe). Bez bibliotek UI.
 
 ## Konfiguracja
 
+Ustawienia w `config/settings/`: `base.py` (wspólne), `development.py` (domyślne dla `manage.py`,
+testów i Dockera) i `production.py` (domyślne dla `wsgi`/`asgi`). Produkcja nie startuje bez
+`DJANGO_SECRET_KEY` i `DJANGO_ALLOWED_HOSTS`, a `DEBUG` jest w niej zawsze wyłączony. Inne środowisko
+wybierasz zmienną `DJANGO_SETTINGS_MODULE`.
+
 Zmienne środowiskowe: patrz `.env.example`. Najważniejsze: `SITE_NAME`, `SITE_URL` (linki w e-mailach
 i `spec.file.url`), `HUEY_IMMEDIATE`, `POSTGRES_HOST`, `REDIS_URL`, `PRINTER_WEBHOOK_SECRET`.
 
 ## Scenariusz prezentacji (ok. 5 minut)
 
-1. S1: wgraj `demo/images/typical_1448.png`. S2: A3 `ok`, A2 `wymaga poprawy`, 50x70 i B2 `wymaga poprawy`
+1. S1: wgraj `apps/demo/images/typical_1448.png`. S2: A3 `ok`, A2 `wymaga poprawy`, 50x70 i B2 `wymaga poprawy`
    (przy 4x upscale "za słaby" pojawia się dopiero dla `small_512.png`, patrz uwaga niżej).
 2. Wybierz A2, enhancer włączy się sam, przesuń kadr i przybliż suwakiem, cena i ocena zmieniają się na żywo.
 3. S3: mockup na ścianie, wycinek przed/po.
