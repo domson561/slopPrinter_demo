@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Podgląd - {{ site_name }}{% endblock %}
+{% block content %}
+<section class="preview">
+  <h1>Tak będzie wyglądał Twój plakat</h1>
+
+  <figure class="preview__mockup">
+    <img src="{% url 'web:mockup_image' order.status_token %}" alt="Plakat {{ item.format.name }} na ścianie, w skali">
+    <figcaption>{{ item.format.name }} na ścianie, w skali. Sofa ma 200 cm szerokości. <span class="tag tag--mock">symulacja</span></figcaption>
+  </figure>
+
+  <section class="preview__fragments">
+    <h2>Wycinek 1:1 {% if item.enhancer_enabled %}przed i po poprawie jakości{% else %}(tak wydrukują się szczegóły){% endif %}</h2>
+    <div class="fragments">
+      <figure>
+        <img src="{% url 'web:fragment_image' order.status_token 'before' %}" alt="Wycinek przed" width="300" height="300">
+        <figcaption>Bez poprawy</figcaption>
+      </figure>
+      {% if item.enhancer_enabled %}
+      <figure>
+        <img src="{% url 'web:fragment_image' order.status_token 'after' %}" alt="Wycinek po" width="300" height="300">
+        <figcaption>Po poprawie <span class="tag tag--mock">symulacja</span></figcaption>
+      </figure>
+      {% endif %}
+    </div>
+    <p>Ocena ostrości: <span class="quality-badge quality-badge--{{ quality.verdict }}">{{ quality.verdict_label }}</span> {{ quality.customer_text }}</p>
+  </section>
+
+  <p class="notice notice--info">Wydruk będzie nieco ciemniejszy i mniej nasycony niż obraz na ekranie. To normalne dla papieru.</p>
+
+  <h2>Podsumowanie</h2>
+  {% include "components/order_summary.html" %}
+
+  <p class="preview__actions">
+    <a class="button button--secondary" href="{% url 'web:configure' item.asset.pk %}">Wróć do konfiguracji</a>
+    <a class="button button--primary" href="{% url 'web:checkout' order.status_token %}">Zamawiam</a>
+  </p>
+</section>
+{% endblock %}

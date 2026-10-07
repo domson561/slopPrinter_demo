@@ -1,0 +1,37 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ site_name }}{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <header class="site-header">
+    <a class="site-header__brand" href="{% url 'web:upload' %}">{{ site_name }}</a>
+    <nav class="site-header__nav">
+      {% block nav %}
+        <a href="{% url 'web:upload' %}">Wgraj plik</a>
+        <a href="{% url 'web:static_page' 'faq' %}">FAQ</a>
+      {% endblock %}
+    </nav>
+  </header>
+
+  <main class="site-main">
+    {% include "components/messages.html" %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    {% block footer %}
+      <a href="{% url 'web:static_page' 'regulamin' %}">Regulamin</a>
+      <a href="{% url 'web:static_page' 'prywatnosc' %}">Polityka prywatności</a>
+      <a href="{% url 'web:static_page' 'faq' %}">FAQ</a>
+      <span class="site-footer__demo">Wersja demo. Płatności, poprawa jakości i drukarnia są symulowane.</span>
+    {% endblock %}
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

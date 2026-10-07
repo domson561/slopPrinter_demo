@@ -1,0 +1,11 @@
+[
+  {"model": "catalog.format", "pk": 1, "fields": {"code": "A3", "name": "A3", "width_mm": 297, "height_mm": 420, "bleed_mm": 3, "base_price": "59.00", "is_active": true, "sort_order": 10}},
+  {"model": "catalog.format", "pk": 2, "fields": {"code": "A2", "name": "A2", "width_mm": 420, "height_mm": 594, "bleed_mm": 3, "base_price": "89.00", "is_active": true, "sort_order": 20}},
+  {"model": "catalog.format", "pk": 3, "fields": {"code": "50x70", "name": "50 x 70 cm", "width_mm": 500, "height_mm": 700, "bleed_mm": 3, "base_price": "99.00", "is_active": true, "sort_order": 30}},
+  {"model": "catalog.format", "pk": 4, "fields": {"code": "B2", "name": "B2", "width_mm": 500, "height_mm": 707, "bleed_mm": 3, "base_price": "119.00", "is_active": true, "sort_order": 40}},
+  {"model": "catalog.paperoption", "pk": 1, "fields": {"code": "matte", "name": "Matowy", "price_delta": "0.00", "is_active": true, "sort_order": 10}},
+  {"model": "catalog.paperoption", "pk": 2, "fields": {"code": "satin", "name": "Satynowy", "price_delta": "10.00", "is_active": true, "sort_order": 20}},
+  {"model": "catalog.deliverymethod", "pk": 1, "fields": {"code": "courier", "name": "Kurier", "price": "19.00", "is_active": true, "sort_order": 10}},
+  {"model": "catalog.deliverymethod", "pk": 2, "fields": {"code": "parcel_locker", "name": "Paczkomat", "price": "14.00", "is_active": true, "sort_order": 20}},
+  {"model": "catalog.shopsettings", "pk": 1, "fields": {"dpi_sharp": 200, "dpi_ok": 120, "upscale_factor": 4, "auto_approve": false, "printer_auto_simulate": false, "printer_auto_interval_seconds": 10, "lead_time_days": 5, "retention_days_after_close": 30, "draft_retention_days": 7, "currency": "PLN"}}
+]

@@ -1,0 +1,41 @@
+/*
+  Tokeny projektowe. Jedyne miejsce z kolorami, odstępami, skalą typograficzną i promieniami.
+  Wymiana tego pliku po Claude Design nie wymaga zmian w logice.
+*/
+:root {
+  --color-bg: #ffffff;
+  --color-surface: #f6f6f4;
+  --color-text: #1b1b1b;
+  --color-muted: #6b6b6b;
+  --color-border: #d6d6d2;
+  --color-primary: #1f1f1f;
+  --color-primary-contrast: #ffffff;
+  --color-accent: #2f5bea;
+  --color-success: #2e7d32;
+  --color-warning: #b26a00;
+  --color-danger: #b3261e;
+  --color-info: #0b5d8a;
+  --color-mock: #7a4dd6;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --font-size-1: 0.8125rem;
+  --font-size-2: 0.9375rem;
+  --font-size-3: 1rem;
+  --font-size-4: 1.25rem;
+  --font-size-5: 1.6rem;
+  --line-height: 1.5;
+
+  --radius-1: 3px;
+  --radius-2: 6px;
+
+  --content-max-width: 1100px;
+}

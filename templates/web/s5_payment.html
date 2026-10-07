@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Płatność - {{ site_name }}{% endblock %}
+{% block content %}
+<section class="payment">
+  <h1>Płatność</h1>
+  <p class="notice notice--mock"><strong>SYMULACJA PŁATNOŚCI.</strong> Żadne pieniądze nie są pobierane. Docelowo w tym miejscu jest bramka (np. BLIK).</p>
+  <p>Zamówienie <strong>{{ order.number }}</strong></p>
+  <p>Do zapłaty: <strong>{{ payment.amount }} {{ payment.currency }}</strong></p>
+  <form method="post" action="{% url 'orders:payment_callback' %}" class="payment-form">
+    {% csrf_token %}
+    <input type="hidden" name="external_id" value="{{ payment.external_id }}">
+    <button type="submit" name="result" value="success" class="button button--primary">Zapłać (sukces)</button>
+    <button type="submit" name="result" value="fail" class="button button--secondary">Symuluj błąd płatności</button>
+  </form>
+  <p><a href="{% url 'web:checkout' order.status_token %}">Wróć do danych</a></p>
+</section>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Dane i dostawa - {{ site_name }}{% endblock %}
+{% block content %}
+<section class="checkout">
+  <h1>Dane do wysyłki</h1>
+  <form method="post" class="checkout-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <fieldset>
+      <legend>Kontakt</legend>
+      <p>{{ form.email.label_tag }} {{ form.email }} {{ form.email.errors }}</p>
+      <p>{{ form.full_name.label_tag }} {{ form.full_name }} {{ form.full_name.errors }}</p>
+      <p>{{ form.phone.label_tag }} {{ form.phone }} {{ form.phone.errors }}</p>
+    </fieldset>
+    <fieldset>
+      <legend>Adres</legend>
+      <p>{{ form.line1.label_tag }} {{ form.line1 }} {{ form.line1.errors }}</p>
+      <p>{{ form.line2.label_tag }} {{ form.line2 }} {{ form.line2.errors }}</p>
+      <p>{{ form.postal_code.label_tag }} {{ form.postal_code }} {{ form.postal_code.errors }}</p>
+      <p>{{ form.city.label_tag }} {{ form.city }} {{ form.city.errors }}</p>
+    </fieldset>
+    <fieldset>
+      <legend>Dostawa</legend>
+      {{ form.delivery_method.errors }}
+      {% for radio in form.delivery_method %}
+        <p>{{ radio.tag }} <label for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+          {% for d in deliveries %}{% if d.pk|stringformat:"s" == radio.data.value|stringformat:"s" %}({{ d.price }} zł){% endif %}{% endfor %}
+        </p>
+      {% endfor %}
+    </fieldset>
+    <fieldset>
+      <legend>Zgody</legend>
+      <p>{{ form.consent_terms }} {{ form.consent_terms.label_tag }} {{ form.consent_terms.errors }}</p>
+      <p>{{ form.consent_no_withdrawal }} {{ form.consent_no_withdrawal.label_tag }} {{ form.consent_no_withdrawal.errors }}</p>
+      <p>{{ form.consent_rights }} {{ form.consent_rights.label_tag }} {{ form.consent_rights.errors }}</p>
+    </fieldset>
+
+    <h2>Zamówienie</h2>
+    {% include "components/order_summary.html" %}
+    <p class="checkout__note">Koszt dostawy zostanie doliczony po wyborze metody.</p>
+
+    <p class="checkout__actions">
+      <a class="button button--secondary" href="{% url 'web:preview' order.status_token %}">Wróć do podglądu</a>
+      <button type="submit" class="button button--primary">Przejdź do płatności</button>
+    </p>
+  </form>
+</section>
+{% endblock %}

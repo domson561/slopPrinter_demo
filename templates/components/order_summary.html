@@ -1,0 +1,11 @@
+{# oczekuje: order, item #}
+<dl class="order-summary">
+  <dt>Format</dt><dd>{{ item.format.name }} ({{ item.format.width_mm }} x {{ item.format.height_mm }} mm, {% if item.orientation == "landscape" %}poziomo{% else %}pionowo{% endif %})</dd>
+  <dt>Papier</dt><dd>{{ item.paper.name|default:"-" }}</dd>
+  <dt>Biały margines</dt><dd>{% if item.white_margin %}tak{% else %}nie{% endif %}</dd>
+  <dt>Poprawa jakości</dt><dd>{% if item.enhancer_enabled %}włączona <span class="tag tag--mock">symulacja</span>{% else %}wyłączona{% endif %}</dd>
+  <dt>Ilość</dt><dd>{{ item.quantity }}</dd>
+  <dt>Cena za sztukę</dt><dd>{{ item.unit_price }} {{ order.currency }}</dd>
+  {% if order.delivery_method %}<dt>Dostawa</dt><dd>{{ order.delivery_method.name }} ({{ order.delivery_price }} {{ order.currency }})</dd>{% endif %}
+  <dt>Razem</dt><dd class="order-summary__total">{{ order.total }} {{ order.currency }}</dd>
+</dl>

@@ -1,0 +1,44 @@
+{% extends "printing/base_printer.html" %}
+{% load static dict_extras %}
+{% block content %}
+<h1>Otrzymane zlecenia</h1>
+<p>Webhook serwisu: <code>{{ webhook_url }}</code> (POST JSON, nagłówek <code>X-Printer-Signature</code> = HMAC-SHA256 body).</p>
+
+<form method="post" action="{% url 'printing:mock_toggle_auto' %}" class="printer-auto" id="auto-form" data-auto="{{ shop.printer_auto_simulate|yesno:'1,0' }}" data-interval="{{ shop.printer_auto_interval_seconds }}" data-tick-url="{% url 'printing:mock_tick' %}">
+  {% csrf_token %}
+  <label>Co ile sekund <input type="number" name="interval" value="{{ shop.printer_auto_interval_seconds }}" min="2" max="600" size="4"></label>
+  <button type="submit">{% if shop.printer_auto_simulate %}Wyłącz auto-symulację{% else %}Włącz auto-symulację{% endif %}</button>
+  <span id="auto-status">{% if shop.printer_auto_simulate %}auto: włączona (zlecenia posuwają się same, gdy ta strona jest otwarta){% else %}auto: wyłączona{% endif %}</span>
+</form>
+<form method="post" action="{% url 'printing:mock_tick' %}" class="printer-tick">{% csrf_token %}<button type="submit">Posuń wszystkie o jeden krok</button></form>
+
+<table class="printer-table">
+  <thead><tr><th>ID</th><th>Zamówienie</th><th>Produkt</th><th>Format</th><th>Ilość</th><th>Stan</th><th>Śledzenie</th><th>Otrzymano</th><th></th></tr></thead>
+  <tbody>
+  {% for j in jobs %}
+    <tr>
+      <td><a href="{% url 'printing:mock_job' j.external_id %}">{{ j.external_id }}</a></td>
+      <td>{{ j.spec.order_number }}{% if j.spec.reprint_of %} <em>(dodruk {{ j.spec.reprint_of }})</em>{% endif %}</td>
+      <td>{{ j.spec.product }}</td>
+      <td>{{ j.spec.format.code }} {{ j.spec.format.orientation }}, {{ j.spec.paper }}</td>
+      <td>{{ j.spec.quantity }}</td>
+      <td class="printer-status printer-status--{{ j.status }}">{{ j.get_status_display }}</td>
+      <td>{{ j.tracking_number|default:"-" }}</td>
+      <td>{{ j.created_at|date:"Y-m-d H:i:s" }}</td>
+      <td>
+        {% for a in j.next_actions %}
+          <form method="post" action="{% url 'printing:mock_action' j.external_id %}" class="printer-inline">{% csrf_token %}
+            <input type="hidden" name="action" value="{{ a }}">
+            {% if a == "reject" or a == "defect" %}<input name="reason" placeholder="powód" required size="12">{% endif %}
+            <button type="submit">{{ action_labels|get_item:a }}</button>
+          </form>
+        {% endfor %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="9">Brak zleceń. Zatwierdź zamówienie w panelu operatora.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/mock_printer.js' %}"></script>{% endblock %}

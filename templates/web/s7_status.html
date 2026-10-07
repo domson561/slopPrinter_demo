@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Zamówienie {{ order.number }} - {{ site_name }}{% endblock %}
+{% block content %}
+<section class="order-status">
+  <h1>Zamówienie {{ order.number }}</h1>
+  <p class="order-status__current"><strong>{{ title }}</strong><br>{{ description }}</p>
+
+  {% if shipment and shipment.tracking_number %}
+    <p>Numer śledzenia: <strong>{{ shipment.tracking_number }}</strong> ({{ shipment.carrier }})</p>
+  {% endif %}
+
+  <div class="order-status__item">
+    <img src="{% url 'web:asset_preview' item.asset.pk %}" alt="" width="120">
+    {% include "components/order_summary.html" %}
+  </div>
+
+  <h2>Historia</h2>
+  <ol class="order-status__history">
+    {% for h in history %}
+      <li><time>{{ h.event.created_at|date:"Y-m-d H:i" }}</time> {{ h.label }}</li>
+    {% empty %}
+      <li>Brak zmian.</li>
+    {% endfor %}
+  </ol>
+
+  {% if complaints %}
+    <h2>Reklamacje</h2>
+    <ul>
+      {% for c in complaints %}
+        <li>{{ c.created_at|date:"Y-m-d" }}: {{ c.get_status_display }}{% if c.resolution %} - {{ c.resolution }}{% endif %}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if form %}
+    <h2>Coś nie tak z wydrukiem?</h2>
+    <form method="post" enctype="multipart/form-data" class="complaint-form">
+      {% csrf_token %}
+      <p>{{ form.description.label_tag }} {{ form.description }} {{ form.description.errors }}</p>
+      <p>{{ form.photos.label_tag }} {{ form.photos }} {{ form.photos.errors }}</p>
+      <button type="submit" class="button button--secondary">Zgłoś reklamację</button>
+    </form>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends "ops/base_ops.html" %}
+{% block title %}{{ order.number }} - operator{% endblock %}
+{% block content %}
+<section class="ops-order">
+  <h1>{{ order.number }} <span class="status status--{{ order.status }}">{{ order.status }}</span></h1>
+  {% if order.hold_reason %}<p class="notice notice--warn">Wstrzymane: {{ order.hold_reason }}</p>{% endif %}
+
+  <div class="ops-order__grid">
+    <section class="ops-order__customer">
+      <h2>Klient i dostawa</h2>
+      <dl>
+        <dt>Imię i nazwisko</dt><dd>{{ order.full_name }}</dd>
+        <dt>E-mail</dt><dd>{{ order.email }}</dd>
+        <dt>Telefon</dt><dd>{{ order.phone }}</dd>
+        <dt>Adres</dt><dd>{% for line in order.shipping_address_lines %}{{ line }}<br>{% endfor %}</dd>
+        <dt>Dostawa</dt><dd>{{ order.delivery_method.name|default:"-" }}</dd>
+        <dt>Link statusu</dt><dd><a href="{{ order.get_status_url }}">{{ order.get_status_url }}</a></dd>
+      </dl>
+      <h2>Wybrane opcje</h2>
+      {% include "components/order_summary.html" %}
+    </section>
+
+    <section class="ops-order__files">
+      <h2>Plik</h2>
+      <div class="file-compare">
+        <figure>
+          <img src="{% url 'web:asset_preview' item.asset.pk %}" alt="Oryginał" width="240">
+          <figcaption>Oryginał: {{ item.asset.width }} x {{ item.asset.height }} px, {{ item.asset.size_bytes|filesizeformat }}, {{ item.asset.mime }}</figcaption>
+        </figure>
+        {% with cropped=item.cropped_version %}
+        {% if cropped %}
+        <figure>
+          <img src="{{ cropped.file.url }}" alt="Po przetworzeniu" width="240">
+          <figcaption>Po przetworzeniu: {{ cropped.width }} x {{ cropped.height }} px, ok. {{ cropped.params.effective_dpi }} DPI dla {{ item.format.code }}{% if cropped.params.upscaled_by %}, upscale: {{ cropped.params.upscaled_by }} <span class="tag tag--mock">symulacja</span>{% endif %}</figcaption>
+        </figure>
+        {% else %}
+        <p>Brak przetworzonego pliku (pipeline jeszcze nie ruszył lub się nie udał).</p>
+        {% endif %}
+        {% endwith %}
+      </div>
+      {% with pdf=item.print_file %}
+        {% if pdf %}
+          <p><a class="button button--secondary" href="{% url 'ops:order_print_file' order.number %}">Pobierz PDF do druku</a>
+            <small>{{ pdf.size_bytes|filesizeformat }}, {{ pdf.params.format }} {{ pdf.params.orientation }}, spad {{ pdf.params.bleed_mm }} mm, {{ pdf.params.color_space }}, {{ pdf.params.effective_dpi }} DPI</small></p>
+        {% endif %}
+      {% endwith %}
+
+      <h3>Analiza</h3>
+      {% if analysis %}
+        <p>Proporcje {{ analysis.aspect_ratio }}. Flagi treści:
+          {% if flag_labels %}<span class="tag tag--warn">{{ flag_labels|join:", " }}</span>{% else %}brak{% endif %}
+          <span class="tag tag--mock">symulacja moderacji</span></p>
+        <table class="quality-table">
+          <thead><tr><th>Format</th><th>DPI</th><th>Po upscale</th><th>Werdykt</th></tr></thead>
+          <tbody>
+          {% for code, q in analysis.quality_per_format.items %}
+            <tr><td>{{ code }}</td><td>{{ q.effective_dpi }}</td><td>{{ q.dpi_after_upscale }}</td><td>{{ q.verdict_label }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="ops-order__actions">
+    <h2>Akcje</h2>
+    {% if can_approve %}
+      <form method="post" action="{% url 'ops:order_action' order.number %}" class="inline-form">{% csrf_token %}
+        <input type="hidden" name="action" value="approve">
+        <button type="submit" class="button button--primary">Zatwierdź i wyślij do drukarni</button>
+      </form>
+    {% endif %}
+    {% if can_reject %}
+      <form method="post" action="{% url 'ops:order_action' order.number %}" class="inline-form">{% csrf_token %}
+        <input type="hidden" name="action" value="reject">
+        <label>Powód odrzucenia <input name="reason" required maxlength="500"></label>
+        <button type="submit" class="button button--danger">Odrzuć ze zwrotem</button>
+      </form>
+    {% endif %}
+    {% if can_reprocess %}
+      <form method="post" action="{% url 'ops:order_action' order.number %}" class="inline-form">{% csrf_token %}
+        <input type="hidden" name="action" value="reprocess">
+        <input type="hidden" name="reason" value="ponowne przetworzenie na żądanie operatora">
+        <button type="submit" class="button button--secondary">Wymuś ponowne przetworzenie</button>
+      </form>
+    {% endif %}
+    {% if can_reprint %}
+      <form method="post" action="{% url 'ops:order_action' order.number %}" class="inline-form">{% csrf_token %}
+        <input type="hidden" name="action" value="reprint">
+        <label>Powód dodruku <input name="reason" required maxlength="500"></label>
+        <button type="submit" class="button button--secondary">Zleć dodruk</button>
+      </form>
+    {% endif %}
+    {% if can_deliver %}
+      <form method="post" action="{% url 'ops:order_action' order.number %}" class="inline-form">{% csrf_token %}
+        <input type="hidden" name="action" value="deliver">
+        <button type="submit" class="button button--secondary">Oznacz jako doręczone</button>
+      </form>
+    {% endif %}
+    {% if can_cancel %}
+      <form method="post" action="{% url 'ops:order_action' order.number %}" class="inline-form">{% csrf_token %}
+        <input type="hidden" name="action" value="cancel">
+        <label>Powód anulowania <input name="reason" required maxlength="500"></label>
+        <button type="submit" class="button button--danger">Anuluj ze zwrotem</button>
+      </form>
+    {% endif %}
+    <details class="force-form">
+      <summary>Zmień stan ręcznie (wymuszenie, wymaga powodu)</summary>
+      <form method="post" action="{% url 'ops:order_action' order.number %}">{% csrf_token %}
+        <input type="hidden" name="action" value="force">
+        <p>{{ force_form.to_status.label_tag }} {{ force_form.to_status }}</p>
+        <p>{{ force_form.reason.label_tag }} {{ force_form.reason }}</p>
+        <button type="submit" class="button button--danger">Wymuś zmianę stanu</button>
+      </form>
+    </details>
+  </section>
+
+  <section class="ops-order__jobs">
+    <h2>Zlecenia do drukarni</h2>
+    <table>
+      <thead><tr><th>Zlecenie</th><th>External ID</th><th>Stan</th><th>Próby</th><th>Wysłano</th><th>Dodruk</th><th>Powód</th><th>Zdarzenia</th></tr></thead>
+      <tbody>
+      {% for j in jobs %}
+        <tr>
+          <td>{{ j.job_id }}</td>
+          <td>{% if j.external_id %}<a href="{% url 'printing:mock_job' j.external_id %}">{{ j.external_id }}</a>{% else %}-{% endif %}</td>
+          <td>{{ j.status }}</td>
+          <td>{{ j.attempts }}</td>
+          <td>{{ j.sent_at|date:"Y-m-d H:i:s"|default:"-" }}</td>
+          <td>{% if j.reprint_of %}dodruk {{ j.reprint_of.job_id }}{% else %}-{% endif %}</td>
+          <td>{{ j.reason }}</td>
+          <td><small>{% for e in j.events.all %}{{ e.received_at|date:"H:i:s" }} {{ e.status }}{% if not e.applied %} (pominięte: {{ e.note }}){% endif %}<br>{% endfor %}</small></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8">Brak zleceń.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="ops-order__side">
+    <h2>Płatności</h2>
+    <ul>{% for p in payments %}<li>{{ p.provider }} {{ p.external_id }}: {{ p.amount }} {{ p.currency }}, {{ p.get_status_display }} {% if p.is_mock %}<span class="tag tag--mock">symulacja</span>{% endif %}</li>{% empty %}<li>Brak.</li>{% endfor %}</ul>
+    <h2>Wysyłka</h2>
+    <ul>{% for s in shipments %}<li>{{ s.shipped_at|date:"Y-m-d H:i" }} {{ s.carrier }} {{ s.tracking_number }}</li>{% empty %}<li>Brak.</li>{% endfor %}</ul>
+    <h2>Reklamacje</h2>
+    {% for c in complaints %}
+      <article class="complaint">
+        <p><strong>{{ c.created_at|date:"Y-m-d H:i" }}</strong> {{ c.get_status_display }}</p>
+        <p>{{ c.description }}</p>
+        {% for ph in c.photos.all %}<a href="{{ ph.image.url }}">zdjęcie {{ forloop.counter }}</a> {% endfor %}
+        {% if c.resolution %}<p>Rozstrzygnięcie: {{ c.resolution }}{% if c.resolved_by %} ({{ c.resolved_by.username }}){% endif %}</p>{% endif %}
+        {% if c.status == "open" %}
+          <form method="post" action="{% url 'ops:order_action' order.number %}">{% csrf_token %}
+            <input type="hidden" name="action" value="resolve_complaint">
+            <input type="hidden" name="complaint_id" value="{{ c.pk }}">
+            <p>{{ resolve_form.decision.label_tag }} {{ resolve_form.decision }}</p>
+            <p>{{ resolve_form.resolution.label_tag }} {{ resolve_form.resolution }}</p>
+            <button type="submit" class="button button--secondary">Rozpatrz</button>
+          </form>
+        {% endif %}
+      </article>
+    {% empty %}<p>Brak.</p>{% endfor %}
+  </section>
+
+  <section class="ops-order__history">
+    <h2>Historia stanów</h2>
+    {% include "components/status_history.html" with events=events %}
+  </section>
+</section>
+{% endblock %}

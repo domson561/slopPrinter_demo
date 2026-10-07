@@ -1,0 +1,9 @@
+Dzień dobry,
+
+przyjęliśmy reklamację do zamówienia {{ order.number }}.
+Treść: {{ complaint.description }}
+
+Odpowiemy e-mailem po sprawdzeniu zgłoszenia.
+Status zamówienia: {{ status_url }}
+
+{{ site_name }}

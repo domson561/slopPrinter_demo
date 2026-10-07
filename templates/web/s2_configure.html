@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Konfiguracja - {{ site_name }}{% endblock %}
+{% block content %}
+<section class="configure" id="configure"
+         data-asset-id="{{ asset.pk }}"
+         data-price-url="{% url 'web:price_partial' asset.pk %}"
+         data-image-url="{% url 'web:asset_preview' asset.pk %}"
+         data-image-width="{{ asset.width }}"
+         data-image-height="{{ asset.height }}">
+  <h1>Wybierz format i jakość</h1>
+
+  <div class="configure__file">
+    <img class="configure__thumb" src="{% url 'web:asset_preview' asset.pk %}" alt="Wgrany obrazek" width="160">
+    <p>{{ asset.original_filename }}, {{ asset.width }} x {{ asset.height }} px. <a href="{% url 'web:upload' %}">Wgraj inny plik</a></p>
+    {% if flags %}<p class="notice notice--warn">Ten plik trafi do ręcznej weryfikacji przed drukiem (symulacja moderacji).</p>{% endif %}
+  </div>
+
+  <form method="post" class="configure-form" id="configure-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <fieldset class="configure__formats">
+      <legend>Format</legend>
+      {{ form.format.errors }}
+      {% for card in cards %}
+        <label class="format-card {% if card.quality.blocked %}format-card--blocked{% endif %}">
+          <input type="radio" name="format" value="{{ card.format.pk }}" data-code="{{ card.format.code }}"
+                 {% if form.format.value|stringformat:"s" == card.format.pk|stringformat:"s" %}checked{% endif %}
+                 {% if card.quality.blocked %}disabled{% endif %}>
+          <span class="format-card__name">{{ card.format.name }}</span>
+          <span class="format-card__dims">{{ card.format.width_mm }} x {{ card.format.height_mm }} mm</span>
+          <span class="format-card__price">od {{ card.price }} zł</span>
+          {% include "components/quality_badge.html" with quality=card.quality %}
+          <span class="format-card__text">{{ card.quality.customer_text }}</span>
+        </label>
+      {% endfor %}
+    </fieldset>
+
+    <fieldset class="configure__crop">
+      <legend>Kadr</legend>
+      <p>Przeciągnij obrazek, żeby ustawić kadr. Suwak przybliża.</p>
+      <div class="crop-frame" id="crop-frame">
+        <img id="crop-image" src="{% url 'web:asset_preview' asset.pk %}" alt="" draggable="false">
+      </div>
+      <label>Przybliżenie <input type="range" id="crop-zoom" min="1" max="3" step="0.01" value="1"></label>
+      <button type="button" class="button button--secondary" id="crop-reset">Wyśrodkuj</button>
+      {{ form.crop }}
+    </fieldset>
+
+    <fieldset class="configure__options">
+      <legend>Opcje</legend>
+      <p>{{ form.paper.label_tag }} {{ form.paper }} {{ form.paper.errors }}</p>
+      <p>{{ form.white_margin }} {{ form.white_margin.label_tag }}</p>
+      <p>{{ form.quantity.label_tag }} {{ form.quantity }} (maks. {{ max_quantity }}) {{ form.quantity.errors }}</p>
+      <p class="enhancer">
+        {{ form.enhancer_enabled }} {{ form.enhancer_enabled.label_tag }} <span class="tag tag--mock">symulacja</span>
+        <span class="enhancer__help">Powiększa obrazek x{{ shop.upscale_factor }} i wyostrza detale. Włączamy automatycznie, gdy plik ma za mało szczegółów do wybranego formatu.</span>
+        <span class="enhancer__auto" id="enhancer-auto" hidden>Zalecane dla tego formatu.</span>
+      </p>
+    </fieldset>
+
+    <section class="configure__quality" id="quality-box" aria-live="polite">
+      <p><strong>Ocena dla tego kadru:</strong> <span id="quality-label"></span> <span id="quality-text"></span></p>
+      <p id="quality-suggestion" hidden></p>
+    </section>
+
+    <section class="configure__price" aria-live="polite">
+      <p>Cena za sztukę: <strong id="price-unit">-</strong> zł</p>
+      <p>Razem: <strong id="price-subtotal">-</strong> zł (bez dostawy)</p>
+    </section>
+
+    <p class="configure__actions">
+      <a class="button button--secondary" href="{% url 'web:upload' %}">Wgraj inny plik</a>
+      <button type="submit" class="button button--primary" id="submit-button">Zobacz podgląd</button>
+    </p>
+  </form>
+</section>
+<script id="cards-data" type="application/json">{{ cards_json|safe }}</script>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'js/configure.js' %}"></script>
+{% endblock %}

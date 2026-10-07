@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Wgraj obrazek - {{ site_name }}{% endblock %}
+{% block content %}
+<section class="upload">
+  <h1>Wydrukuj swój obrazek z AI jako plakat</h1>
+  <p>Wgraj plik, a my sprawdzimy, czy nadaje się do druku, poprawimy jakość i wyślemy gotowy plakat.</p>
+
+  <form method="post" enctype="multipart/form-data" class="upload-form" id="upload-form">
+    {% csrf_token %}
+    <div class="upload-dropzone" id="dropzone">
+      <label for="{{ form.file.id_for_label }}">Przeciągnij plik tutaj albo wybierz z dysku</label>
+      {{ form.file }}
+      <p class="upload-dropzone__hint">JPG, PNG lub WebP, maksymalnie {{ max_mb }} MB.</p>
+      {{ form.file.errors }}
+    </div>
+    <progress class="upload-progress" id="upload-progress" value="0" max="100" hidden></progress>
+    <button type="submit" class="button button--primary">Wgraj i sprawdź</button>
+  </form>
+
+  <section class="upload__formats">
+    <h2>Dostępne formaty</h2>
+    <ul>
+      {% for f in formats %}<li>{{ f.name }} ({{ f.width_mm }} x {{ f.height_mm }} mm) od {{ f.base_price }} zł</li>{% endfor %}
+    </ul>
+  </section>
+  <p><a href="{% url 'web:static_page' 'regulamin' %}">Regulamin</a></p>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var form = document.getElementById('upload-form');
+  var input = form.querySelector('input[type=file]');
+  var zone = document.getElementById('dropzone');
+  var progress = document.getElementById('upload-progress');
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add('upload-dropzone--active'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove('upload-dropzone--active'); });
+  });
+  zone.addEventListener('drop', function (e) {
+    if (e.dataTransfer.files.length) { input.files = e.dataTransfer.files; form.requestSubmit(); }
+  });
+  input.addEventListener('change', function () { if (input.files.length) form.requestSubmit(); });
+  form.addEventListener('submit', function (e) {
+    if (!input.files.length || !window.XMLHttpRequest) return;
+    e.preventDefault();
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', form.action || window.location.href);
+    xhr.responseType = 'document';
+    progress.hidden = false;
+    xhr.upload.onprogress = function (ev) { if (ev.lengthComputable) progress.value = Math.round(ev.loaded / ev.total * 100); };
+    xhr.onload = function () {
+      if (xhr.responseURL && xhr.responseURL !== window.location.href) { window.location.href = xhr.responseURL; return; }
+      document.open(); document.write(xhr.response.documentElement.outerHTML); document.close();
+    };
+    xhr.onerror = function () { progress.hidden = true; form.submit(); };
+    xhr.send(new FormData(form));
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "ops/base_ops.html" %}
+{% load dict_extras %}
+{% block title %}Zamówienia - operator{% endblock %}
+{% block content %}
+<section class="ops-orders">
+  <h1>Zamówienia <span class="attention-counter" title="awaiting_approval + on_hold + otwarte reklamacje">wymaga uwagi: {{ attention_count }}</span></h1>
+
+  <form method="get" class="filter-form">
+    <label>Stan {{ form.status }}</label>
+    <label>{{ form.q.label }} {{ form.q }}</label>
+    <label>{{ form.attention }} {{ form.attention.label }}</label>
+    <button type="submit" class="button button--secondary">Filtruj</button>
+    <a href="{% url 'ops:order_list' %}">wyczyść</a>
+  </form>
+
+  <p class="status-counts">
+    {% for code, label in statuses %}{% if counts|get_item:code %}<span class="status-counts__item">{{ code }}: {{ counts|get_item:code }}</span>{% endif %}{% endfor %}
+  </p>
+
+  <table class="orders-table">
+    <thead>
+      <tr><th>Numer</th><th>Data</th><th>Klient</th><th>Format</th><th>Stan</th><th>Kwota</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for o in orders %}
+      <tr class="{% if o.needs_attention %}orders-table__row--attention{% endif %}">
+        <td><a href="{% url 'ops:order_detail' o.number %}">{{ o.number }}</a></td>
+        <td>{{ o.created_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ o.full_name }}<br><small>{{ o.email }}</small></td>
+        <td>{% for i in o.items.all %}{{ i.format.code }} x{{ i.quantity }}{% endfor %}</td>
+        <td><span class="status status--{{ o.status }}">{{ o.status }}</span>{% if o.hold_reason %}<br><small>{{ o.hold_reason }}</small>{% endif %}</td>
+        <td>{{ o.total }} {{ o.currency }}</td>
+        <td><a href="{% url 'ops:order_detail' o.number %}">otwórz</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7">Brak zamówień. Uruchom <code>manage.py seed_demo</code>.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

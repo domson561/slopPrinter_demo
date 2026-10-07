@@ -1,0 +1,20 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}MOCK DRUKARNIA{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/printer.css' %}">
+</head>
+<body class="printer">
+  <header class="printer-header">
+    <strong>MOCK DRUKARNIA</strong> <span class="printer-header__badge">SYMULACJA - to nie jest część serwisu</span>
+    <nav><a href="{% url 'printing:mock_dashboard' %}">Zlecenia</a> <a href="{% url 'ops:order_list' %}">wróć do panelu operatora</a></nav>
+  </header>
+  <main class="printer-main">
+    {% include "components/messages.html" %}
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

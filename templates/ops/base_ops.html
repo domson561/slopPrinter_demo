@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block body_class %}ops{% endblock %}
+{% block nav %}
+  <a href="{% url 'ops:order_list' %}">Zamówienia</a>
+  <a href="{% url 'ops:queue' %}">Kolejka moderacji</a>
+  <a href="{% url 'ops:settings' %}">Ustawienia</a>
+  <a href="{% url 'printing:mock_dashboard' %}">Mock drukarni</a>
+  <a href="{% url 'admin:index' %}">Admin (awaryjnie)</a>
+  <form method="post" action="{% url 'ops:logout' %}" class="site-header__logout">{% csrf_token %}<button type="submit" class="button button--link">Wyloguj ({{ user.username }})</button></form>
+{% endblock %}
+{% block footer %}<span class="site-footer__demo">Panel operatora. Demo.</span>{% endblock %}

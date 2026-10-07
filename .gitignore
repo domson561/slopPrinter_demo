@@ -1,0 +1,35 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+db.sqlite3
+huey.db*
+media/
+staticfiles/
+.pytest_cache/
+.env
+demo/images/*.png
+demo/images/*.jpg
+
+# assets/: prywatne materiały (prezentacje, grafiki, paczki), nie kod aplikacji
+assets/*.png
+assets/*.jpg
+assets/*.pdf
+assets/*.zip
+assets/wetransfer_*/
+
+# Claude Code: lokalne ustawienia (launch.json zostaje w repo)
+.claude/settings.local.json
+
+# testy i narzędzia
+.coverage
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+# IDE i system
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini
+*.log

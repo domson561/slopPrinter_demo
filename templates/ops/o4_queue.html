@@ -1,0 +1,37 @@
+{% extends "ops/base_ops.html" %}
+{% block title %}Kolejka moderacji - operator{% endblock %}
+{% block content %}
+<section class="ops-queue">
+  <h1>Kolejka moderacji</h1>
+  {% for o in orders %}
+    {% with item=o.item %}
+    <article class="queue-card">
+      <img src="{% url 'web:asset_preview' item.asset.pk %}" alt="" width="160">
+      <div class="queue-card__body">
+        <h2><a href="{% url 'ops:order_detail' o.number %}">{{ o.number }}</a> <span class="status status--{{ o.status }}">{{ o.status }}</span></h2>
+        <p>{{ o.created_at|date:"Y-m-d H:i" }}, {{ o.full_name }}, {{ item.format.code }} x{{ item.quantity }}, {{ o.total }} {{ o.currency }}</p>
+        {% if o.hold_reason %}<p class="notice notice--warn">{{ o.hold_reason }}</p>{% endif %}
+        {% with pdf=item.print_file %}{% if pdf %}<p>PDF: {{ pdf.params.effective_dpi }} DPI, {{ pdf.params.format }}</p>{% else %}<p>Brak PDF.</p>{% endif %}{% endwith %}
+        <form method="post" action="{% url 'ops:order_action' o.number %}" class="inline-form">{% csrf_token %}
+          <input type="hidden" name="action" value="approve"><input type="hidden" name="next" value="{% url 'ops:queue' %}">
+          <button type="submit" class="button button--primary">Zatwierdź</button>
+        </form>
+        <form method="post" action="{% url 'ops:order_action' o.number %}" class="inline-form">{% csrf_token %}
+          <input type="hidden" name="action" value="reject"><input type="hidden" name="next" value="{% url 'ops:queue' %}">
+          <label>Powód <input name="reason" required maxlength="500"></label>
+          <button type="submit" class="button button--danger">Odrzuć</button>
+        </form>
+        <a href="{% url 'ops:order_detail' o.number %}">szczegóły</a>
+      </div>
+    </article>
+    {% endwith %}
+  {% empty %}
+    <p>Kolejka pusta.</p>
+  {% endfor %}
+
+  <h2>Otwarte reklamacje</h2>
+  <ul>
+    {% for c in open_complaints %}<li><a href="{% url 'ops:order_detail' c.order.number %}">{{ c.order.number }}</a>: {{ c.description|truncatechars:120 }}</li>{% empty %}<li>Brak.</li>{% endfor %}
+  </ul>
+</section>
+{% endblock %}

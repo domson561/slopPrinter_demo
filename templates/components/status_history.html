@@ -1,0 +1,19 @@
+{# oczekuje: events (OrderStatusEvent queryset), operator (bool) #}
+<table class="status-history">
+  <thead>
+    <tr><th>Kiedy</th><th>Z</th><th>Na</th><th>Kto</th><th>Powód</th></tr>
+  </thead>
+  <tbody>
+  {% for e in events %}
+    <tr class="{% if e.forced %}status-history__row--forced{% endif %}">
+      <td>{{ e.created_at|date:"Y-m-d H:i:s" }}</td>
+      <td>{{ e.from_status|default:"-" }}</td>
+      <td>{{ e.to_status }}</td>
+      <td>{{ e.get_actor_display }}{% if e.actor_user %} ({{ e.actor_user.username }}){% endif %}{% if e.forced %} <span class="tag tag--warn">wymuszone</span>{% endif %}</td>
+      <td>{{ e.reason }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5">Brak zdarzeń.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>

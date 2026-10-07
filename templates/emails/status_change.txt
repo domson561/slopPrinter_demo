@@ -1,0 +1,10 @@
+Dzień dobry,
+
+zamówienie {{ order.number }}: {{ title }}
+{{ description }}
+{% if shipment and shipment.tracking_number %}
+Numer śledzenia: {{ shipment.tracking_number }} ({{ shipment.carrier }})
+{% endif %}
+Status i historia zamówienia: {{ status_url }}
+
+{{ site_name }}

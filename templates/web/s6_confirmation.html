@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Dziękujemy - {{ site_name }}{% endblock %}
+{% block content %}
+<section class="confirmation">
+  <h1>Dziękujemy za zamówienie</h1>
+  <p>Numer zamówienia: <strong>{{ order.number }}</strong></p>
+  <p>Status i historię znajdziesz pod tym linkiem (zapisz go, nie wymaga logowania):<br>
+     <a href="{{ order.get_status_url }}">{{ site_url }}{{ order.get_status_url }}</a></p>
+  <h2>Co teraz</h2>
+  <ol>
+    <li>Przygotowujemy plik do druku{% if item.enhancer_enabled %} i poprawiamy jego jakość{% endif %}.</li>
+    <li>Operator sprawdza, czy wszystko wydrukuje się dobrze.</li>
+    <li>Drukarnia drukuje i pakuje plakat.</li>
+    <li>Paczka rusza do Ciebie. Wyślemy numer śledzenia.</li>
+  </ol>
+  <p>Spodziewany czas do wysyłki: ok. {{ lead_time_days }} dni roboczych.</p>
+  <p>Potwierdzenie wysłaliśmy na {{ order.email }} (w demo trafia do logu serwera).</p>
+  <p><a class="button button--primary" href="{{ order.get_status_url }}">Zobacz status zamówienia</a></p>
+</section>
+{% endblock %}

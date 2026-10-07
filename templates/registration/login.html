@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Logowanie operatora - {{ site_name }}{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<section class="login">
+  <h1>Panel operatora</h1>
+  <form method="post" class="login-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <p>{{ form.username.label_tag }} {{ form.username }}</p>
+    <p>{{ form.password.label_tag }} {{ form.password }}</p>
+    <input type="hidden" name="next" value="{{ next|default:'/ops/' }}">
+    <button type="submit" class="button button--primary">Zaloguj</button>
+  </form>
+  <p class="notice notice--info">Demo: <code>demo / demo</code> (po <code>manage.py seed_demo</code>).</p>
+</section>
+{% endblock %}

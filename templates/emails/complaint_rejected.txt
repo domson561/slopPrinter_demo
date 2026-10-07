@@ -1,0 +1,9 @@
+Dzień dobry,
+
+rozpatrzyliśmy reklamację do zamówienia {{ order.number }}.
+Decyzja: reklamacja nie została uznana.
+Uzasadnienie: {{ complaint.resolution }}
+
+Status zamówienia: {{ status_url }}
+
+{{ site_name }}
