@@ -16,7 +16,16 @@ from apps.catalog.models import ShopSettings
 from apps.catalog.services import quote
 
 from . import notifications
-from .models import Actor, Complaint, ComplaintPhoto, Order, OrderItem, OrderStatus, OrderStatusEvent, Payment
+from .models import (
+    Actor,
+    Complaint,
+    ComplaintPhoto,
+    Order,
+    OrderItem,
+    OrderStatus,
+    OrderStatusEvent,
+    Payment,
+)
 
 log = logging.getLogger("slop.orders")
 
@@ -48,15 +57,27 @@ CUSTOMER_LABELS: dict[str, tuple[str, str]] = {
     S.DRAFT: ("Konfiguracja", "Zamówienie nie zostało jeszcze złożone."),
     S.AWAITING_PAYMENT: ("Oczekujemy na płatność", "Dokończ płatność, żebyśmy mogli zacząć."),
     S.PAID: ("Płatność przyjęta", "Dziękujemy. Zaraz zajmiemy się Twoim plikiem."),
-    S.PROCESSING: ("Przygotowujemy plik do druku", "Poprawiamy jakość i przygotowujemy plik produkcyjny."),
-    S.AWAITING_APPROVAL: ("Sprawdzamy plik", "Nasz operator sprawdza, czy wszystko wydrukuje się dobrze."),
-    S.ON_HOLD: ("Zamówienie wymaga dodatkowej weryfikacji", "Skontaktujemy się, jeśli będziemy czegoś potrzebować."),
+    S.PROCESSING: (
+        "Przygotowujemy plik do druku",
+        "Poprawiamy jakość i przygotowujemy plik produkcyjny.",
+    ),
+    S.AWAITING_APPROVAL: (
+        "Sprawdzamy plik",
+        "Nasz operator sprawdza, czy wszystko wydrukuje się dobrze.",
+    ),
+    S.ON_HOLD: (
+        "Zamówienie wymaga dodatkowej weryfikacji",
+        "Skontaktujemy się, jeśli będziemy czegoś potrzebować.",
+    ),
     S.SENT_TO_PRINTER: ("W drukarni", "Plik został przekazany do druku."),
     S.PRINTED: ("Wydrukowane", "Twój plakat jest gotowy i czeka na pakowanie."),
     S.SHIPPED: ("Nadane", "Paczka jest w drodze. Numer śledzenia znajdziesz poniżej."),
     S.DELIVERED: ("Doręczone", "Mamy nadzieję, że plakat wygląda świetnie na ścianie."),
     S.REPRINT: ("Drukujemy ponownie", "Zleciliśmy dodruk. Nowa paczka jest w drodze do produkcji."),
-    S.CANCELLED: ("Anulowane", "Zamówienie zostało anulowane. Jeśli zapłaciłeś, zwrot jest w drodze."),
+    S.CANCELLED: (
+        "Anulowane",
+        "Zamówienie zostało anulowane. Jeśli zapłaciłeś, zwrot jest w drodze.",
+    ),
 }
 
 # Stany, przy których klient dostaje e-mail.
@@ -80,11 +101,15 @@ def can_transition(from_status, to_status) -> bool:
     return to_status in TRANSITIONS.get(from_status, set())
 
 
-def transition(order: Order, to_status: str, actor: str, reason: str = "", actor_user=None, notify: bool = True) -> OrderStatusEvent:
+def transition(
+    order: Order, to_status: str, actor: str, reason: str = "", actor_user=None, notify: bool = True
+) -> OrderStatusEvent:
     """Jedyna droga zmiany stanu. Przejścia spoza tabeli rzucają TransitionError."""
     if not can_transition(order.status, to_status):
         raise TransitionError(f"Niedozwolone przejście {order.status} -> {to_status} dla {order}")
-    return _apply_transition(order, to_status, actor, reason, actor_user, forced=False, notify=notify)
+    return _apply_transition(
+        order, to_status, actor, reason, actor_user, forced=False, notify=notify
+    )
 
 
 def force_transition(order: Order, to_status: str, actor_user, reason: str) -> OrderStatusEvent:
@@ -95,7 +120,9 @@ def force_transition(order: Order, to_status: str, actor_user, reason: str) -> O
         raise TransitionError(f"Nieznany stan: {to_status}")
     if to_status == order.status:
         raise TransitionError("Zamówienie jest już w tym stanie.")
-    return _apply_transition(order, to_status, Actor.OPERATOR, reason, actor_user, forced=True, notify=True)
+    return _apply_transition(
+        order, to_status, Actor.OPERATOR, reason, actor_user, forced=True, notify=True
+    )
 
 
 def _apply_transition(order, to_status, actor, reason, actor_user, forced, notify):
@@ -117,7 +144,15 @@ def _apply_transition(order, to_status, actor, reason, actor_user, forced, notif
             forced=forced,
         )
         _after_transition(order, event)
-    log.info("order %s: %s -> %s (%s%s) %s", order.number, from_status, to_status, actor, " forced" if forced else "", reason)
+    log.info(
+        "order %s: %s -> %s (%s%s) %s",
+        order.number,
+        from_status,
+        to_status,
+        actor,
+        " forced" if forced else "",
+        reason,
+    )
     if notify and to_status in NOTIFY_STATUSES:
         notifications.send_status_email(order, event)
     return event
@@ -150,14 +185,18 @@ def recalc_totals(order: Order) -> Order:
         item.save(update_fields=["unit_price"])
         subtotal += q.subtotal
     order.subtotal = subtotal
-    order.delivery_price = Decimal(order.delivery_method.price) if order.delivery_method else Decimal("0.00")
+    order.delivery_price = (
+        Decimal(order.delivery_method.price) if order.delivery_method else Decimal("0.00")
+    )
     order.total = (order.subtotal + order.delivery_price).quantize(Decimal("0.01"))
     order.currency = ShopSettings.get().currency
     order.save(update_fields=["subtotal", "delivery_price", "total", "currency", "updated_at"])
     return order
 
 
-def save_draft(asset, fmt, paper, *, white_margin, quantity, crop, enhancer_enabled, order: Order | None = None) -> Order:
+def save_draft(
+    asset, fmt, paper, *, white_margin, quantity, crop, enhancer_enabled, order: Order | None = None
+) -> Order:
     """Tworzy lub aktualizuje szkic z jedną pozycją. Kadr jest sanityzowany."""
     crop = quality.sanitize_crop(crop, asset.width, asset.height, fmt)
     q = quality.quality_for(asset.width, asset.height, fmt, ShopSettings.get(), crop)
@@ -186,7 +225,9 @@ def save_draft(asset, fmt, paper, *, white_margin, quantity, crop, enhancer_enab
 # ---------------------------------------------------------------------------
 
 
-def start_checkout(order: Order, *, email, full_name, phone, address: dict, delivery_method, consents: dict) -> str:
+def start_checkout(
+    order: Order, *, email, full_name, phone, address: dict, delivery_method, consents: dict
+) -> str:
     """Zapisuje dane, przechodzi do awaiting_payment i zwraca URL bramki (mock)."""
     from .payments import get_payment_provider
 
@@ -210,7 +251,12 @@ def mark_paid(order: Order, payment: Payment | None = None):
     if order.status != S.AWAITING_PAYMENT:
         log.info("mark_paid: %s już w stanie %s, pomijam", order.number, order.status)
         return
-    transition(order, S.PAID, Actor.SYSTEM, f"płatność {payment.external_id}" if payment else "płatność potwierdzona")
+    transition(
+        order,
+        S.PAID,
+        Actor.SYSTEM,
+        f"płatność {payment.external_id}" if payment else "płatność potwierdzona",
+    )
     from .tasks import process_order_task
 
     process_order_task(order.pk)
@@ -232,7 +278,12 @@ def process_order(order: Order):
             run_pipeline(item)
     except Exception as exc:  # noqa: BLE001 - każdy błąd pipeline ląduje w on_hold
         log.exception("pipeline failed for %s", order.number)
-        transition(order, S.ON_HOLD, Actor.SYSTEM, f"Błąd przetwarzania pliku: {type(exc).__name__}: {exc}"[:500])
+        transition(
+            order,
+            S.ON_HOLD,
+            Actor.SYSTEM,
+            f"Błąd przetwarzania pliku: {type(exc).__name__}: {exc}"[:500],
+        )
         return
 
     flags = []
@@ -261,7 +312,9 @@ def approve_order(order: Order, actor=Actor.OPERATOR, actor_user=None, reason: s
 
     order.refresh_from_db()
     if order.status == S.ON_HOLD:
-        transition(order, S.AWAITING_APPROVAL, actor, reason or "zatwierdzone po weryfikacji", actor_user)
+        transition(
+            order, S.AWAITING_APPROVAL, actor, reason or "zatwierdzone po weryfikacji", actor_user
+        )
     if order.status != S.AWAITING_APPROVAL:
         raise TransitionError(f"Nie można zatwierdzić zamówienia w stanie {order.status}.")
     if any(item.print_file is None for item in order.items.all()):
@@ -305,7 +358,12 @@ def _open_print_jobs(order):
     from apps.printing.models import PrintJob
 
     return PrintJob.objects.filter(order_item__order=order).exclude(
-        status__in=[PrintJob.Status.SHIPPED, PrintJob.Status.REJECTED, PrintJob.Status.FAILED, PrintJob.Status.CANCELLED]
+        status__in=[
+            PrintJob.Status.SHIPPED,
+            PrintJob.Status.REJECTED,
+            PrintJob.Status.FAILED,
+            PrintJob.Status.CANCELLED,
+        ]
     )
 
 
@@ -317,9 +375,16 @@ def reprocess_order(order: Order, actor_user, reason: str = "ponowne przetworzen
     if order.status == S.AWAITING_APPROVAL:
         transition(order, S.ON_HOLD, Actor.OPERATOR, reason, actor_user, notify=False)
     if order.status != S.ON_HOLD:
-        raise TransitionError(f"Ponowne przetworzenie możliwe tylko z on_hold (jest {order.status}).")
+        raise TransitionError(
+            f"Ponowne przetworzenie możliwe tylko z on_hold (jest {order.status})."
+        )
     OrderStatusEvent.objects.create(
-        order=order, from_status=order.status, to_status=order.status, actor=Actor.OPERATOR, actor_user=actor_user, reason=reason
+        order=order,
+        from_status=order.status,
+        to_status=order.status,
+        actor=Actor.OPERATOR,
+        actor_user=actor_user,
+        reason=reason,
     )
     process_order_task(order.pk)
 
@@ -360,7 +425,11 @@ def file_complaint(order: Order, description: str, photos=()) -> Complaint:
         for photo in photos:
             ComplaintPhoto.objects.create(complaint=complaint, image=photo)
         OrderStatusEvent.objects.create(
-            order=order, from_status=order.status, to_status=order.status, actor=Actor.CUSTOMER, reason="zgłoszono reklamację"
+            order=order,
+            from_status=order.status,
+            to_status=order.status,
+            actor=Actor.CUSTOMER,
+            reason="zgłoszono reklamację",
         )
     notifications.send_complaint_received_email(order, complaint)
     return complaint
@@ -379,6 +448,8 @@ def resolve_complaint(complaint: Complaint, actor_user, decision: str, resolutio
     complaint.resolved_at = timezone.now()
     complaint.save()
     if decision == Complaint.Status.REPRINT:
-        request_reprint(complaint.order, Actor.OPERATOR, f"reklamacja uznana: {resolution}"[:500], actor_user)
+        request_reprint(
+            complaint.order, Actor.OPERATOR, f"reklamacja uznana: {resolution}"[:500], actor_user
+        )
     else:
         notifications.send_complaint_rejected_email(complaint.order, complaint)

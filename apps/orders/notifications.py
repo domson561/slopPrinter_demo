@@ -13,8 +13,22 @@ def _send(order, subject, template, context):
     if not order.email:
         log.info("Brak e-maila dla %s, pomijam powiadomienie", order.number)
         return
-    body = render_to_string(template, {"order": order, "site_name": settings.SITE_NAME, "status_url": order.get_absolute_status_url(), **context})
-    send_mail(f"[{settings.SITE_NAME}] {subject}", body, settings.DEFAULT_FROM_EMAIL, [order.email], fail_silently=True)
+    body = render_to_string(
+        template,
+        {
+            "order": order,
+            "site_name": settings.SITE_NAME,
+            "status_url": order.get_absolute_status_url(),
+            **context,
+        },
+    )
+    send_mail(
+        f"[{settings.SITE_NAME}] {subject}",
+        body,
+        settings.DEFAULT_FROM_EMAIL,
+        [order.email],
+        fail_silently=True,
+    )
 
 
 def send_status_email(order, event):
@@ -31,8 +45,18 @@ def send_status_email(order, event):
 
 
 def send_complaint_received_email(order, complaint):
-    _send(order, f"Zamówienie {order.number}: przyjęliśmy reklamację", "emails/complaint_received.txt", {"complaint": complaint})
+    _send(
+        order,
+        f"Zamówienie {order.number}: przyjęliśmy reklamację",
+        "emails/complaint_received.txt",
+        {"complaint": complaint},
+    )
 
 
 def send_complaint_rejected_email(order, complaint):
-    _send(order, f"Zamówienie {order.number}: odpowiedź na reklamację", "emails/complaint_rejected.txt", {"complaint": complaint})
+    _send(
+        order,
+        f"Zamówienie {order.number}: odpowiedź na reklamację",
+        "emails/complaint_rejected.txt",
+        {"complaint": complaint},
+    )

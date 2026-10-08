@@ -59,9 +59,15 @@ class MockPaymentProvider:
         from .services import mark_paid
 
         with transaction.atomic():
-            payment = Payment.objects.select_for_update().select_related("order").get(external_id=external_id)
+            payment = (
+                Payment.objects.select_for_update()
+                .select_related("order")
+                .get(external_id=external_id)
+            )
             if payment.status == Payment.Status.SUCCEEDED:
-                return PaymentResult(payment, True, "Płatność była już zaksięgowana.", already_processed=True)
+                return PaymentResult(
+                    payment, True, "Płatność była już zaksięgowana.", already_processed=True
+                )
             if result == "success":
                 payment.status = Payment.Status.SUCCEEDED
                 payment.log("callback", result="success")
@@ -74,7 +80,9 @@ class MockPaymentProvider:
         if payment.status == Payment.Status.SUCCEEDED:
             mark_paid(payment.order, payment)
             return PaymentResult(payment, True, "Płatność zaksięgowana (symulacja).")
-        return PaymentResult(payment, False, "Płatność nie powiodła się (symulacja). Możesz spróbować ponownie.")
+        return PaymentResult(
+            payment, False, "Płatność nie powiodła się (symulacja). Możesz spróbować ponownie."
+        )
 
     def refund(self, payment: Payment, amount: Decimal) -> None:
         payment.status = Payment.Status.REFUNDED

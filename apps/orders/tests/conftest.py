@@ -12,7 +12,15 @@ def make_draft(catalog_data, image_upload):
         asset = create_asset_from_upload(image_upload(name=name, size=size))
         fmt = Format.objects.get(code=fmt_code)
         paper = PaperOption.objects.get(code="matte")
-        return services.save_draft(asset, fmt, paper, white_margin=False, quantity=quantity, crop=None, enhancer_enabled=enhancer)
+        return services.save_draft(
+            asset,
+            fmt,
+            paper,
+            white_margin=False,
+            quantity=quantity,
+            crop=None,
+            enhancer_enabled=enhancer,
+        )
 
     return _make
 
@@ -26,7 +34,12 @@ def make_awaiting_payment(make_draft):
             email="klient@example.com",
             full_name="Jan Testowy",
             phone="+48 600 000 000",
-            address={"line1": "ul. Testowa 1", "postal_code": "00-001", "city": "Warszawa", "country": "PL"},
+            address={
+                "line1": "ul. Testowa 1",
+                "postal_code": "00-001",
+                "city": "Warszawa",
+                "country": "PL",
+            },
             delivery_method=DeliveryMethod.objects.get(code="courier"),
             consents={"terms": True, "no_withdrawal": True, "image_rights": True},
         )

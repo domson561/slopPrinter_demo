@@ -32,7 +32,9 @@ class Command(BaseCommand):
         expired = Asset.objects.filter(expires_at__lt=now)
         # Nie usuwaj plików zamówień, które wciąż są w toku (bezpiecznik).
         open_statuses = [
-            s for s in OrderStatus.values if s not in (OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.DRAFT)
+            s
+            for s in OrderStatus.values
+            if s not in (OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.DRAFT)
         ]
         expired = expired.exclude(order_items__order__status__in=open_statuses)
         asset_count = expired.count()
@@ -44,4 +46,6 @@ class Command(BaseCommand):
                 asset.delete()
 
         prefix = "[dry-run] " if dry else ""
-        self.stdout.write(f"{prefix}Usunięto porzuconych draftów: {draft_count}, wygasłych plików: {asset_count}")
+        self.stdout.write(
+            f"{prefix}Usunięto porzuconych draftów: {draft_count}, wygasłych plików: {asset_count}"
+        )

@@ -11,7 +11,13 @@ from apps.orders.models import OrderStatus as S
 from apps.orders.payments import MockPaymentProvider
 from apps.printing.models import MockPrinterJob, PrintJob
 from apps.printing.providers import MockPrintProvider
-from apps.printing.services import PrintSubmitError, build_spec, create_print_job, sign_payload, submit_print_job
+from apps.printing.services import (
+    PrintSubmitError,
+    build_spec,
+    create_print_job,
+    sign_payload,
+    submit_print_job,
+)
 
 
 @pytest.fixture
@@ -19,7 +25,13 @@ def approved_order(catalog_data, image_upload):
     """Zamówienie po płatności i pipeline, w awaiting_approval."""
     asset = create_asset_from_upload(image_upload(size=(1448, 2048)))
     order = order_services.save_draft(
-        asset, Format.objects.get(code="A2"), PaperOption.objects.get(code="matte"), white_margin=False, quantity=1, crop=None, enhancer_enabled=False
+        asset,
+        Format.objects.get(code="A2"),
+        PaperOption.objects.get(code="matte"),
+        white_margin=False,
+        quantity=1,
+        crop=None,
+        enhancer_enabled=False,
     )
     order_services.start_checkout(
         order,
@@ -47,10 +59,19 @@ def test_spec_matches_contract(approved_order):
     spec = build_spec(job)
     assert spec["product"] == "poster"
     assert spec["order_number"] == approved_order.number
-    assert spec["format"] == {"code": "A2", "width_mm": 420, "height_mm": 594, "bleed_mm": 3, "orientation": "portrait"}
+    assert spec["format"] == {
+        "code": "A2",
+        "width_mm": 420,
+        "height_mm": 594,
+        "bleed_mm": 3,
+        "orientation": "portrait",
+    }
     assert spec["paper"] == "matte" and spec["quantity"] == 1 and spec["white_margin"] is False
     assert spec["file"]["url"].endswith(".pdf") and len(spec["file"]["sha256"]) == 64
-    assert spec["shipping"]["address"]["city"] == "Warszawa" and spec["shipping"]["method"] == "courier"
+    assert (
+        spec["shipping"]["address"]["city"] == "Warszawa"
+        and spec["shipping"]["method"] == "courier"
+    )
     assert spec["reprint_of"] is None
 
 
@@ -98,14 +119,21 @@ def test_approve_sends_to_printer_and_creates_mock_job(approved_order, operator)
 def _post_event(client, payload, secret_ok=True):
     body = json.dumps(payload).encode()
     sig = sign_payload(body) if secret_ok else "deadbeef"
-    return client.post(reverse("printing:webhook"), data=body, content_type="application/json", headers={"X-Printer-Signature": sig})
+    return client.post(
+        reverse("printing:webhook"),
+        data=body,
+        content_type="application/json",
+        headers={"X-Printer-Signature": sig},
+    )
 
 
 @pytest.mark.django_db
 def test_webhook_rejects_bad_signature(client, approved_order, operator):
     order_services.approve_order(approved_order, actor_user=operator)
     job = PrintJob.objects.get()
-    resp = _post_event(client, {"external_id": job.external_id, "status": "printed"}, secret_ok=False)
+    resp = _post_event(
+        client, {"external_id": job.external_id, "status": "printed"}, secret_ok=False
+    )
     assert resp.status_code == 403
     resp = client.post(reverse("printing:webhook"), data=b"{}", content_type="application/json")
     assert resp.status_code == 403
@@ -130,7 +158,10 @@ def test_webhook_flow_and_idempotency(client, approved_order, operator):
 
     resp = _post_event(client, {"external_id": ext, "status": "shipped", "tracking_number": "MK1"})
     approved_order.refresh_from_db()
-    assert approved_order.status == S.SHIPPED and approved_order.latest_shipment.tracking_number == "MK1"
+    assert (
+        approved_order.status == S.SHIPPED
+        and approved_order.latest_shipment.tracking_number == "MK1"
+    )
 
     resp = _post_event(client, {"external_id": ext, "status": "accepted"})  # wstecz
     assert resp.json()["applied"] is False
@@ -138,7 +169,12 @@ def test_webhook_flow_and_idempotency(client, approved_order, operator):
 
     resp = _post_event(client, {"external_id": "MOCK-NOPE", "status": "printed"})
     assert resp.status_code == 404
-    resp = client.post(reverse("printing:webhook"), data=b"not json", content_type="application/json", headers={"X-Printer-Signature": sign_payload(b"not json")})
+    resp = client.post(
+        reverse("printing:webhook"),
+        data=b"not json",
+        content_type="application/json",
+        headers={"X-Printer-Signature": sign_payload(b"not json")},
+    )
     assert resp.status_code == 400
 
 
@@ -146,7 +182,9 @@ def test_webhook_flow_and_idempotency(client, approved_order, operator):
 def test_webhook_rejected_puts_order_on_hold(client, approved_order, operator):
     order_services.approve_order(approved_order, actor_user=operator)
     job = PrintJob.objects.get()
-    _post_event(client, {"external_id": job.external_id, "status": "rejected", "reason": "uszkodzony PDF"})
+    _post_event(
+        client, {"external_id": job.external_id, "status": "rejected", "reason": "uszkodzony PDF"}
+    )
     approved_order.refresh_from_db()
     assert approved_order.status == S.ON_HOLD and "uszkodzony PDF" in approved_order.hold_reason
     job.refresh_from_db()
@@ -162,12 +200,21 @@ def test_webhook_defect_triggers_reprint(client, approved_order, operator):
     approved_order.refresh_from_db()
     assert approved_order.status == S.SENT_TO_PRINTER
     jobs = list(PrintJob.objects.order_by("created_at"))
-    assert len(jobs) == 2 and jobs[1].reprint_of == jobs[0] and jobs[0].status == PrintJob.Status.FAILED
-    assert MockPrinterJob.objects.get(external_id=jobs[1].external_id).spec["reprint_of"] == jobs[0].job_id
+    assert (
+        len(jobs) == 2
+        and jobs[1].reprint_of == jobs[0]
+        and jobs[0].status == PrintJob.Status.FAILED
+    )
+    assert (
+        MockPrinterJob.objects.get(external_id=jobs[1].external_id).spec["reprint_of"]
+        == jobs[0].job_id
+    )
 
 
 @pytest.mark.django_db
-def test_mock_printer_dashboard_action_calls_webhook_over_http(client, approved_order, operator, monkeypatch):
+def test_mock_printer_dashboard_action_calls_webhook_over_http(
+    client, approved_order, operator, monkeypatch
+):
     """D1 woła webhook przez requests.post; tu przekierowujemy to na klienta testowego."""
     import requests
 
@@ -187,10 +234,19 @@ def test_mock_printer_dashboard_action_calls_webhook_over_http(client, approved_
     def fake_post(url, data=None, headers=None, timeout=None):
         captured["url"] = url
         captured["headers"] = headers
-        return FakeResponse(client.post(reverse("printing:webhook"), data=data, content_type="application/json", headers={"X-Printer-Signature": headers["X-Printer-Signature"]}))
+        return FakeResponse(
+            client.post(
+                reverse("printing:webhook"),
+                data=data,
+                content_type="application/json",
+                headers={"X-Printer-Signature": headers["X-Printer-Signature"]},
+            )
+        )
 
     monkeypatch.setattr(requests, "post", fake_post)
-    resp = client.post(reverse("printing:mock_action", args=[mock_job.external_id]), {"action": "accept"})
+    resp = client.post(
+        reverse("printing:mock_action", args=[mock_job.external_id]), {"action": "accept"}
+    )
     assert resp.status_code == 302
     assert captured["url"].endswith("/api/printer/events/")
     mock_job.refresh_from_db()

@@ -15,7 +15,15 @@ from apps.orders.models import Actor, Complaint, Order, OrderStatus
 from apps.orders.services import TransitionError
 from apps.printing.models import PrintJob
 
-from .forms import FormatFormSet, ForceStatusForm, OrderFilterForm, PaperFormSet, ReasonForm, ResolveComplaintForm, ShopSettingsForm
+from .forms import (
+    ForceStatusForm,
+    FormatFormSet,
+    OrderFilterForm,
+    PaperFormSet,
+    ReasonForm,
+    ResolveComplaintForm,
+    ShopSettingsForm,
+)
 
 staff_required = user_passes_test(lambda u: u.is_active and u.is_staff, login_url="/ops/login/")
 
@@ -31,14 +39,19 @@ class OpsLogoutView(LogoutView):
 
 def _attention_qs():
     return Order.objects.filter(
-        Q(status__in=[OrderStatus.AWAITING_APPROVAL, OrderStatus.ON_HOLD]) | Q(complaints__status=Complaint.Status.OPEN)
+        Q(status__in=[OrderStatus.AWAITING_APPROVAL, OrderStatus.ON_HOLD])
+        | Q(complaints__status=Complaint.Status.OPEN)
     ).distinct()
 
 
 @staff_required
 def order_list(request):
     form = OrderFilterForm(request.GET or None)
-    qs = Order.objects.exclude(status=OrderStatus.DRAFT).select_related("delivery_method").prefetch_related("items__format")
+    qs = (
+        Order.objects.exclude(status=OrderStatus.DRAFT)
+        .select_related("delivery_method")
+        .prefetch_related("items__format")
+    )
     if form.is_valid():
         d = form.cleaned_data
         if d["status"]:
@@ -47,32 +60,57 @@ def order_list(request):
             qs = qs.filter(Q(number__icontains=d["q"]) | Q(email__icontains=d["q"]))
         if d["attention"]:
             qs = qs.filter(pk__in=_attention_qs().values("pk"))
-    counts = {row["status"]: row["n"] for row in Order.objects.values("status").annotate(n=Count("id"))}
+    counts = {
+        row["status"]: row["n"] for row in Order.objects.values("status").annotate(n=Count("id"))
+    }
     return render(
         request,
         "ops/o2_orders.html",
-        {"orders": qs[:200], "form": form, "attention_count": _attention_qs().count(), "counts": counts, "statuses": OrderStatus.choices},
+        {
+            "orders": qs[:200],
+            "form": form,
+            "attention_count": _attention_qs().count(),
+            "counts": counts,
+            "statuses": OrderStatus.choices,
+        },
     )
 
 
 @staff_required
 def queue(request):
-    orders = Order.objects.filter(status__in=[OrderStatus.AWAITING_APPROVAL, OrderStatus.ON_HOLD]).order_by("created_at")
+    orders = Order.objects.filter(
+        status__in=[OrderStatus.AWAITING_APPROVAL, OrderStatus.ON_HOLD]
+    ).order_by("created_at")
     open_complaints = Complaint.objects.filter(status=Complaint.Status.OPEN).select_related("order")
-    return render(request, "ops/o4_queue.html", {"orders": orders, "open_complaints": open_complaints, "reason_form": ReasonForm()})
+    return render(
+        request,
+        "ops/o4_queue.html",
+        {"orders": orders, "open_complaints": open_complaints, "reason_form": ReasonForm()},
+    )
 
 
 @staff_required
 def order_detail(request, number):
-    order = get_object_or_404(Order.objects.prefetch_related("items", "status_events", "payments", "shipments", "complaints"), number=number)
+    order = get_object_or_404(
+        Order.objects.prefetch_related(
+            "items", "status_events", "payments", "shipments", "complaints"
+        ),
+        number=number,
+    )
     item = order.item
-    jobs = PrintJob.objects.filter(order_item__order=order).select_related("reprint_of").prefetch_related("events")
+    jobs = (
+        PrintJob.objects.filter(order_item__order=order)
+        .select_related("reprint_of")
+        .prefetch_related("events")
+    )
     analysis = getattr(item.asset, "analysis", None) if item else None
     context = {
         "order": order,
         "item": item,
         "analysis": analysis,
-        "flag_labels": [FLAG_LABELS.get(f, f) for f in (analysis.content_flags if analysis else [])],
+        "flag_labels": [
+            FLAG_LABELS.get(f, f) for f in (analysis.content_flags if analysis else [])
+        ],
         "jobs": jobs,
         "events": order.status_events.select_related("actor_user"),
         "payments": order.payments.all(),
@@ -84,8 +122,10 @@ def order_detail(request, number):
         "can_approve": order.status in (OrderStatus.AWAITING_APPROVAL, OrderStatus.ON_HOLD),
         "can_reject": order.status in (OrderStatus.AWAITING_APPROVAL, OrderStatus.ON_HOLD),
         "can_reprocess": order.status in (OrderStatus.AWAITING_APPROVAL, OrderStatus.ON_HOLD),
-        "can_reprint": order.status in (OrderStatus.PRINTED, OrderStatus.SHIPPED, OrderStatus.DELIVERED),
-        "can_cancel": order.status not in (OrderStatus.CANCELLED, OrderStatus.DELIVERED, OrderStatus.DRAFT),
+        "can_reprint": order.status
+        in (OrderStatus.PRINTED, OrderStatus.SHIPPED, OrderStatus.DELIVERED),
+        "can_cancel": order.status
+        not in (OrderStatus.CANCELLED, OrderStatus.DELIVERED, OrderStatus.DRAFT),
         "can_deliver": order.status == OrderStatus.SHIPPED,
         "S": OrderStatus,
     }
@@ -114,7 +154,9 @@ def order_action(request, number):
             form = ForceStatusForm(request.POST)
             if not form.is_valid():
                 raise TransitionError("Wybierz stan i podaj powód.")
-            order_services.force_transition(order, form.cleaned_data["to_status"], user, form.cleaned_data["reason"])
+            order_services.force_transition(
+                order, form.cleaned_data["to_status"], user, form.cleaned_data["reason"]
+            )
             messages.warning(request, "Stan zmieniony ręcznie (zalogowane jako wymuszenie).")
         elif action == "reprint":
             _require(reason)
@@ -125,14 +167,20 @@ def order_action(request, number):
             order_services.cancel_order(order, Actor.OPERATOR, reason, user)
             messages.success(request, "Anulowano ze zwrotem (symulacja).")
         elif action == "deliver":
-            order_services.mark_delivered(order, Actor.OPERATOR, user, reason or "oznaczone ręcznie jako doręczone")
+            order_services.mark_delivered(
+                order, Actor.OPERATOR, user, reason or "oznaczone ręcznie jako doręczone"
+            )
             messages.success(request, "Oznaczono jako doręczone.")
         elif action == "resolve_complaint":
             form = ResolveComplaintForm(request.POST)
             if not form.is_valid():
                 raise TransitionError("Podaj decyzję i uzasadnienie.")
-            complaint = get_object_or_404(Complaint, pk=form.cleaned_data["complaint_id"], order=order)
-            order_services.resolve_complaint(complaint, user, form.cleaned_data["decision"], form.cleaned_data["resolution"])
+            complaint = get_object_or_404(
+                Complaint, pk=form.cleaned_data["complaint_id"], order=order
+            )
+            order_services.resolve_complaint(
+                complaint, user, form.cleaned_data["decision"], form.cleaned_data["resolution"]
+            )
             messages.success(request, "Reklamacja rozpatrzona.")
         else:
             raise TransitionError("Nieznana akcja.")
@@ -156,7 +204,11 @@ def order_print_file(request, number):
     version = item.print_file if item else None
     if version is None:
         raise Http404("Brak PDF do druku.")
-    return FileResponse(version.file.open("rb"), as_attachment=True, filename=f"{order.number}_{item.format.code}.pdf")
+    return FileResponse(
+        version.file.open("rb"),
+        as_attachment=True,
+        filename=f"{order.number}_{item.format.code}.pdf",
+    )
 
 
 @staff_required
@@ -176,4 +228,8 @@ def settings_view(request):
         form = ShopSettingsForm(instance=shop)
         formats = FormatFormSet(prefix="formats")
         papers = PaperFormSet(prefix="papers")
-    return render(request, "ops/o5_settings.html", {"form": form, "formats": formats, "papers": papers, "shop": shop})
+    return render(
+        request,
+        "ops/o5_settings.html",
+        {"form": form, "formats": formats, "papers": papers, "shop": shop},
+    )

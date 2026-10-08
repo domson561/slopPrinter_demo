@@ -11,7 +11,15 @@ class OrderItemInline(admin.TabularInline):
 class OrderStatusEventInline(admin.TabularInline):
     model = OrderStatusEvent
     extra = 0
-    readonly_fields = ("from_status", "to_status", "actor", "actor_user", "reason", "forced", "created_at")
+    readonly_fields = (
+        "from_status",
+        "to_status",
+        "actor",
+        "actor_user",
+        "reason",
+        "forced",
+        "created_at",
+    )
     can_delete = False
 
 

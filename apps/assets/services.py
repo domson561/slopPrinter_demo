@@ -58,10 +58,12 @@ def create_asset_from_upload(uploaded_file) -> Asset:
         img = Image.open(io.BytesIO(data))
         pil_format = img.format
         img.load()
-    except Image.DecompressionBombError:
-        raise UploadError("Obraz ma za dużo pikseli, żebyśmy mogli go bezpiecznie otworzyć.")
-    except Exception:
-        raise UploadError("Nie udało się otworzyć obrazu. Plik może być uszkodzony.")
+    except Image.DecompressionBombError as exc:
+        raise UploadError(
+            "Obraz ma za dużo pikseli, żebyśmy mogli go bezpiecznie otworzyć."
+        ) from exc
+    except Exception as exc:
+        raise UploadError("Nie udało się otworzyć obrazu. Plik może być uszkodzony.") from exc
 
     mime = _MIME_BY_PIL_FORMAT.get(pil_format)
     if mime not in settings.UPLOAD_ALLOWED_MIME:
@@ -98,14 +100,26 @@ def _save_preview(asset: Asset, img: Image.Image) -> AssetVersion:
     return save_version(asset, AssetVersion.Kind.PREVIEW, preview, provider="Pillow", fmt="JPEG")
 
 
-def save_version(asset, kind, image=None, *, provider="", params=None, fmt="JPEG", order_item=None, pdf_bytes=None):
+def save_version(
+    asset,
+    kind,
+    image=None,
+    *,
+    provider="",
+    params=None,
+    fmt="JPEG",
+    order_item=None,
+    pdf_bytes=None,
+):
     """Zapisuje AssetVersion. Nadpisuje poprzednie wersje tego rodzaju (pipeline jest idempotentny)."""
     old = asset.versions.filter(kind=kind, order_item=order_item)
     for v in old:
         v.file.delete(save=False)
     old.delete()
 
-    version = AssetVersion(asset=asset, kind=kind, provider=provider, params=params or {}, order_item=order_item)
+    version = AssetVersion(
+        asset=asset, kind=kind, provider=provider, params=params or {}, order_item=order_item
+    )
     if pdf_bytes is not None:
         version.file.save("print.pdf", ContentFile(pdf_bytes), save=False)
     else:
@@ -161,7 +175,9 @@ class AnalysisService:
         shop = ShopSettings.get()
         per_format = {}
         for fmt in active_formats():
-            per_format[fmt.code] = quality.quality_for(asset.width, asset.height, fmt, shop).as_dict()
+            per_format[fmt.code] = quality.quality_for(
+                asset.width, asset.height, fmt, shop
+            ).as_dict()
         flags = self.content_safety.check(asset, image)
         analysis, _ = AssetAnalysis.objects.update_or_create(
             asset=asset,
@@ -248,7 +264,14 @@ class PrepressService:
 
     name = "PrepressService"
 
-    def build_pdf(self, image: Image.Image, fmt: Format, orientation: str, white_margin: bool, meta: dict | None = None) -> bytes:
+    def build_pdf(
+        self,
+        image: Image.Image,
+        fmt: Format,
+        orientation: str,
+        white_margin: bool,
+        meta: dict | None = None,
+    ) -> bytes:
         trim_w_mm, trim_h_mm = fmt.dims_mm(orientation)
         bleed = fmt.bleed_mm
         page_w_pt = (trim_w_mm + 2 * bleed) * MM_TO_PT
@@ -327,7 +350,9 @@ class MockupService:
     SOFA_H_CM = 85
     POSTER_BOTTOM_CM = 150  # wysokość dolnej krawędzi plakatu nad podłogą
 
-    def render(self, image: Image.Image, fmt: Format, orientation: str, white_margin: bool) -> Image.Image:
+    def render(
+        self, image: Image.Image, fmt: Format, orientation: str, white_margin: bool
+    ) -> Image.Image:
         s = self.PX_PER_CM
         W, H = self.WALL_W_CM * s, self.WALL_H_CM * s
         scene = Image.new("RGB", (W, H), (235, 232, 226))
@@ -341,7 +366,9 @@ class MockupService:
         sofa_y1 = floor_top + 6 * s
         sofa_y0 = sofa_y1 - self.SOFA_H_CM * s
         d.rectangle([sofa_x0, sofa_y0, sofa_x0 + self.SOFA_W_CM * s, sofa_y1], fill=(120, 130, 145))
-        d.rectangle([sofa_x0, sofa_y0 + 35 * s, sofa_x0 + self.SOFA_W_CM * s, sofa_y1], fill=(105, 115, 130))
+        d.rectangle(
+            [sofa_x0, sofa_y0 + 35 * s, sofa_x0 + self.SOFA_W_CM * s, sofa_y1], fill=(105, 115, 130)
+        )
         d.text((sofa_x0 + 6, sofa_y1 - 16), "sofa 200 cm", fill=(240, 240, 240), font=_font(12))
 
         pw_mm, ph_mm = fmt.dims_mm(orientation)
@@ -384,7 +411,14 @@ def render_fragment(asset: Asset, crop: dict, enhanced: bool, out_px: int = 300)
     cx = (box[0] + box[2]) // 2
     cy = (box[1] + box[3]) // 2
     half = FRAGMENT_SOURCE_PX // 2
-    frag = img.crop((max(cx - half, 0), max(cy - half, 0), min(cx + half, img.width), min(cy + half, img.height)))
+    frag = img.crop(
+        (
+            max(cx - half, 0),
+            max(cy - half, 0),
+            min(cx + half, img.width),
+            min(cy + half, img.height),
+        )
+    )
     factor = max(1, out_px // max(frag.width, 1))
     if enhanced:
         out = MockUpscale(simulate_delay=False).upscale(frag, factor)
@@ -435,7 +469,9 @@ def run_pipeline(order_item, upscaler: UpscaleService | None = None) -> AssetVer
         )
 
     cropped = CropService.crop(img, crop)
-    dpi = quality.effective_dpi(cropped.width, cropped.height, {"w": 1, "h": 1, "orientation": crop["orientation"]}, fmt)
+    dpi = quality.effective_dpi(
+        cropped.width, cropped.height, {"w": 1, "h": 1, "orientation": crop["orientation"]}, fmt
+    )
     save_version(
         asset,
         AssetVersion.Kind.CROPPED,

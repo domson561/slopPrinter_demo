@@ -17,4 +17,6 @@ SECRET_KEY = required("DJANGO_SECRET_KEY")
 DEBUG = False
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
 if not ALLOWED_HOSTS:
-    raise ImproperlyConfigured("Brak zmiennej środowiskowej DJANGO_ALLOWED_HOSTS (wymagana w produkcji).")
+    raise ImproperlyConfigured(
+        "Brak zmiennej środowiskowej DJANGO_ALLOWED_HOSTS (wymagana w produkcji)."
+    )

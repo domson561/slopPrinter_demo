@@ -23,8 +23,12 @@ def advance_all_mock_jobs(request=None) -> int:
     from .views import send_printer_event
 
     advanced = 0
-    for mock_job in MockPrinterJob.objects.filter(status__in=list(_NEXT.keys())).order_by("created_at"):
-        send_printer_event(mock_job, _NEXT[mock_job.status], reason="auto-symulacja", request=request)
+    for mock_job in MockPrinterJob.objects.filter(status__in=list(_NEXT.keys())).order_by(
+        "created_at"
+    ):
+        send_printer_event(
+            mock_job, _NEXT[mock_job.status], reason="auto-symulacja", request=request
+        )
         advanced += 1
     return advanced
 

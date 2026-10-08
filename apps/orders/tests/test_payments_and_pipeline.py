@@ -3,7 +3,8 @@ from django.contrib.auth import get_user_model
 
 from apps.catalog.models import ShopSettings
 from apps.orders import services
-from apps.orders.models import OrderStatus as S, Payment
+from apps.orders.models import OrderStatus as S
+from apps.orders.models import Payment
 from apps.orders.payments import MockPaymentProvider
 from apps.printing.models import MockPrinterJob, PrintJob
 
@@ -130,7 +131,9 @@ def test_reprint_and_complaint_flow(make_awaiting_payment):
     services.approve_order(order, actor_user=user)
     job = PrintJob.objects.get(order_item__order=order)
     handle_printer_event({"external_id": job.external_id, "status": "printed"})
-    handle_printer_event({"external_id": job.external_id, "status": "shipped", "tracking_number": "MK123"})
+    handle_printer_event(
+        {"external_id": job.external_id, "status": "shipped", "tracking_number": "MK123"}
+    )
     order.refresh_from_db()
     assert order.status == S.SHIPPED and order.latest_shipment.tracking_number == "MK123"
     services.mark_delivered(order)

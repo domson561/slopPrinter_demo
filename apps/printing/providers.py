@@ -57,7 +57,10 @@ class MockPrintProvider:
 
     def cancel(self, external_id: str) -> None:
         mock_job = MockPrinterJob.objects.filter(external_id=external_id).first()
-        if mock_job and mock_job.status in (MockPrinterJob.Status.RECEIVED, MockPrinterJob.Status.ACCEPTED):
+        if mock_job and mock_job.status in (
+            MockPrinterJob.Status.RECEIVED,
+            MockPrinterJob.Status.ACCEPTED,
+        ):
             mock_job.status = MockPrinterJob.Status.CANCELLED
             mock_job.log("anulowane przez serwis")
             mock_job.save(update_fields=["status", "history", "updated_at"])

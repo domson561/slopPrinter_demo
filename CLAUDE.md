@@ -3,7 +3,7 @@
 Sklep(y) z drukiem od 1 sztuki. Produkcję robi drukarnia Graphic House (GH): osobna aplikacja
 klienta, repo `E:\DJANGO\graphic_house`, sklep łączy się z nią przez API.
 
-Obecny kod to demo „plakat z obrazka AI” (`slop_printer_seed_3.md`, opis w README).
+Obecny kod to demo „plakat z obrazka AI” (`docs/slop_printer_seed_3.md`, opis w README).
 To baza do przebudowy, nie gotowy produkt.
 
 ## Granica sklep ↔ GH
@@ -22,5 +22,7 @@ Otwarta decyzja: jeden silnik dla kilku marek czy osobny sklep per marka.
 
 ## Praca
 - Testy: `.venv\Scripts\python -m pytest` (ok. 2,5 min). Podgląd na porcie 8010 (`.claude/launch.json`).
+- Po każdej zmianie w kodzie Python Claude uruchamia `.venv\Scripts\python -m ruff check .` i `ruff format .`; konfiguracja w `pyproject.toml`.
+- Zależności: `requirements.txt` (produkcja) i `requirements-dev.txt` (pytest, ruff), wersje przypięte.
 - Git i instalacje robi użytkownik.
 - Odpowiedzi krótkie; przy rozkminach poziom idei, szczegóły na prośbę.

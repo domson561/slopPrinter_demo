@@ -9,7 +9,8 @@ from django.urls import reverse
 
 from apps.assets.models import Asset
 from apps.catalog.models import DeliveryMethod, Format, PaperOption
-from apps.orders.models import Order, OrderStatus as S
+from apps.orders.models import Order
+from apps.orders.models import OrderStatus as S
 from apps.printing.models import MockPrinterJob, PrintJob
 from apps.printing.services import sign_payload
 
@@ -28,13 +29,30 @@ def test_full_customer_path(client, catalog_data, image_upload):
     resp = client.get(resp.url)
     html = resp.content.decode()
     assert resp.status_code == 200 and "wymaga poprawy" in html and "ostry" in html or "ok" in html
-    resp = client.get(reverse("web:price_partial", args=[asset.pk]), {"format": Format.objects.get(code="A2").pk, "paper": PaperOption.objects.get(code="satin").pk, "quantity": 2})
+    resp = client.get(
+        reverse("web:price_partial", args=[asset.pk]),
+        {
+            "format": Format.objects.get(code="A2").pk,
+            "paper": PaperOption.objects.get(code="satin").pk,
+            "quantity": 2,
+        },
+    )
     data = resp.json()
-    assert data["quality"]["verdict"] == "needs_enhance" and data["unit_price"] == "99.00" and data["subtotal"] == "198.00"
+    assert (
+        data["quality"]["verdict"] == "needs_enhance"
+        and data["unit_price"] == "99.00"
+        and data["subtotal"] == "198.00"
+    )
 
     resp = client.post(
         reverse("web:configure", args=[asset.pk]),
-        {"format": Format.objects.get(code="A2").pk, "paper": PaperOption.objects.get(code="matte").pk, "quantity": 1, "enhancer_enabled": "on", "crop": json.dumps({"x": 0, "y": 0.05, "w": 1, "h": 0.9, "orientation": "portrait"})},
+        {
+            "format": Format.objects.get(code="A2").pk,
+            "paper": PaperOption.objects.get(code="matte").pk,
+            "quantity": 1,
+            "enhancer_enabled": "on",
+            "crop": json.dumps({"x": 0, "y": 0.05, "w": 1, "h": 0.9, "orientation": "portrait"}),
+        },
     )
     assert resp.status_code == 302
     order = Order.objects.get()
@@ -43,8 +61,14 @@ def test_full_customer_path(client, catalog_data, image_upload):
     # S3
     resp = client.get(reverse("web:preview", args=[order.status_token]))
     assert resp.status_code == 200 and "symulacja" in resp.content.decode()
-    assert client.get(reverse("web:mockup_image", args=[order.status_token]))["Content-Type"] == "image/png"
-    assert client.get(reverse("web:fragment_image", args=[order.status_token, "after"])).status_code == 200
+    assert (
+        client.get(reverse("web:mockup_image", args=[order.status_token]))["Content-Type"]
+        == "image/png"
+    )
+    assert (
+        client.get(reverse("web:fragment_image", args=[order.status_token, "after"])).status_code
+        == 200
+    )
 
     # S4
     resp = client.post(
@@ -70,12 +94,19 @@ def test_full_customer_path(client, catalog_data, image_upload):
     resp = client.get(resp.url)
     assert "SYMULACJA" in resp.content.decode()
     payment = order.payments.get()
-    resp = client.post(reverse("orders:payment_callback"), {"external_id": payment.external_id, "result": "fail"})
-    assert resp.status_code == 302 and resp.url == reverse("web:checkout", args=[order.status_token])
+    resp = client.post(
+        reverse("orders:payment_callback"), {"external_id": payment.external_id, "result": "fail"}
+    )
+    assert resp.status_code == 302 and resp.url == reverse(
+        "web:checkout", args=[order.status_token]
+    )
     resp = client.get(reverse("orders:retry_payment", args=[order.status_token]))
     assert resp.status_code == 302
     payment2 = order.payments.order_by("-created_at").first()
-    resp = client.post(reverse("orders:payment_callback"), {"external_id": payment2.external_id, "result": "success"})
+    resp = client.post(
+        reverse("orders:payment_callback"),
+        {"external_id": payment2.external_id, "result": "success"},
+    )
     assert resp.url == reverse("web:order_confirmation", args=[order.status_token])
     order.refresh_from_db()
     assert order.status == S.AWAITING_APPROVAL
@@ -95,7 +126,10 @@ def test_full_customer_path(client, catalog_data, image_upload):
     assert resp.status_code == 200 and order.number in resp.content.decode()
     resp = client.get(reverse("ops:order_detail", args=[order.number]))
     assert resp.status_code == 200 and "Pobierz PDF" in resp.content.decode()
-    assert client.get(reverse("ops:order_print_file", args=[order.number]))["Content-Type"] == "application/pdf"
+    assert (
+        client.get(reverse("ops:order_print_file", args=[order.number]))["Content-Type"]
+        == "application/pdf"
+    )
     resp = client.post(reverse("ops:order_action", args=[order.number]), {"action": "approve"})
     order.refresh_from_db()
     assert order.status == S.SENT_TO_PRINTER and MockPrinterJob.objects.count() == 1
@@ -104,9 +138,18 @@ def test_full_customer_path(client, catalog_data, image_upload):
 
     # Drukarnia -> webhook
     job = PrintJob.objects.get()
-    for status, extra in (("accepted", {}), ("printed", {}), ("shipped", {"tracking_number": "MK42"})):
+    for status, extra in (
+        ("accepted", {}),
+        ("printed", {}),
+        ("shipped", {"tracking_number": "MK42"}),
+    ):
         body = json.dumps({"external_id": job.external_id, "status": status, **extra}).encode()
-        resp = client.post(reverse("printing:webhook"), data=body, content_type="application/json", headers={"X-Printer-Signature": sign_payload(body)})
+        resp = client.post(
+            reverse("printing:webhook"),
+            data=body,
+            content_type="application/json",
+            headers={"X-Printer-Signature": sign_payload(body)},
+        )
         assert resp.status_code == 200
     order.refresh_from_db()
     assert order.status == S.SHIPPED
@@ -115,7 +158,9 @@ def test_full_customer_path(client, catalog_data, image_upload):
 
     # Doręczenie i reklamacja
     client.post(reverse("ops:order_action", args=[order.number]), {"action": "deliver"})
-    resp = client.post(reverse("web:order_status", args=[order.status_token]), {"description": "zagięty róg"})
+    resp = client.post(
+        reverse("web:order_status", args=[order.status_token]), {"description": "zagięty róg"}
+    )
     assert resp.status_code == 302
     order.refresh_from_db()
     assert order.complaints.count() == 1 and order.needs_attention
@@ -127,7 +172,10 @@ def test_full_customer_path(client, catalog_data, image_upload):
 def test_upload_errors_are_shown(client, catalog_data):
     from django.core.files.uploadedfile import SimpleUploadedFile
 
-    resp = client.post(reverse("web:upload"), {"file": SimpleUploadedFile("x.png", b"garbage", content_type="image/png")})
+    resp = client.post(
+        reverse("web:upload"),
+        {"file": SimpleUploadedFile("x.png", b"garbage", content_type="image/png")},
+    )
     assert resp.status_code == 200 and "uszkodzony" in resp.content.decode()
 
 
@@ -135,9 +183,18 @@ def test_upload_errors_are_shown(client, catalog_data):
 def test_blocked_format_cannot_be_ordered(client, catalog_data, image_upload):
     client.post(reverse("web:upload"), {"file": image_upload(size=(362, 512))})
     asset = Asset.objects.get()
-    resp = client.post(reverse("web:configure", args=[asset.pk]), {"format": Format.objects.get(code="B2").pk, "paper": PaperOption.objects.get(code="matte").pk, "quantity": 1})
+    resp = client.post(
+        reverse("web:configure", args=[asset.pk]),
+        {
+            "format": Format.objects.get(code="B2").pk,
+            "paper": PaperOption.objects.get(code="matte").pk,
+            "quantity": 1,
+        },
+    )
     assert resp.status_code == 200 and "zablokowany" in resp.content.decode()
-    resp = client.get(reverse("web:price_partial", args=[asset.pk]), {"format": Format.objects.get(code="B2").pk})
+    resp = client.get(
+        reverse("web:price_partial", args=[asset.pk]), {"format": Format.objects.get(code="B2").pk}
+    )
     assert resp.json()["quality"]["blocked"] is True
 
 

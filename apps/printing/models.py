@@ -17,14 +17,22 @@ class PrintJob(models.Model):
         FAILED = "failed", "Błąd / wada"
         CANCELLED = "cancelled", "Anulowane"
 
-    order_item = models.ForeignKey("orders.OrderItem", on_delete=models.CASCADE, related_name="print_jobs")
+    order_item = models.ForeignKey(
+        "orders.OrderItem", on_delete=models.CASCADE, related_name="print_jobs"
+    )
     external_id = models.CharField(max_length=100, blank=True, db_index=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.CREATED, db_index=True)
-    print_file = models.ForeignKey("assets.AssetVersion", null=True, blank=True, on_delete=models.SET_NULL)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.CREATED, db_index=True
+    )
+    print_file = models.ForeignKey(
+        "assets.AssetVersion", null=True, blank=True, on_delete=models.SET_NULL
+    )
     spec = models.JSONField(default=dict, blank=True)
     idempotency_key = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     sent_at = models.DateTimeField(null=True, blank=True)
-    reprint_of = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, related_name="reprints")
+    reprint_of = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="reprints"
+    )
     reason = models.CharField(max_length=500, blank=True)
     attempts = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -46,7 +54,12 @@ class PrintJob(models.Model):
 
     @property
     def is_open(self):
-        return self.status in (self.Status.CREATED, self.Status.SENT, self.Status.ACCEPTED, self.Status.PRINTED)
+        return self.status in (
+            self.Status.CREATED,
+            self.Status.SENT,
+            self.Status.ACCEPTED,
+            self.Status.PRINTED,
+        )
 
 
 class PrintJobEvent(models.Model):
@@ -96,7 +109,9 @@ class MockPrinterJob(models.Model):
         return f"{self.external_id} ({self.status})"
 
     def log(self, message, **data):
-        self.history = list(self.history) + [{"at": timezone.now().isoformat(), "message": message, **data}]
+        self.history = list(self.history) + [
+            {"at": timezone.now().isoformat(), "message": message, **data}
+        ]
 
     @property
     def next_actions(self):

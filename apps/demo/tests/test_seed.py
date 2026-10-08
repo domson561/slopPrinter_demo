@@ -1,7 +1,8 @@
 import pytest
 from django.core.management import call_command
 
-from apps.orders.models import Complaint, Order, OrderStatus as S
+from apps.orders.models import Complaint, Order
+from apps.orders.models import OrderStatus as S
 from apps.printing.models import MockPrinterJob, PrintJob
 
 
@@ -17,7 +18,17 @@ def test_seed_demo_covers_all_states(tmp_path, monkeypatch):
     call_command("seed_demo", verbosity=0)
 
     statuses = set(Order.objects.values_list("status", flat=True))
-    expected = {S.DRAFT, S.AWAITING_PAYMENT, S.AWAITING_APPROVAL, S.ON_HOLD, S.SENT_TO_PRINTER, S.PRINTED, S.SHIPPED, S.DELIVERED, S.CANCELLED}
+    expected = {
+        S.DRAFT,
+        S.AWAITING_PAYMENT,
+        S.AWAITING_APPROVAL,
+        S.ON_HOLD,
+        S.SENT_TO_PRINTER,
+        S.PRINTED,
+        S.SHIPPED,
+        S.DELIVERED,
+        S.CANCELLED,
+    }
     assert expected <= statuses
     assert Order.objects.count() >= 15
     assert Order.objects.filter(status__in=[S.AWAITING_APPROVAL, S.ON_HOLD]).count() >= 3

@@ -11,7 +11,15 @@ class PrintJobEventInline(admin.TabularInline):
 
 @admin.register(PrintJob)
 class PrintJobAdmin(admin.ModelAdmin):
-    list_display = ("id", "order_item", "external_id", "status", "attempts", "sent_at", "reprint_of")
+    list_display = (
+        "id",
+        "order_item",
+        "external_id",
+        "status",
+        "attempts",
+        "sent_at",
+        "reprint_of",
+    )
     list_filter = ("status",)
     inlines = [PrintJobEventInline]
 

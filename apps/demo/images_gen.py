@@ -47,13 +47,28 @@ def draw_demo_image(width, height, seed=0, label=""):
         if rnd.random() < 0.5:
             d.ellipse([x, y, x + r, y + r], fill=color, outline=(20, 20, 20), width=max(1, r // 40))
         else:
-            d.rectangle([x, y, x + r, y + int(r * 0.7)], fill=color, outline=(20, 20, 20), width=max(1, r // 40))
+            d.rectangle(
+                [x, y, x + r, y + int(r * 0.7)],
+                fill=color,
+                outline=(20, 20, 20),
+                width=max(1, r // 40),
+            )
     # Drobne linie i tekst: dobrze pokazują pikselozę przy powiększeniu.
     step = max(width // 24, 8)
     for x in range(0, width, step):
         d.line([x, height - step * 3, x + step // 2, height], fill=(255, 255, 255), width=1)
-    d.text((width // 20, height // 20), label or f"{width}x{height}", fill=(255, 255, 255), font=_font(max(width // 30, 12)))
-    d.text((width // 20, height // 20 + max(width // 30, 12) + 4), "demo AI slop", fill=(0, 0, 0), font=_font(max(width // 60, 8)))
+    d.text(
+        (width // 20, height // 20),
+        label or f"{width}x{height}",
+        fill=(255, 255, 255),
+        font=_font(max(width // 30, 12)),
+    )
+    d.text(
+        (width // 20, height // 20 + max(width // 30, 12) + 4),
+        "demo AI slop",
+        fill=(0, 0, 0),
+        font=_font(max(width // 60, 8)),
+    )
     return img
 
 

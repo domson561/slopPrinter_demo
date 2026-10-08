@@ -28,8 +28,12 @@ class MultipleFileField(forms.FileField):
 
 
 class ConfigureForm(forms.Form):
-    format = forms.ModelChoiceField(queryset=Format.objects.filter(is_active=True), label="Format", empty_label=None)
-    paper = forms.ModelChoiceField(queryset=PaperOption.objects.filter(is_active=True), label="Papier", empty_label=None)
+    format = forms.ModelChoiceField(
+        queryset=Format.objects.filter(is_active=True), label="Format", empty_label=None
+    )
+    paper = forms.ModelChoiceField(
+        queryset=PaperOption.objects.filter(is_active=True), label="Papier", empty_label=None
+    )
     white_margin = forms.BooleanField(label="Biały margines", required=False)
     quantity = forms.IntegerField(label="Ilość", min_value=1, max_value=MAX_QUANTITY, initial=1)
     enhancer_enabled = forms.BooleanField(label="Popraw jakość (enhancer)", required=False)
@@ -55,13 +59,18 @@ class CheckoutForm(forms.Form):
     postal_code = forms.CharField(label="Kod pocztowy", max_length=10)
     city = forms.CharField(label="Miejscowość", max_length=80)
     delivery_method = forms.ModelChoiceField(
-        queryset=DeliveryMethod.objects.filter(is_active=True), label="Dostawa", empty_label=None, widget=forms.RadioSelect
+        queryset=DeliveryMethod.objects.filter(is_active=True),
+        label="Dostawa",
+        empty_label=None,
+        widget=forms.RadioSelect,
     )
     consent_terms = forms.BooleanField(label="Akceptuję regulamin.")
     consent_no_withdrawal = forms.BooleanField(
         label="Rozumiem, że plakat jest produktem personalizowanym i nie przysługuje mi prawo odstąpienia od umowy."
     )
-    consent_rights = forms.BooleanField(label="Oświadczam, że mam prawo do wykorzystania wgranego obrazka.")
+    consent_rights = forms.BooleanField(
+        label="Oświadczam, że mam prawo do wykorzystania wgranego obrazka."
+    )
 
     def address(self):
         d = self.cleaned_data

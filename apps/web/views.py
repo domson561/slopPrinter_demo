@@ -10,7 +10,13 @@ from django.views.decorators.http import require_GET, require_http_methods
 
 from apps.assets import quality
 from apps.assets.models import Asset
-from apps.assets.services import UploadError, create_asset_from_upload, quality_for_selection, render_fragment, render_mockup
+from apps.assets.services import (
+    UploadError,
+    create_asset_from_upload,
+    quality_for_selection,
+    render_fragment,
+    render_mockup,
+)
 from apps.catalog.models import Format, ShopSettings
 from apps.catalog.services import active_deliveries, active_formats, active_papers, quote
 from apps.orders import services as order_services
@@ -69,7 +75,14 @@ def _format_cards(asset, shop):
         q = analysis.quality(fmt.code) if analysis else None
         if q is None:
             q = quality.quality_for(asset.width, asset.height, fmt, shop).as_dict()
-        cards.append({"format": fmt, "quality": q, "price": quote(fmt, None, 1).unit_price, "default_crop": quality.default_crop(asset.width, asset.height, fmt)})
+        cards.append(
+            {
+                "format": fmt,
+                "quality": q,
+                "price": quote(fmt, None, 1).unit_price,
+                "default_crop": quality.default_crop(asset.width, asset.height, fmt),
+            }
+        )
     return cards
 
 
@@ -118,7 +131,18 @@ def configure(request, asset_id):
             "asset": asset,
             "form": form,
             "cards": cards,
-            "cards_json": json.dumps({c["format"].code: {"id": c["format"].pk, "width_mm": c["format"].width_mm, "height_mm": c["format"].height_mm, "quality": c["quality"], "default_crop": c["default_crop"]} for c in cards}),
+            "cards_json": json.dumps(
+                {
+                    c["format"].code: {
+                        "id": c["format"].pk,
+                        "width_mm": c["format"].width_mm,
+                        "height_mm": c["format"].height_mm,
+                        "quality": c["quality"],
+                        "default_crop": c["default_crop"],
+                    }
+                    for c in cards
+                }
+            ),
             "papers": active_papers(),
             "shop": shop,
             "max_quantity": MAX_QUANTITY,
@@ -153,8 +177,12 @@ def price_partial(request, asset_id):
     price = quote(fmt, paper, qty, white_margin)
     suggestion = None
     if q.blocked:
-        smaller = quality.suggest_smaller_format(fmt, active_formats(), asset.width, asset.height, ShopSettings.get())
-        suggestion = {"id": smaller.pk, "code": smaller.code, "name": smaller.name} if smaller else None
+        smaller = quality.suggest_smaller_format(
+            fmt, active_formats(), asset.width, asset.height, ShopSettings.get()
+        )
+        suggestion = (
+            {"id": smaller.pk, "code": smaller.code, "name": smaller.name} if smaller else None
+        )
     return JsonResponse(
         {
             "quality": q.as_dict(),
@@ -255,7 +283,11 @@ def checkout(request, token):
             consents=form.consents(),
         )
         return redirect(payment_url)
-    return render(request, "web/s4_checkout.html", {"order": order, "item": order.item, "form": form, "deliveries": active_deliveries()})
+    return render(
+        request,
+        "web/s4_checkout.html",
+        {"order": order, "item": order.item, "form": form, "deliveries": active_deliveries()},
+    )
 
 
 @require_GET
@@ -266,7 +298,11 @@ def order_confirmation(request, token):
     if order.status == OrderStatus.AWAITING_PAYMENT:
         return redirect("web:checkout", token=token)
     shop = ShopSettings.get()
-    return render(request, "web/s6_confirmation.html", {"order": order, "item": order.item, "lead_time_days": shop.lead_time_days})
+    return render(
+        request,
+        "web/s6_confirmation.html",
+        {"order": order, "item": order.item, "lead_time_days": shop.lead_time_days},
+    )
 
 
 @require_http_methods(["GET", "POST"])
@@ -274,10 +310,14 @@ def order_status(request, token):
     order = _order_by_token(token)
     if order.status == OrderStatus.DRAFT:
         return redirect("web:preview", token=token)
-    form = ComplaintForm(request.POST or None, request.FILES or None) if order.can_complain else None
+    form = (
+        ComplaintForm(request.POST or None, request.FILES or None) if order.can_complain else None
+    )
     if request.method == "POST" and form is not None and form.is_valid():
         try:
-            order_services.file_complaint(order, form.cleaned_data["description"], form.cleaned_data["photos"])
+            order_services.file_complaint(
+                order, form.cleaned_data["description"], form.cleaned_data["photos"]
+            )
         except TransitionError as exc:
             messages.error(request, str(exc))
         else:

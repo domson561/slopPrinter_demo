@@ -1,0 +1,23 @@
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+extend-exclude = ["migrations", ".venv", "media", "staticfiles", "docs", "*.md"]
+
+[tool.ruff.lint]
+# E/W: pycodestyle, F: pyflakes, I: isort, UP: pyupgrade, B: bugbear, DJ: flake8-django, SIM: simplify
+select = ["E", "W", "F", "I", "UP", "B", "DJ", "SIM"]
+ignore = [
+    "E501",  # długość linii pilnuje formatter
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.development"
+python_files = ["test_*.py"]
+testpaths = ["apps", "config"]
+addopts = "-p no:cacheprovider"

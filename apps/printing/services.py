@@ -126,7 +126,11 @@ def submit_print_job(job: PrintJob, provider=None) -> PrintJob:
         job.status = J.SENT
         job.sent_at = timezone.now()
         job.save(update_fields=["external_id", "status", "sent_at", "attempts", "updated_at"])
-        PrintJobEvent.objects.create(print_job=job, status=J.SENT, payload={"external_id": external_id, "provider": provider.name})
+        PrintJobEvent.objects.create(
+            print_job=job,
+            status=J.SENT,
+            payload={"external_id": external_id, "provider": provider.name},
+        )
         return job
     job.status = J.FAILED
     job.reason = f"submit nieudany po {max_attempts} próbach: {last_error}"[:500]
@@ -183,7 +187,11 @@ def verify_signature(body: bytes, signature: str | None) -> bool:
 
 
 def serialize_event(external_id, status, tracking_number=None, reason=None) -> bytes:
-    payload = {"external_id": external_id, "status": status, "timestamp": timezone.now().isoformat()}
+    payload = {
+        "external_id": external_id,
+        "status": status,
+        "timestamp": timezone.now().isoformat(),
+    }
     if tracking_number:
         payload["tracking_number"] = tracking_number
     if reason:
@@ -212,11 +220,15 @@ def handle_printer_event(payload: dict) -> tuple[PrintJob, bool, str]:
 
     external_id = str(payload.get("external_id", ""))
     status = str(payload.get("status", ""))
-    job = PrintJob.objects.select_related("order_item__order").filter(external_id=external_id).first()
+    job = (
+        PrintJob.objects.select_related("order_item__order").filter(external_id=external_id).first()
+    )
     if job is None:
         raise UnknownPrintJob(external_id)
     if status not in _EVENT_TO_JOB_STATUS:
-        event = PrintJobEvent.objects.create(print_job=job, status=status, payload=payload, applied=False, note="nieznany status")
+        event = PrintJobEvent.objects.create(
+            print_job=job, status=status, payload=payload, applied=False, note="nieznany status"
+        )
         return job, False, event.note
 
     order = job.order_item.order
@@ -229,16 +241,27 @@ def handle_printer_event(payload: dict) -> tuple[PrintJob, bool, str]:
         if new_job_status is not None:
             if job.status == new_job_status:
                 applied, note = False, "powtórzone zdarzenie, bez zmian"
-            elif new_job_status in _RANK and job.status in _RANK and _RANK[new_job_status] <= _RANK[job.status]:
-                applied, note = False, f"zdarzenie wstecz ({job.status} -> {new_job_status}), bez zmian"
+            elif (
+                new_job_status in _RANK
+                and job.status in _RANK
+                and _RANK[new_job_status] <= _RANK[job.status]
+            ):
+                applied, note = (
+                    False,
+                    f"zdarzenie wstecz ({job.status} -> {new_job_status}), bez zmian",
+                )
             elif job.status in (J.REJECTED, J.FAILED, J.CANCELLED):
                 applied, note = False, f"zlecenie zamknięte ({job.status}), bez zmian"
         if applied:
             try:
-                note = _apply_event(job, order, status, new_job_status, reason, payload, order_services)
+                note = _apply_event(
+                    job, order, status, new_job_status, reason, payload, order_services
+                )
             except order_services.TransitionError as exc:
                 applied, note = False, f"stan zamówienia nie pozwala: {exc}"[:300]
-        PrintJobEvent.objects.create(print_job=job, status=status, payload=payload, applied=applied, note=note)
+        PrintJobEvent.objects.create(
+            print_job=job, status=status, payload=payload, applied=applied, note=note
+        )
     return job, applied, note
 
 
@@ -253,7 +276,12 @@ def _apply_event(job, order, status, new_job_status, reason, payload, order_serv
         return "zlecenie przyjęte przez drukarnię"
 
     if status == "rejected":
-        order_services.transition(order, S.ON_HOLD, Actor.PRINTER, f"Drukarnia odrzuciła zlecenie: {reason or 'bez powodu'}"[:500])
+        order_services.transition(
+            order,
+            S.ON_HOLD,
+            Actor.PRINTER,
+            f"Drukarnia odrzuciła zlecenie: {reason or 'bez powodu'}"[:500],
+        )
         return "zamówienie wstrzymane"
 
     if status == "printed":
@@ -262,14 +290,26 @@ def _apply_event(job, order, status, new_job_status, reason, payload, order_serv
 
     if status == "shipped":
         tracking = str(payload.get("tracking_number", "") or "")
-        Shipment.objects.create(order=order, carrier=str(payload.get("carrier", "") or "MockKurier"), tracking_number=tracking)
+        Shipment.objects.create(
+            order=order,
+            carrier=str(payload.get("carrier", "") or "MockKurier"),
+            tracking_number=tracking,
+        )
         if order.status == S.SENT_TO_PRINTER:
-            order_services.transition(order, S.PRINTED, Actor.PRINTER, "wydruk domniemany (nadanie bez zgłoszenia wydruku)", notify=False)
+            order_services.transition(
+                order,
+                S.PRINTED,
+                Actor.PRINTER,
+                "wydruk domniemany (nadanie bez zgłoszenia wydruku)",
+                notify=False,
+            )
         order_services.transition(order, S.SHIPPED, Actor.PRINTER, f"nadane, nr {tracking}"[:500])
         return "zamówienie: nadane"
 
     if status == "defect":
-        order_services.request_reprint(order, Actor.PRINTER, f"Wada z produkcji: {reason or 'bez opisu'}"[:500])
+        order_services.request_reprint(
+            order, Actor.PRINTER, f"Wada z produkcji: {reason or 'bez opisu'}"[:500]
+        )
         return "zlecono dodruk"
 
     if status == "delivered":

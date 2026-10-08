@@ -6,7 +6,6 @@ from PIL import Image
 
 from apps.assets.models import AssetVersion
 from apps.assets.services import (
-    AnalysisService,
     MockUpscale,
     OutpaintService,
     PrepressService,
@@ -28,7 +27,9 @@ def make_upload(name="test.png", size=(800, 1200), fmt="PNG", color=(120, 80, 20
 
 @pytest.fixture
 def a2(db):
-    return Format.objects.create(code="A2", name="A2", width_mm=420, height_mm=594, bleed_mm=3, base_price="89.00")
+    return Format.objects.create(
+        code="A2", name="A2", width_mm=420, height_mm=594, bleed_mm=3, base_price="89.00"
+    )
 
 
 @pytest.fixture
@@ -50,9 +51,13 @@ def test_upload_creates_asset_preview_and_analysis(a2):
 @pytest.mark.django_db
 def test_upload_rejects_wrong_type_and_garbage(a2):
     with pytest.raises(UploadError):
-        create_asset_from_upload(SimpleUploadedFile("x.gif", b"GIF89a garbage", content_type="image/gif"))
+        create_asset_from_upload(
+            SimpleUploadedFile("x.gif", b"GIF89a garbage", content_type="image/gif")
+        )
     with pytest.raises(UploadError):
-        create_asset_from_upload(SimpleUploadedFile("x.png", b"not an image", content_type="image/png"))
+        create_asset_from_upload(
+            SimpleUploadedFile("x.png", b"not an image", content_type="image/png")
+        )
 
 
 @pytest.mark.django_db
@@ -75,7 +80,13 @@ def test_pipeline_creates_versions_and_is_idempotent(a2, matte):
     asset = create_asset_from_upload(make_upload(size=(600, 900)))
     order = Order.objects.create(email="a@b.pl", full_name="Test")
     item = OrderItem.objects.create(
-        order=order, asset=asset, format=a2, paper=matte, quantity=1, enhancer_enabled=True, unit_price="89.00"
+        order=order,
+        asset=asset,
+        format=a2,
+        paper=matte,
+        quantity=1,
+        enhancer_enabled=True,
+        unit_price="89.00",
     )
 
     pdf = run_pipeline(item, upscaler=MockUpscale(simulate_delay=False))
@@ -96,7 +107,9 @@ def test_pipeline_creates_versions_and_is_idempotent(a2, matte):
 def test_pipeline_without_enhancer_skips_upscale(a2, matte):
     asset = create_asset_from_upload(make_upload(size=(600, 900)))
     order = Order.objects.create(email="a@b.pl", full_name="Test")
-    item = OrderItem.objects.create(order=order, asset=asset, format=a2, paper=matte, enhancer_enabled=False, unit_price="89.00")
+    item = OrderItem.objects.create(
+        order=order, asset=asset, format=a2, paper=matte, enhancer_enabled=False, unit_price="89.00"
+    )
     run_pipeline(item)
     assert asset.version("upscaled", item) is None
     assert asset.version("print_pdf", item) is not None

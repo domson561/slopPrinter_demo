@@ -3,7 +3,8 @@ from django.contrib.auth import get_user_model
 from django.core import mail
 
 from apps.orders import services
-from apps.orders.models import Actor, OrderStatus as S
+from apps.orders.models import Actor
+from apps.orders.models import OrderStatus as S
 from apps.orders.services import NOTIFY_STATUSES, TRANSITIONS, TransitionError
 
 ALL = list(S.values)

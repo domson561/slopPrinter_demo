@@ -18,7 +18,13 @@ from django.views.decorators.http import require_POST
 from apps.catalog.models import ShopSettings
 
 from .models import MockPrinterJob, PrintJob
-from .services import UnknownPrintJob, handle_printer_event, serialize_event, sign_payload, verify_signature
+from .services import (
+    UnknownPrintJob,
+    handle_printer_event,
+    serialize_event,
+    sign_payload,
+    verify_signature,
+)
 
 # ---------------------------------------------------------------------------
 # Webhook
@@ -37,7 +43,9 @@ def printer_webhook(request):
     except (json.JSONDecodeError, UnicodeDecodeError):
         return JsonResponse({"ok": False, "error": "invalid json"}, status=400)
     if not isinstance(payload, dict) or "external_id" not in payload or "status" not in payload:
-        return JsonResponse({"ok": False, "error": "external_id and status are required"}, status=400)
+        return JsonResponse(
+            {"ok": False, "error": "external_id and status are required"}, status=400
+        )
     try:
         job, applied, note = handle_printer_event(payload)
     except UnknownPrintJob:
@@ -92,7 +100,9 @@ def webhook_url(request=None) -> str:
     return settings.SITE_URL + path
 
 
-def send_printer_event(mock_job: MockPrinterJob, status: str, reason: str = "", request=None) -> dict:
+def send_printer_event(
+    mock_job: MockPrinterJob, status: str, reason: str = "", request=None
+) -> dict:
     """Aktualizuje rekord drukarni i woła webhook serwisu przez HTTP z podpisem HMAC."""
     tracking = ""
     if status == "shipped":
@@ -103,8 +113,13 @@ def send_printer_event(mock_job: MockPrinterJob, status: str, reason: str = "", 
     mock_job.log(f"akcja: {status}", reason=reason)
     mock_job.save()
 
-    body = serialize_event(mock_job.external_id, status, tracking_number=tracking or None, reason=reason or None)
-    headers = {settings.PRINTER_WEBHOOK_SIGNATURE_HEADER: sign_payload(body), "Content-Type": "application/json"}
+    body = serialize_event(
+        mock_job.external_id, status, tracking_number=tracking or None, reason=reason or None
+    )
+    headers = {
+        settings.PRINTER_WEBHOOK_SIGNATURE_HEADER: sign_payload(body),
+        "Content-Type": "application/json",
+    }
     url = webhook_url(request)
     try:
         resp = requests.post(url, data=body, headers=headers, timeout=15)
@@ -165,9 +180,14 @@ def mock_printer_action(request, external_id):
         return redirect("printing:mock_job", external_id=external_id)
     result = send_printer_event(mock_job, ACTION_TO_STATUS[action], reason=reason, request=request)
     if result["http_status"] == 200:
-        messages.success(request, f"Webhook przyjęty: {result['response'].get('note') or 'ok'} (zamówienie: {result['response'].get('order_status')})")
+        messages.success(
+            request,
+            f"Webhook przyjęty: {result['response'].get('note') or 'ok'} (zamówienie: {result['response'].get('order_status')})",
+        )
     else:
-        messages.error(request, f"Webhook odrzucony: HTTP {result['http_status']} {result['response']}")
+        messages.error(
+            request, f"Webhook odrzucony: HTTP {result['http_status']} {result['response']}"
+        )
     return redirect("printing:mock_job", external_id=external_id)
 
 
@@ -181,7 +201,9 @@ def mock_printer_toggle_auto(request):
     except ValueError:
         pass
     shop.save()
-    messages.info(request, "Auto-symulacja " + ("włączona." if shop.printer_auto_simulate else "wyłączona."))
+    messages.info(
+        request, "Auto-symulacja " + ("włączona." if shop.printer_auto_simulate else "wyłączona.")
+    )
     return redirect("printing:mock_dashboard")
 
 
@@ -192,7 +214,9 @@ def mock_printer_tick(request):
 
     advanced = advance_all_mock_jobs(request=request)
     if request.headers.get("X-Requested-With") == "fetch":
-        return JsonResponse({"advanced": advanced, "auto": ShopSettings.get().printer_auto_simulate})
+        return JsonResponse(
+            {"advanced": advanced, "auto": ShopSettings.get().printer_auto_simulate}
+        )
     messages.info(request, f"Posunięto zleceń: {advanced}")
     return redirect("printing:mock_dashboard")
 
@@ -203,4 +227,8 @@ def mock_printer_file(request, external_id):
     job = PrintJob.objects.filter(external_id=external_id).select_related("print_file").first()
     if job is None or job.print_file is None:
         raise Http404("Brak pliku")
-    return FileResponse(job.print_file.file.open("rb"), as_attachment=True, filename=f"{mock_job.spec.get('order_number', 'print')}.pdf")
+    return FileResponse(
+        job.print_file.file.open("rb"),
+        as_attachment=True,
+        filename=f"{mock_job.spec.get('order_number', 'print')}.pdf",
+    )

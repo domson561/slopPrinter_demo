@@ -18,10 +18,10 @@ from huey.contrib.djhuey import HUEY
 
 from apps.assets.models import Asset
 from apps.assets.services import create_asset_from_upload
-from apps.catalog.models import DeliveryMethod, Format, PaperOption, ShopSettings
+from apps.catalog.models import DeliveryMethod, Format, PaperOption
 from apps.demo.images_gen import IMAGES_DIR, ensure_demo_images
 from apps.orders import services as order_services
-from apps.orders.models import Actor, Order, OrderStatus
+from apps.orders.models import Actor, Order
 from apps.orders.payments import MockPaymentProvider
 from apps.printing.models import MockPrinterJob, PrintJob
 from apps.printing.services import handle_printer_event
@@ -60,7 +60,11 @@ class Command(BaseCommand):
     help = "Ładuje dane demo: operator demo/demo, katalog, obrazki, ~15 zamówień we wszystkich stanach."
 
     def add_arguments(self, parser):
-        parser.add_argument("--flush", action="store_true", help="Najpierw usuń istniejące zamówienia, pliki i zlecenia.")
+        parser.add_argument(
+            "--flush",
+            action="store_true",
+            help="Najpierw usuń istniejące zamówienia, pliki i zlecenia.",
+        )
 
     def handle(self, *args, **options):
         if options["flush"]:
@@ -85,7 +89,11 @@ class Command(BaseCommand):
             self._backdate(order, days_ago)
             self.stdout.write(f"{order.number}: {image} {fmt_code} -> {order.status}")
 
-        self.stdout.write(self.style.SUCCESS("Gotowe. Operator: demo / demo. Panel: /ops/, mock drukarni: /mock-printer/"))
+        self.stdout.write(
+            self.style.SUCCESS(
+                "Gotowe. Operator: demo / demo. Panel: /ops/, mock drukarni: /mock-printer/"
+            )
+        )
 
     # ------------------------------------------------------------------
 
@@ -103,7 +111,10 @@ class Command(BaseCommand):
 
     def _operator(self):
         User = get_user_model()
-        user, created = User.objects.get_or_create(username="demo", defaults={"is_staff": True, "is_superuser": True, "email": "demo@example.com"})
+        user, created = User.objects.get_or_create(
+            username="demo",
+            defaults={"is_staff": True, "is_superuser": True, "email": "demo@example.com"},
+        )
         if created:
             user.set_password("demo")
             user.save()
@@ -137,8 +148,16 @@ class Command(BaseCommand):
             email=email,
             full_name=name,
             phone="+48 600 000 000",
-            address={"line1": line1, "line2": "", "postal_code": postal, "city": city, "country": "PL"},
-            delivery_method=DeliveryMethod.objects.get(code=random.choice(["courier", "parcel_locker"])),
+            address={
+                "line1": line1,
+                "line2": "",
+                "postal_code": postal,
+                "city": city,
+                "country": "PL",
+            },
+            delivery_method=DeliveryMethod.objects.get(
+                code=random.choice(["courier", "parcel_locker"])
+            ),
             consents={"terms": True, "no_withdrawal": True, "image_rights": True},
         )
         if target == "awaiting_payment":
@@ -154,7 +173,9 @@ class Command(BaseCommand):
             return order
 
         if target == "cancelled":
-            order_services.reject_order(order, self.operator, "Obrazek zawiera cudze logo, nie możemy tego wydrukować.")
+            order_services.reject_order(
+                order, self.operator, "Obrazek zawiera cudze logo, nie możemy tego wydrukować."
+            )
             return order
 
         order_services.approve_order(order, Actor.OPERATOR, self.operator, "plik sprawdzony")
@@ -186,16 +207,29 @@ class Command(BaseCommand):
 
         if target == "complaint":
             order.refresh_from_db()
-            order_services.file_complaint(order, "Plakat przyszedł z zagiętym rogiem, widać załamanie na wydruku.")
+            order_services.file_complaint(
+                order, "Plakat przyszedł z zagiętym rogiem, widać załamanie na wydruku."
+            )
             return order
 
         return order
 
     def _printer(self, job, status, **extra):
-        payload = {"external_id": job.external_id, "status": status, "timestamp": timezone.now().isoformat(), **extra}
+        payload = {
+            "external_id": job.external_id,
+            "status": status,
+            "timestamp": timezone.now().isoformat(),
+            **extra,
+        }
         mock_job = MockPrinterJob.objects.filter(external_id=job.external_id).first()
         if mock_job:
-            local = {"accepted": "accepted", "printed": "printed", "shipped": "shipped", "defect": "defect", "rejected": "rejected"}.get(status)
+            local = {
+                "accepted": "accepted",
+                "printed": "printed",
+                "shipped": "shipped",
+                "defect": "defect",
+                "rejected": "rejected",
+            }.get(status)
             if local:
                 mock_job.status = local
             if extra.get("tracking_number"):

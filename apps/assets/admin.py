@@ -11,7 +11,15 @@ class AssetVersionInline(admin.TabularInline):
 
 @admin.register(Asset)
 class AssetAdmin(admin.ModelAdmin):
-    list_display = ("id", "original_filename", "mime", "width", "height", "created_at", "expires_at")
+    list_display = (
+        "id",
+        "original_filename",
+        "mime",
+        "width",
+        "height",
+        "created_at",
+        "expires_at",
+    )
     readonly_fields = ("sha256", "created_at")
     inlines = [AssetVersionInline]
 

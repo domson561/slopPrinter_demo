@@ -51,8 +51,12 @@ class Asset(models.Model):
     def open_image(self) -> Image.Image:
         """Otwiera oryginał, obraca wg EXIF, konwertuje do RGB."""
         self.original_file.open("rb")
-        img = Image.open(self.original_file)
-        img.load()
+        try:
+            img = Image.open(self.original_file)
+            img.load()
+        finally:
+            # Po load() piksele są w pamięci; otwarty uchwyt blokowałby usuwanie pliku na Windowsie.
+            self.original_file.close()
         img = ImageOps.exif_transpose(img)
         if img.mode != "RGB":
             img = img.convert("RGB")

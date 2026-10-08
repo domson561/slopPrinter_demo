@@ -144,8 +144,10 @@ class Quality:
 
 
 def quality_for(image_width, image_height, fmt, shop_settings, crop=None) -> Quality:
-    crop = sanitize_crop(crop, image_width, image_height, fmt) if crop else default_crop(
-        image_width, image_height, fmt
+    crop = (
+        sanitize_crop(crop, image_width, image_height, fmt)
+        if crop
+        else default_crop(image_width, image_height, fmt)
     )
     dpi = effective_dpi(image_width, image_height, crop, fmt)
     verdict = verdict_for_dpi(dpi, shop_settings)

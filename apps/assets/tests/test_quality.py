@@ -40,7 +40,9 @@ def test_effective_dpi_formula_full_frame(a2):
 def test_zooming_in_lowers_dpi(a2):
     full = quality.default_crop(2000, 2828, a2)
     zoomed = {**full, "w": full["w"] / 2, "h": full["h"] / 2}
-    assert quality.effective_dpi(2000, 2828, zoomed, a2) < quality.effective_dpi(2000, 2828, full, a2)
+    assert quality.effective_dpi(2000, 2828, zoomed, a2) < quality.effective_dpi(
+        2000, 2828, full, a2
+    )
 
 
 @pytest.mark.parametrize(
@@ -76,6 +78,8 @@ def test_quality_for_demo_images(db, shop):
 
 
 def test_sanitize_crop_rejects_garbage(a2):
-    assert quality.sanitize_crop({"x": "abc"}, 1000, 1000, a2) == quality.default_crop(1000, 1000, a2)
+    assert quality.sanitize_crop({"x": "abc"}, 1000, 1000, a2) == quality.default_crop(
+        1000, 1000, a2
+    )
     c = quality.sanitize_crop({"x": 0.9, "y": 0.9, "w": 0.5, "h": 0.5}, 1000, 1000, a2)
     assert c["x"] + c["w"] <= 1.0 and c["y"] + c["h"] <= 1.0

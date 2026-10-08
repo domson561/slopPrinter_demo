@@ -1,6 +1,6 @@
 # NAZWA_ROBOCZA - demo serwisu druku obrazków AI
 
-Demo zbudowane wg `slop_printer_seed_3.md`. Klient wgrywa obrazek, system ocenia jakość
+Demo zbudowane wg `docs/slop_printer_seed_3.md`. Klient wgrywa obrazek, system ocenia jakość
 i przygotowuje plik, klient wybiera format, płaci (symulacja), operator zatwierdza,
 symulowana drukarnia drukuje i nadaje. Wszystkie integracje zewnętrzne są mockami
 za wymiennymi interfejsami i mają etykietę "symulacja" w UI.
@@ -10,7 +10,7 @@ za wymiennymi interfejsami i mają etykietę "symulacja" w UI.
 ```bash
 python -m venv .venv
 .venv\Scripts\activate          # Windows; na Linux/macOS: source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 python manage.py migrate
 python manage.py seed_demo
 python manage.py runserver
