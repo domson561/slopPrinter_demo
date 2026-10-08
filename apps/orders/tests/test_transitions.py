@@ -79,3 +79,9 @@ def test_every_status_has_customer_label():
     for status in S.values:
         title, description = services.customer_label(status)
         assert title and description
+
+
+def test_order_number_uses_configured_prefix(bare_order, settings):
+    settings.ORDER_NUMBER_PREFIX = "XY"
+    order = bare_order()
+    assert order.number == f"XY-{order.created_at.year}-{order.pk:06d}"

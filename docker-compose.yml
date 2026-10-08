@@ -29,7 +29,6 @@ services:
       POSTGRES_PASSWORD: slop
       REDIS_URL: redis://redis:6379/0
       HUEY_IMMEDIATE: "0"
-      PRINTER_WEBHOOK_SECRET: demo-printer-secret
       MEDIA_ROOT: /app/media
     volumes:
       - .:/app
@@ -55,7 +54,6 @@ services:
       POSTGRES_PASSWORD: slop
       REDIS_URL: redis://redis:6379/0
       HUEY_IMMEDIATE: "0"
-      PRINTER_WEBHOOK_SECRET: demo-printer-secret
       MEDIA_ROOT: /app/media
     volumes:
       - .:/app

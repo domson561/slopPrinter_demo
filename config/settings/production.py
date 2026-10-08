@@ -33,3 +33,20 @@ if not GH_API_BASE_URL.startswith("https://"):
     )
 GH_API_TOKEN = required("GH_API_TOKEN")
 GH_MOCK_ENABLED = False
+
+# Publiczny adres sklepu: idzie do GH w linkach do plików i do kupujących w mailach. Z domyślnym
+# `http://localhost:8000` GH nie pobrałoby żadnego pliku, a zlecenia stałyby na `pending`.
+SITE_URL = required("SITE_URL").rstrip("/")
+if not SITE_URL.startswith("https://"):
+    raise ImproperlyConfigured("SITE_URL w produkcji musi być publicznym adresem https:// sklepu.")
+
+# HTTPS: aplikacja stoi za reverse proxy, które kończy TLS i ustawia X-Forwarded-Proto.
+# `manage.py check --deploy` ma przechodzić bez ostrzeżeń.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+# HSTS: 30 dni domyślnie; nagłówek `preload` jest tylko deklaracją, wpis na listę preload to osobna decyzja.
+SECURE_HSTS_SECONDS = int(env("DJANGO_HSTS_SECONDS", 60 * 60 * 24 * 30))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True

@@ -1,9 +1,11 @@
-# NAZWA_ROBOCZA - demo serwisu druku obrazków AI
+# NAZWA_ROBOCZA - sklep z drukiem od 1 sztuki, produkcja w Graphic House
 
-Demo zbudowane wg `docs/slop_printer_seed_3.md`. Klient wgrywa obrazek, system ocenia jakość
-i przygotowuje plik, klient wybiera format, płaci (symulacja), operator zatwierdza,
-symulowana drukarnia drukuje i nadaje. Wszystkie integracje zewnętrzne są mockami
-za wymiennymi interfejsami i mają etykietę "symulacja" w UI.
+Sklep obsługuje kupującego: katalog, plik, koszyk, płatność, etykietę, maile, status. Produkcję
+robi drukarnia Graphic House (GH), do której sklep wysyła zlecenia i którą odpytuje o statusy przez
+API z `docs/kontrakt-gh-v1.md`. W repo jest atrapa GH (`apps/gh_mock`) o kształcie tego kontraktu,
+więc całość działa bez prawdziwej drukarni. Pierwszy produkt to plakat z obrazka AI, zbudowany
+jako demo wg `docs/slop_printer_seed_3.md` (ocena jakości, kadr, PDF ze spadami); płatność i kurier
+są na razie symulowane i mają etykietę "symulacja" w UI.
 
 ## Szybki start (lokalnie, SQLite, bez workera)
 
@@ -62,7 +64,7 @@ Logika biznesowa jest w `services.py` każdej aplikacji; widoki są cienkie. Wyg
 
 Ustawienia w `config/settings/`: `base.py` (wspólne), `development.py` (domyślne dla `manage.py`,
 testów i Dockera) i `production.py` (domyślne dla `wsgi`/`asgi`). Produkcja nie startuje bez
-`DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `GH_API_BASE_URL` (https) i `GH_API_TOKEN`, `DEBUG` jest w niej zawsze
+`DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `SITE_URL` (https), `GH_API_BASE_URL` (https) i `GH_API_TOKEN`, `DEBUG` jest w niej zawsze
 wyłączony, a atrapa GH nigdy nie jest zainstalowana. Inne środowisko
 wybierasz zmienną `DJANGO_SETTINGS_MODULE`.
 

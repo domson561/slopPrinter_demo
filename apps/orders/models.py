@@ -73,7 +73,7 @@ class Order(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if not self.number:
-            self.number = f"PA-{self.created_at.year}-{self.pk:06d}"
+            self.number = f"{settings.ORDER_NUMBER_PREFIX}-{self.created_at.year}-{self.pk:06d}"
             super().save(update_fields=["number"])
 
     @property
