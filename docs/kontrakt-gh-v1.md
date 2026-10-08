@@ -199,10 +199,10 @@ W GH:
 
 W sklepie:
 
-- `PrintJob` wisi dziś na `OrderItem` (jedno zlecenie na pozycję). Pod kontrakt przechodzi na poziom `Order`, pozycje w `spec`.
-- `MockPrinterJob` i `MockPrintProvider` do zastąpienia atrapą GH o kształcie z tego dokumentu; jej statusy to statusy GH plus stany plików.
-- `accepted` dostaje znaczenie „GH ma wszystkie pliki”.
-- Podpisane, wygasające linki z sumą kontrolną zamiast publicznego `/media/`.
+- `PrintJob` na poziomie `Order`, pozycje w `spec` (wcześniej jedno zlecenie na `OrderItem`). Zrobione 2026-10-08.
+- Atrapa GH (`apps/gh_mock`) o kształcie z tego dokumentu zamiast `MockPrinterJob` i `MockPrintProvider`; jej statusy to statusy GH plus stany plików. Zrobione 2026-10-08.
+- `accepted` znaczy „GH ma wszystkie pliki”. Zrobione 2026-10-08.
+- Podpisane, wygasające linki z sumą kontrolną zamiast publicznego `/media/`. Do zrobienia (task „Pliki do druku”).
 
 Poza kontraktem, do ustalenia między stronami: rozliczenie i faktura zbiorcza, umowa powierzenia danych z etykiet (RODO), minimalna ważność linku, zawartość słownika produktów, X dni retencji plików w GH.
 
