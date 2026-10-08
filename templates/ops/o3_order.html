@@ -116,15 +116,21 @@
   </section>
 
   <section class="ops-order__jobs">
-    <h2>Zlecenia do drukarni</h2>
+    <h2>Zlecenia w Graphic House</h2>
+    {% if poll_cursor.auth_failed %}
+      <div class="ops-alert">GH odrzuciło token sklepu. Wysyłka i polling wstrzymane.
+        <form method="post" action="{% url 'ops:poll_gh' %}" class="printer-inline">{% csrf_token %}<input type="hidden" name="action" value="reset_auth"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button type="submit" class="button button--secondary">Token wymieniony, wznów</button></form>
+      </div>
+    {% endif %}
     <table>
-      <thead><tr><th>Zlecenie</th><th>External ID</th><th>Stan</th><th>Próby</th><th>Wysłano</th><th>Dodruk</th><th>Powód</th><th>Zdarzenia</th></tr></thead>
+      <thead><tr><th>Nr dla GH</th><th>Nr w GH</th><th>Stan</th><th>Pliki w GH</th><th>Próby</th><th>Wysłano</th><th>Dodruk</th><th>Powód</th><th>Zdarzenia</th></tr></thead>
       <tbody>
       {% for j in jobs %}
         <tr>
-          <td>{{ j.job_id }}</td>
-          <td>{% if j.external_id %}<a href="{% url 'printing:mock_job' j.external_id %}">{{ j.external_id }}</a>{% else %}-{% endif %}</td>
-          <td>{{ j.status }}</td>
+          <td>{{ j.shop_order_number }}</td>
+          <td>{% if j.external_id %}<a href="{% url 'gh_mock:dashboard' %}">{{ j.external_id }}</a>{% else %}-{% endif %}</td>
+          <td>{{ j.status }}{% if j.provider_status %}<br><small>GH: {{ j.provider_status }}</small>{% endif %}</td>
+          <td><small>{% for f in j.files_state %}{{ f.kind }}{% if f.position %} {{ f.position }}{% endif %}: {{ f.state }}{% if f.error %} ({{ f.error }}){% endif %}<br>{% empty %}-{% endfor %}</small></td>
           <td>{{ j.attempts }}</td>
           <td>{{ j.sent_at|date:"Y-m-d H:i:s"|default:"-" }}</td>
           <td>{% if j.reprint_of %}dodruk {{ j.reprint_of.job_id }}{% else %}-{% endif %}</td>
@@ -132,7 +138,7 @@
           <td><small>{% for e in j.events.all %}{{ e.received_at|date:"H:i:s" }} {{ e.status }}{% if not e.applied %} (pominięte: {{ e.note }}){% endif %}<br>{% endfor %}</small></td>
         </tr>
       {% empty %}
-        <tr><td colspan="8">Brak zleceń.</td></tr>
+        <tr><td colspan="9">Brak zleceń.</td></tr>
       {% endfor %}
       </tbody>
     </table>

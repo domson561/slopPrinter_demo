@@ -13,7 +13,8 @@ from apps.catalog.models import ShopSettings
 from apps.orders import services as order_services
 from apps.orders.models import Actor, Complaint, Order, OrderStatus
 from apps.orders.services import TransitionError
-from apps.printing.models import PrintJob
+from apps.printing.models import PollCursor, PrintJob
+from apps.printing.services import poll_changes, reset_poll_auth
 
 from .forms import (
     ForceStatusForm,
@@ -99,15 +100,15 @@ def order_detail(request, number):
     )
     item = order.item
     jobs = (
-        PrintJob.objects.filter(order_item__order=order)
-        .select_related("reprint_of")
-        .prefetch_related("events")
+        PrintJob.objects.filter(order=order).select_related("reprint_of").prefetch_related("events")
     )
+    poll_cursor = PollCursor.get()
     analysis = getattr(item.asset, "analysis", None) if item else None
     context = {
         "order": order,
         "item": item,
         "analysis": analysis,
+        "poll_cursor": poll_cursor,
         "flag_labels": [
             FLAG_LABELS.get(f, f) for f in (analysis.content_flags if analysis else [])
         ],
@@ -190,6 +191,28 @@ def order_action(request, number):
     if next_url.startswith("/ops/"):
         return redirect(next_url)
     return redirect("ops:order_detail", number=order.number)
+
+
+@staff_required
+@require_POST
+def poll_gh(request):
+    """Ręczny cykl pollingu GH (bez workera) albo wznowienie po wymianie tokenu."""
+    if request.POST.get("action") == "reset_auth":
+        reset_poll_auth()
+        messages.info(request, "Polling GH wznowiony.")
+    summary = poll_changes()
+    if summary["error"]:
+        messages.error(request, f"GH: {summary['error']}")
+    else:
+        messages.success(
+            request,
+            f"GH odpytane: zleceń {summary['orders']}, zmian {summary['changed']}, "
+            f"dosłanych linków {summary['resent']}.",
+        )
+    next_url = request.POST.get("next") or ""
+    if next_url.startswith("/ops/"):
+        return redirect(next_url)
+    return redirect("ops:order_list")
 
 
 def _require(reason):

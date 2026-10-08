@@ -357,7 +357,7 @@ def cancel_order(order: Order, actor, reason: str, actor_user=None):
 def _open_print_jobs(order):
     from apps.printing.models import PrintJob
 
-    return PrintJob.objects.filter(order_item__order=order).exclude(
+    return PrintJob.objects.filter(order=order).exclude(
         status__in=[
             PrintJob.Status.SHIPPED,
             PrintJob.Status.REJECTED,

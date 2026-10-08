@@ -19,3 +19,8 @@ body.printer { margin: 0; font-family: "Courier New", Courier, monospace; font-s
 .messages { list-style: none; padding: 0; }
 .messages__item { background: #fff; border: 1px solid #999; padding: 4px 8px; margin-bottom: 4px; }
 .messages__item--error { border-color: #c00; }
+.printer-status--new, .printer-status--pending { color: #555; }
+.printer-status--in_progress, .printer-status--downloaded { color: #06c; }
+.printer-status--ready { color: #690; }
+.printer-status--failed { color: #c00; }
+.printer-badge { background: #06c; color: #fff; padding: 1px 5px; font-weight: bold; }

@@ -1,4 +1,4 @@
-/* D1: auto-symulacja - gdy włączona, strona co N sekund woła /mock-printer/tick/ i odświeża listę. */
+/* Atrapa GH: auto-symulacja - gdy włączona, strona co N sekund woła /gh-mock/tick/ i odświeża listę. */
 (function () {
   var form = document.getElementById('auto-form');
   if (!form || form.dataset.auto !== '1') return;

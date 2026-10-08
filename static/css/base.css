@@ -112,3 +112,4 @@ textarea { width: 100%; }
   .ops-order__grid { grid-template-columns: 1fr; }
   .site-header { flex-wrap: wrap; }
 }
+.ops-alert { background: #fff3cd; border: 1px solid #c90; padding: 8px 12px; }

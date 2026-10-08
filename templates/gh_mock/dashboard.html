@@ -1,0 +1,43 @@
+{% extends "gh_mock/base.html" %}
+{% load static dict_extras %}
+{% block content %}
+<h1>Zlecenia ze sklepów</h1>
+<p>API: <code>POST /shop-api/v1/orders/</code>, <code>GET /shop-api/v1/orders/changes/?since=…</code>, nagłówek <code>Authorization: Token &lt;token sklepu&gt;</code>. GH nikogo nie woła: sklep sam odpytuje o zmiany.</p>
+
+<form method="post" action="{% url 'gh_mock:toggle_auto' %}" class="printer-auto" id="auto-form" data-auto="{{ shop.printer_auto_simulate|yesno:'1,0' }}" data-interval="{{ shop.printer_auto_interval_seconds }}" data-tick-url="{% url 'gh_mock:tick' %}">
+  {% csrf_token %}
+  <label>Co ile sekund <input type="number" name="interval" value="{{ shop.printer_auto_interval_seconds }}" min="2" max="600" size="4"></label>
+  <button type="submit">{% if shop.printer_auto_simulate %}Wyłącz auto-symulację{% else %}Włącz auto-symulację{% endif %}</button>
+  <span id="auto-status">{% if shop.printer_auto_simulate %}auto: włączona (biuro klika samo, gdy ta strona jest otwarta){% else %}auto: wyłączona{% endif %}</span>
+</form>
+<form method="post" action="{% url 'gh_mock:download_all' %}" class="printer-tick">{% csrf_token %}<button type="submit">Cron: pobierz oczekujące pliki</button></form>
+<form method="post" action="{% url 'gh_mock:tick' %}" class="printer-tick">{% csrf_token %}<button type="submit">Posuń wszystkie o jeden krok</button></form>
+
+<table class="printer-table">
+  <thead><tr><th>Nr GH</th><th>Sklep / nr zamówienia</th><th>Pozycje</th><th>Wartość</th><th>Pliki</th><th>Status</th><th>Przyjęto</th><th></th></tr></thead>
+  <tbody>
+  {% for o in orders %}
+    <tr>
+      <td><a href="{% url 'gh_mock:order' o.pk %}">{{ o.gh_number }}</a>{% if o.needs_review %} <em>do weryfikacji</em>{% endif %}</td>
+      <td><span class="printer-badge">{{ o.shop.code }}</span> {{ o.shop_order_number }}</td>
+      <td>{% for it in o.items.all %}{{ it.position }}. {{ it.name }} ×{{ it.quantity }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
+      <td>{{ o.total_value }} {{ o.currency }}</td>
+      <td>{% for f in o.files.all %}<span class="printer-status printer-status--{{ f.state }}">{{ f.get_kind_display }}{% if f.position %} {{ f.position }}{% endif %}: {{ f.state }}{% if f.error %} ({{ f.error }}){% endif %}</span>{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
+      <td class="printer-status printer-status--{{ o.status }}">{{ o.get_status_display }}</td>
+      <td>{{ o.created_at|date:"Y-m-d H:i:s" }}</td>
+      <td>
+        {% if o.next_status %}
+          <form method="post" action="{% url 'gh_mock:action' o.pk %}" class="printer-inline">{% csrf_token %}
+            <input type="hidden" name="action" value="{{ o.next_status }}">
+            <button type="submit">{{ status_labels|get_item:o.next_status }}</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="8">Brak zleceń. Zatwierdź zamówienie w panelu operatora.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/mock_printer.js' %}"></script>{% endblock %}

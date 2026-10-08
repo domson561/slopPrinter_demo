@@ -4,7 +4,8 @@
   <a href="{% url 'ops:order_list' %}">Zamówienia</a>
   <a href="{% url 'ops:queue' %}">Kolejka moderacji</a>
   <a href="{% url 'ops:settings' %}">Ustawienia</a>
-  <a href="{% url 'printing:mock_dashboard' %}">Mock drukarni</a>
+  <a href="{% url 'gh_mock:dashboard' %}">Atrapa GH</a>
+  <form method="post" action="{% url 'ops:poll_gh' %}" class="site-header__logout">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button type="submit" class="button button--link" title="Sklep pyta GH o zmiany statusów (normalnie co 5 minut)">Odpytaj GH</button></form>
   <a href="{% url 'admin:index' %}">Admin (awaryjnie)</a>
   <form method="post" action="{% url 'ops:logout' %}" class="site-header__logout">{% csrf_token %}<button type="submit" class="button button--link">Wyloguj ({{ user.username }})</button></form>
 {% endblock %}

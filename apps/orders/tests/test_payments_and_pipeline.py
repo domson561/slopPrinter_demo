@@ -2,11 +2,13 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from apps.catalog.models import ShopSettings
+from apps.gh_mock import services as gh_services
+from apps.gh_mock.models import GhOrder
 from apps.orders import services
 from apps.orders.models import OrderStatus as S
 from apps.orders.models import Payment
 from apps.orders.payments import MockPaymentProvider
-from apps.printing.models import MockPrinterJob, PrintJob
+from apps.printing.models import PrintJob
 
 
 @pytest.mark.django_db
@@ -104,7 +106,7 @@ def test_auto_approve_sends_to_printer(make_awaiting_payment):
     MockPaymentProvider().process_callback(order.payments.get().external_id, "success")
     order.refresh_from_db()
     assert order.status == S.SENT_TO_PRINTER
-    assert MockPrinterJob.objects.count() == 1
+    assert GhOrder.objects.count() == 1
 
 
 @pytest.mark.django_db
@@ -122,26 +124,27 @@ def test_operator_reject_refunds_and_cancels(make_awaiting_payment):
 
 @pytest.mark.django_db
 def test_reprint_and_complaint_flow(make_awaiting_payment):
-    from apps.printing.services import handle_printer_event
+    from apps.printing.services import poll_changes
 
     user = get_user_model().objects.create_user("op", password="x", is_staff=True)
     order = make_awaiting_payment()
     MockPaymentProvider().process_callback(order.payments.get().external_id, "success")
     order.refresh_from_db()
     services.approve_order(order, actor_user=user)
-    job = PrintJob.objects.get(order_item__order=order)
-    handle_printer_event({"external_id": job.external_id, "status": "printed"})
-    handle_printer_event(
-        {"external_id": job.external_id, "status": "shipped", "tracking_number": "MK123"}
-    )
+    job = PrintJob.objects.get(order=order)
+    gh_order = GhOrder.objects.get(shop_order_number=job.shop_order_number)
+    gh_services.download_pending_files()
+    for status in ("in_progress", "ready", "shipped"):
+        gh_services.set_status(gh_order, status)
+    poll_changes()
     order.refresh_from_db()
-    assert order.status == S.SHIPPED and order.latest_shipment.tracking_number == "MK123"
+    assert order.status == S.SHIPPED and order.latest_shipment.carrier == "Graphic House"
     services.mark_delivered(order)
     complaint = services.file_complaint(order, "zagięty róg")
     assert order.needs_attention
     services.resolve_complaint(complaint, user, "reprint", "uznana, wysyłamy nowy")
     order.refresh_from_db()
     assert order.status == S.SENT_TO_PRINTER
-    jobs = list(PrintJob.objects.filter(order_item__order=order).order_by("created_at"))
+    jobs = list(PrintJob.objects.filter(order=order).order_by("created_at"))
     assert len(jobs) == 2 and jobs[1].reprint_of == jobs[0]
-    assert MockPrinterJob.objects.count() == 2
+    assert GhOrder.objects.count() == 2

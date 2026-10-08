@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.assets",
     "apps.orders",
     "apps.printing",
+    "apps.gh_mock",
     "apps.ops",
     "apps.web",
     "apps.demo",
@@ -135,15 +136,19 @@ PIL_MAX_IMAGE_PIXELS = 80_000_000  # ok. 9000 x 9000 px
 MOCK_UPSCALE_DELAY_SECONDS = tuple(
     float(x) for x in env("MOCK_UPSCALE_DELAY_SECONDS", "3,8").split(",")
 )
-PRINT_PROVIDER = env("PRINT_PROVIDER", "apps.printing.providers.MockPrintProvider")
 PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", "apps.orders.payments.MockPaymentProvider")
+
+# --- Graphic House (kontrakt v1, docs/kontrakt-gh-v1.md) ----------------------
+PRINT_PROVIDER = env("PRINT_PROVIDER", "apps.printing.providers.GhApiProvider")
+# Ścieżka = atrapa GH w tym procesie (apps.gh_mock); pełny URL http(s) = prawdziwe GH.
+GH_API_BASE_URL = env("GH_API_BASE_URL", "/shop-api/v1")
+# Token wydaje GH przy podpinaniu sklepu. Atrapa zna ten sam token (seed_demo).
+GH_API_TOKEN = env("GH_API_TOKEN", "demo-shop-token")
+GH_FILE_LINK_TTL_HOURS = 24  # nominalna ważność linku do pliku (pkt 4)
 PRINT_SUBMIT_MAX_ATTEMPTS = 5
 PRINT_SUBMIT_RETRY_BACKOFF_SECONDS = 0.5
-
-# --- Webhook drukarni -------------------------------------------------------
-PRINTER_WEBHOOK_SECRET = env("PRINTER_WEBHOOK_SECRET", "demo-printer-secret")
-PRINTER_WEBHOOK_URL = env("PRINTER_WEBHOOK_URL")  # None = zbuduj z bieżącego requestu
-PRINTER_WEBHOOK_SIGNATURE_HEADER = "X-Printer-Signature"
+# Atrapa GH: limit rozmiaru pobieranego PDF-a.
+GH_MOCK_MAX_FILE_BYTES = 500 * 1024 * 1024
 
 # --- Zadania w tle (huey) ---------------------------------------------------
 if env("REDIS_URL"):

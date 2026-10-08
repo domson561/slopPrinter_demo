@@ -1,4 +1,4 @@
-"""Pełna ścieżka klienta S1 -> S7 przez klienta testowego, potem operator i webhook."""
+"""Pełna ścieżka klienta S1 -> S7 przez klienta testowego, potem operator i atrapa GH."""
 
 import json
 
@@ -9,10 +9,12 @@ from django.urls import reverse
 
 from apps.assets.models import Asset
 from apps.catalog.models import DeliveryMethod, Format, PaperOption
+from apps.gh_mock import services as gh_services
+from apps.gh_mock.models import GhOrder
 from apps.orders.models import Order
 from apps.orders.models import OrderStatus as S
-from apps.printing.models import MockPrinterJob, PrintJob
-from apps.printing.services import sign_payload
+from apps.printing.models import PrintJob
+from apps.printing.services import poll_changes
 
 
 @pytest.mark.django_db
@@ -132,29 +134,25 @@ def test_full_customer_path(client, catalog_data, image_upload):
     )
     resp = client.post(reverse("ops:order_action", args=[order.number]), {"action": "approve"})
     order.refresh_from_db()
-    assert order.status == S.SENT_TO_PRINTER and MockPrinterJob.objects.count() == 1
+    assert order.status == S.SENT_TO_PRINTER and GhOrder.objects.count() == 1
     resp = client.get(reverse("ops:order_list"), {"attention": "on"})
     assert resp.status_code == 200 and order.number not in resp.content.decode()
 
-    # Drukarnia -> webhook
+    # Biuro GH pobiera pliki i realizuje; sklep odpytuje o zmiany (przycisk w panelu)
     job = PrintJob.objects.get()
-    for status, extra in (
-        ("accepted", {}),
-        ("printed", {}),
-        ("shipped", {"tracking_number": "MK42"}),
-    ):
-        body = json.dumps({"external_id": job.external_id, "status": status, **extra}).encode()
-        resp = client.post(
-            reverse("printing:webhook"),
-            data=body,
-            content_type="application/json",
-            headers={"X-Printer-Signature": sign_payload(body)},
-        )
-        assert resp.status_code == 200
+    gh_order = GhOrder.objects.get(shop_order_number=job.shop_order_number)
+    gh_services.download_pending_files()
+    for status in ("in_progress", "ready", "shipped"):
+        gh_services.set_status(gh_order, status)
+    resp = client.post(
+        reverse("ops:poll_gh"), {"next": reverse("ops:order_detail", args=[order.number])}
+    )
+    assert resp.status_code == 302
     order.refresh_from_db()
     assert order.status == S.SHIPPED
+    assert poll_changes()["changed"] == 0
     resp = client.get(reverse("web:order_status", args=[order.status_token]))
-    assert "MK42" in resp.content.decode() and "Nadane" in resp.content.decode()
+    assert "Nadane" in resp.content.decode()
 
     # Doręczenie i reklamacja
     client.post(reverse("ops:order_action", args=[order.number]), {"action": "deliver"})

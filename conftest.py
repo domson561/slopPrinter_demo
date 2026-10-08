@@ -17,17 +17,21 @@ def _fast_demo_settings(settings, tmp_path):
 
 
 @pytest.fixture(autouse=True)
-def _reset_mock_provider():
-    from apps.printing.providers import MockPrintProvider
+def _reset_gh_provider():
+    from apps.printing.providers import GhApiProvider
 
-    MockPrintProvider.fail_next_submits = 0
+    GhApiProvider.fail_next_requests = 0
     yield
-    MockPrintProvider.fail_next_submits = 0
+    GhApiProvider.fail_next_requests = 0
 
 
 @pytest.fixture
 def catalog_data(db):
+    """Katalog z fixtury plus sklep demo w atrapie GH (token z GH_API_TOKEN)."""
+    from apps.gh_mock.services import ensure_demo_shop
+
     call_command("loaddata", "catalog.json", verbosity=0)
+    ensure_demo_shop()
 
 
 def make_image_upload(name="test.png", size=(800, 1200), fmt="PNG"):

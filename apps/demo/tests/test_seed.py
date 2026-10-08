@@ -1,9 +1,10 @@
 import pytest
 from django.core.management import call_command
 
+from apps.gh_mock.models import GhOrder
 from apps.orders.models import Complaint, Order
 from apps.orders.models import OrderStatus as S
-from apps.printing.models import MockPrinterJob, PrintJob
+from apps.printing.models import PrintJob
 
 
 @pytest.mark.django_db
@@ -34,7 +35,8 @@ def test_seed_demo_covers_all_states(tmp_path, monkeypatch):
     assert Order.objects.filter(status__in=[S.AWAITING_APPROVAL, S.ON_HOLD]).count() >= 3
     assert Complaint.objects.filter(status=Complaint.Status.OPEN).count() == 1
     assert PrintJob.objects.filter(reprint_of__isnull=False).count() == 1
-    assert MockPrinterJob.objects.count() >= 7
+    assert GhOrder.objects.count() >= 7
+    assert GhOrder.objects.filter(status="shipped").count() >= 4
     assert Order.objects.filter(hold_reason__icontains="Błąd przetwarzania").exists()
 
     # Ponowne uruchomienie z --flush działa i nie duplikuje operatora.

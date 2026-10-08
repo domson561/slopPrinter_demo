@@ -1,0 +1,56 @@
+{% extends "gh_mock/base.html" %}
+{% load dict_extras %}
+{% block title %}{{ order.gh_number }} - ATRAPA GRAPHIC HOUSE{% endblock %}
+{% block content %}
+<h1>Zlecenie {{ order.gh_number }} <span class="printer-status printer-status--{{ order.status }}">{{ order.get_status_display }}</span></h1>
+<p><span class="printer-badge">{{ order.shop.code }}</span> {{ order.shop.name }}, numer w sklepie <strong>{{ order.shop_order_number }}</strong>. {{ order.title }}. Wartość {{ order.total_value }} {{ order.currency }}, nakład 1 komplet.{% if order.needs_review %} <em>Do weryfikacji: nieznany kod produktu.</em>{% endif %}</p>
+{% if order.note_for_production %}<p>Uwagi dla produkcji: {{ order.note_for_production }}</p>{% endif %}
+
+<h2>Pozycje</h2>
+<ul>
+{% for it in order.items.all %}
+  <li>{{ it.position }}. {{ it.name }} ×{{ it.quantity }} po {{ it.unit_price }} ({{ it.product_code }})</li>
+{% endfor %}
+</ul>
+
+<h2>Pliki</h2>
+<table class="printer-table">
+  <thead><tr><th>Plik</th><th>Stan</th><th>Rozmiar</th><th>Link ważny do</th><th>Link</th><th></th></tr></thead>
+  <tbody>
+  {% for f in order.files.all %}
+    <tr>
+      <td>{{ f.get_kind_display }}{% if f.position %} {{ f.position }}{% endif %}</td>
+      <td class="printer-status printer-status--{{ f.state }}">{{ f.state }}{% if f.error %} ({{ f.error }}){% endif %}</td>
+      <td>{{ f.size }} B</td>
+      <td>{{ f.expires_at|date:"Y-m-d H:i" }}</td>
+      <td><a href="{{ f.url }}">otwórz</a></td>
+      <td>
+        {% if f.state != "downloaded" %}
+          <form method="post" action="{% url 'gh_mock:action' order.pk %}" class="printer-inline">{% csrf_token %}
+            <input type="hidden" name="action" value="expire"><input type="hidden" name="file_id" value="{{ f.pk }}">
+            <button type="submit">Udawaj, że link wygasł</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6">Brak plików.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Akcje biura</h2>
+<form method="post" action="{% url 'gh_mock:action' order.pk %}" class="printer-inline">{% csrf_token %}
+  <input type="hidden" name="action" value="download"><button type="submit">Pobierz oczekujące pliki</button>
+</form>
+{% if order.next_status %}
+  <form method="post" action="{% url 'gh_mock:action' order.pk %}" class="printer-inline">{% csrf_token %}
+    <input type="hidden" name="action" value="{{ order.next_status }}"><button type="submit">{{ status_labels|get_item:order.next_status }}</button>
+  </form>
+{% else %}
+  <p>Wysłane {{ order.shipped_at|date:"Y-m-d H:i" }}. Brak dalszych akcji.</p>
+{% endif %}
+
+<h2>Stan, jaki zobaczy sklep w <code>GET /shop-api/v1/orders/changes/</code></h2>
+<pre class="printer-json">{{ state_json }}</pre>
+{% endblock %}

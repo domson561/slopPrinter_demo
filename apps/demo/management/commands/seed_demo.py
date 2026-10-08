@@ -20,11 +20,13 @@ from apps.assets.models import Asset
 from apps.assets.services import create_asset_from_upload
 from apps.catalog.models import DeliveryMethod, Format, PaperOption
 from apps.demo.images_gen import IMAGES_DIR, ensure_demo_images
+from apps.gh_mock import services as gh_services
+from apps.gh_mock.models import GhOrder
 from apps.orders import services as order_services
 from apps.orders.models import Actor, Order
 from apps.orders.payments import MockPaymentProvider
-from apps.printing.models import MockPrinterJob, PrintJob
-from apps.printing.services import handle_printer_event
+from apps.printing import services as print_services
+from apps.printing.models import PollCursor, PrintJob
 
 CUSTOMERS = [
     ("anna.kowalska@example.com", "Anna Kowalska", "ul. Długa 12/3", "00-238", "Warszawa"),
@@ -72,6 +74,7 @@ class Command(BaseCommand):
 
         call_command("loaddata", "catalog.json", verbosity=0)
         self._operator()
+        gh_services.ensure_demo_shop()
         ensure_demo_images()
 
         # Deterministycznie i szybko: zadania synchronicznie, mock upscale bez opóźnień.
@@ -90,16 +93,14 @@ class Command(BaseCommand):
             self.stdout.write(f"{order.number}: {image} {fmt_code} -> {order.status}")
 
         self.stdout.write(
-            self.style.SUCCESS(
-                "Gotowe. Operator: demo / demo. Panel: /ops/, mock drukarni: /mock-printer/"
-            )
+            self.style.SUCCESS("Gotowe. Operator: demo / demo. Panel: /ops/, atrapa GH: /gh-mock/")
         )
 
     # ------------------------------------------------------------------
 
     def _flush(self):
-        for job in MockPrinterJob.objects.all():
-            job.delete()
+        GhOrder.objects.all().delete()
+        PollCursor.objects.all().delete()
         PrintJob.objects.all().delete()
         Order.objects.all().delete()
         for asset in Asset.objects.all():
@@ -180,23 +181,26 @@ class Command(BaseCommand):
 
         order_services.approve_order(order, Actor.OPERATOR, self.operator, "plik sprawdzony")
         order.refresh_from_db()
-        job = PrintJob.objects.filter(order_item__order=order).first()
-        self._printer(job, "accepted")
+        job = PrintJob.objects.filter(order=order).first()
+        self._gh(job, "in_progress")
         if target == "sent_to_printer":
             return order
 
-        self._printer(job, "printed")
+        self._gh(job, "ready")
         if target == "printed":
             return order
 
         if target == "reprint":
-            self._printer(job, "defect", reason="Smuga tuszu na 1/3 wysokości")
+            # Wadę zgłasza kupujący, dodruk zleca operator sklepu; GH o wadach nie wie.
             order.refresh_from_db()
-            new_job = PrintJob.objects.filter(order_item__order=order, reprint_of=job).first()
-            self._printer(new_job, "accepted")
+            order_services.request_reprint(
+                order, Actor.OPERATOR, "Smuga tuszu na 1/3 wysokości", self.operator
+            )
+            new_job = PrintJob.objects.filter(order=order, reprint_of=job).first()
+            self._gh(new_job, "in_progress")
             return order
 
-        self._printer(job, "shipped", tracking_number=f"MK{random.randrange(10**10):010d}PL")
+        self._gh(job, "shipped")
         if target == "shipped":
             return order
 
@@ -214,29 +218,13 @@ class Command(BaseCommand):
 
         return order
 
-    def _printer(self, job, status, **extra):
-        payload = {
-            "external_id": job.external_id,
-            "status": status,
-            "timestamp": timezone.now().isoformat(),
-            **extra,
-        }
-        mock_job = MockPrinterJob.objects.filter(external_id=job.external_id).first()
-        if mock_job:
-            local = {
-                "accepted": "accepted",
-                "printed": "printed",
-                "shipped": "shipped",
-                "defect": "defect",
-                "rejected": "rejected",
-            }.get(status)
-            if local:
-                mock_job.status = local
-            if extra.get("tracking_number"):
-                mock_job.tracking_number = extra["tracking_number"]
-            mock_job.log(f"akcja: {status} (seed_demo)", **{k: str(v) for k, v in extra.items()})
-            mock_job.save()
-        handle_printer_event(payload)
+    def _gh(self, job, target_status):
+        """Biuro GH: pobiera pliki i przesuwa zlecenie do `target_status`; sklep odpytuje."""
+        gh_order = GhOrder.objects.get(shop_order_number=job.shop_order_number)
+        gh_services.download_pending_files()
+        while gh_order.status != target_status and gh_order.next_status:
+            gh_services.set_status(gh_order, gh_order.next_status)
+        print_services.poll_changes()
 
     def _backdate(self, order, days_ago):
         if not days_ago:
