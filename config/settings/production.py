@@ -1,4 +1,7 @@
-"""Serwer produkcyjny: bez wartości domyślnych dla sekretów i hostów, DEBUG zawsze wyłączony."""
+"""
+Serwer produkcyjny: bez wartości domyślnych dla sekretów, hostów i GH, DEBUG zawsze wyłączony,
+atrapa GH nigdy nie zainstalowana.
+"""
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -20,3 +23,13 @@ if not ALLOWED_HOSTS:
     raise ImproperlyConfigured(
         "Brak zmiennej środowiskowej DJANGO_ALLOWED_HOSTS (wymagana w produkcji)."
     )
+
+# Prawdziwe GH: pełny adres https i token wydany przez GH. Bez tego produkcja po cichu
+# wysyłałaby zlecenia do atrapy z tokenem demo.
+GH_API_BASE_URL = required("GH_API_BASE_URL")
+if not GH_API_BASE_URL.startswith("https://"):
+    raise ImproperlyConfigured(
+        "GH_API_BASE_URL w produkcji musi być adresem https:// prawdziwego GH, nie ścieżką atrapy."
+    )
+GH_API_TOKEN = required("GH_API_TOKEN")
+GH_MOCK_ENABLED = False

@@ -46,11 +46,12 @@ INSTALLED_APPS = [
     "apps.assets",
     "apps.orders",
     "apps.printing",
-    "apps.gh_mock",
     "apps.ops",
     "apps.web",
     "apps.demo",
 ]
+# Atrapa GH (`apps.gh_mock`, API /shop-api/v1/ i pulpit /gh-mock/) dochodzi w `development.py`
+# pod flagą GH_MOCK_ENABLED. Produkcja nigdy jej nie instaluje.
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

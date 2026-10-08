@@ -62,12 +62,14 @@ Logika biznesowa jest w `services.py` każdej aplikacji; widoki są cienkie. Wyg
 
 Ustawienia w `config/settings/`: `base.py` (wspólne), `development.py` (domyślne dla `manage.py`,
 testów i Dockera) i `production.py` (domyślne dla `wsgi`/`asgi`). Produkcja nie startuje bez
-`DJANGO_SECRET_KEY` i `DJANGO_ALLOWED_HOSTS`, a `DEBUG` jest w niej zawsze wyłączony. Inne środowisko
+`DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `GH_API_BASE_URL` (https) i `GH_API_TOKEN`, `DEBUG` jest w niej zawsze
+wyłączony, a atrapa GH nigdy nie jest zainstalowana. Inne środowisko
 wybierasz zmienną `DJANGO_SETTINGS_MODULE`.
 
 Zmienne środowiskowe: patrz `.env.example`. Najważniejsze: `SITE_NAME`, `SITE_URL` (linki w e-mailach
 i linki do plików dla GH), `HUEY_IMMEDIATE`, `POSTGRES_HOST`, `REDIS_URL`, `GH_API_BASE_URL`
-(ścieżka = atrapa w tym procesie, URL http(s) = prawdziwe GH), `GH_API_TOKEN`.
+(ścieżka = atrapa w tym procesie, URL http(s) = prawdziwe GH), `GH_API_TOKEN`, `GH_MOCK_ENABLED`
+(atrapa GH pod `/shop-api/v1/` i `/gh-mock/`, w dev domyślnie włączona).
 
 ## Scenariusz prezentacji (ok. 5 minut)
 

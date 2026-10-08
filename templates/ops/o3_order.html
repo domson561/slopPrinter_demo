@@ -128,7 +128,7 @@
       {% for j in jobs %}
         <tr>
           <td>{{ j.shop_order_number }}</td>
-          <td>{% if j.external_id %}<a href="{% url 'gh_mock:dashboard' %}">{{ j.external_id }}</a>{% else %}-{% endif %}</td>
+          <td>{% if not j.external_id %}-{% elif gh_mock_enabled %}<a href="{% url 'gh_mock:dashboard' %}">{{ j.external_id }}</a>{% else %}{{ j.external_id }}{% endif %}</td>
           <td>{{ j.status }}{% if j.provider_status %}<br><small>GH: {{ j.provider_status }}</small>{% endif %}</td>
           <td><small>{% for f in j.files_state %}{{ f.kind }}{% if f.position %} {{ f.position }}{% endif %}: {{ f.state }}{% if f.error %} ({{ f.error }}){% endif %}<br>{% empty %}-{% endfor %}</small></td>
           <td>{{ j.attempts }}</td>

@@ -6,7 +6,10 @@ from django.urls import include, path
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("ops/", include("apps.ops.urls")),
-    path("", include("apps.gh_mock.urls")),
+]
+if settings.GH_MOCK_ENABLED:
+    urlpatterns.append(path("", include("apps.gh_mock.urls")))
+urlpatterns += [
     path("", include("apps.orders.urls")),
     path("", include("apps.web.urls")),
 ]

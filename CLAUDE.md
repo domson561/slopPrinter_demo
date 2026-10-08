@@ -15,8 +15,8 @@ Ustalone 2026-10-03, szczegóły w `E:\DJANGO\graphic_house\demo_docs\scope.md`,
 - Pliki dla GH przez podpisane, wygasające linki z sumą kontrolną, nie z publicznego `/media/`.
 - GH zna statusy: nowe, w realizacji, gotowe, wysłane. Odrzucenia, wady i dodruki obsługuje sklep.
 - Kontrakt: `docs/kontrakt-gh-v1.md`. Klient GH: `apps/printing/providers.py` (`GhApiProvider`, transport
-  in-process do atrapy albo HTTP). Atrapa GH: `apps/gh_mock` (API pod `/shop-api/v1/`, pulpit `/gh-mock/`).
-  Podmiana na prawdziwe GH = `GH_API_BASE_URL` i `GH_API_TOKEN`.
+  in-process do atrapy albo HTTP). Atrapa GH: `apps/gh_mock` (API pod `/shop-api/v1/`, pulpit `/gh-mock/`), instalowana
+  tylko w `development.py` pod `GH_MOCK_ENABLED`; produkcja wymaga `GH_API_BASE_URL` (https) i `GH_API_TOKEN`.
 
 ## Plan
 Mapa zadań: `E:\OBSIDIAN VAULTS\PROJECT_VAULTS\slopPrinter.canvas`, zmiany tylko przez skill `canvas`.

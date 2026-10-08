@@ -11,7 +11,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 from huey.contrib.djhuey import HUEY
@@ -20,8 +20,6 @@ from apps.assets.models import Asset
 from apps.assets.services import create_asset_from_upload
 from apps.catalog.models import DeliveryMethod, Format, PaperOption
 from apps.demo.images_gen import IMAGES_DIR, ensure_demo_images
-from apps.gh_mock import services as gh_services
-from apps.gh_mock.models import GhOrder
 from apps.orders import services as order_services
 from apps.orders.models import Actor, Order
 from apps.orders.payments import MockPaymentProvider
@@ -58,6 +56,16 @@ SCENARIOS = [
 ]
 
 
+def _gh_mock():
+    """Seed udaje biuro GH, więc wymaga atrapy; ta jest instalowana tylko pod GH_MOCK_ENABLED."""
+    if not settings.GH_MOCK_ENABLED:
+        raise CommandError("seed_demo wymaga atrapy GH: ustaw GH_MOCK_ENABLED=1.")
+    from apps.gh_mock import services
+    from apps.gh_mock.models import GhOrder
+
+    return services, GhOrder
+
+
 class Command(BaseCommand):
     help = "Ładuje dane demo: operator demo/demo, katalog, obrazki, ~15 zamówień we wszystkich stanach."
 
@@ -74,7 +82,7 @@ class Command(BaseCommand):
 
         call_command("loaddata", "catalog.json", verbosity=0)
         self._operator()
-        gh_services.ensure_demo_shop()
+        _gh_mock()[0].ensure_demo_shop()
         ensure_demo_images()
 
         # Deterministycznie i szybko: zadania synchronicznie, mock upscale bez opóźnień.
@@ -99,7 +107,7 @@ class Command(BaseCommand):
     # ------------------------------------------------------------------
 
     def _flush(self):
-        GhOrder.objects.all().delete()
+        _gh_mock()[1].objects.all().delete()
         PollCursor.objects.all().delete()
         PrintJob.objects.all().delete()
         Order.objects.all().delete()
@@ -220,6 +228,7 @@ class Command(BaseCommand):
 
     def _gh(self, job, target_status):
         """Biuro GH: pobiera pliki i przesuwa zlecenie do `target_status`; sklep odpytuje."""
+        gh_services, GhOrder = _gh_mock()
         gh_order = GhOrder.objects.get(shop_order_number=job.shop_order_number)
         gh_services.download_pending_files()
         while gh_order.status != target_status and gh_order.next_status:
