@@ -46,7 +46,7 @@ def build_request(job: PrintJob) -> dict:
     hurtowa wejdzie z taskiem „Katalog”. Etykieta (`label`) dojdzie z taskiem „Etykieta”.
     """
     order = job.order
-    items = order.items.select_related("format", "paper").order_by("pk")
+    items = order.items.select_related("asset").order_by("pk")
     body = {
         "shop_order_number": job.shop_order_number,
         "title": f"Zamówienie {job.shop_order_number}",
@@ -63,25 +63,29 @@ def build_request(job: PrintJob) -> dict:
 
 
 def _item_body(position: int, item) -> dict:
-    fmt = item.format
-    paper_code = item.paper.code if item.paper else None
+    line = item.definition.gh_line(item)
+    files = item.print_files
     return {
         "position": position,
-        "name": _item_name(item),
-        "product_code": "-".join(p for p in ("poster", fmt.code.lower(), paper_code) if p),
+        "name": line.name,
+        "product_code": line.product_code,
         "quantity": item.quantity,
         "unit_price": str(item.unit_price),
-        "file": file_object(item.print_file),
+        "file": file_object(files[0] if files else None),
     }
 
 
-def _item_name(item) -> str:
-    parts = [f"Plakat {item.format.name}"]
-    if item.paper:
-        parts.append(item.paper.name)
-    if item.white_margin:
-        parts.append("biały margines")
-    return ", ".join(parts)
+def check_print_files(order) -> None:
+    """
+    Kontrakt v1: dokładnie jeden plik do druku na pozycję. Pozycja z kilkoma plikami
+    (np. okładka i blok książki) czeka na v1.1/v2 kontraktu.
+    """
+    for item in order.items.order_by("pk"):
+        count = len(item.print_files)
+        if count != 1:
+            raise PrintSubmitError(
+                f"Pozycja {item.summary}: plików do druku {count}, kontrakt v1 przyjmuje jeden."
+            )
 
 
 def file_object(version) -> dict:
@@ -132,6 +136,7 @@ def _next_shop_order_number(order) -> str:
 
 
 def create_print_job(order, reprint_of: PrintJob | None = None, reason: str = "") -> PrintJob:
+    check_print_files(order)
     job = PrintJob.objects.create(
         order=order,
         shop_order_number=_next_shop_order_number(order),
@@ -326,7 +331,8 @@ def resend_failed_files(job: PrintJob, provider) -> int:
         order_items = list(job.order.items.order_by("pk"))
         position = failed["position"]
         order_item = order_items[position - 1] if 0 < position <= len(order_items) else None
-        fresh = file_object(order_item.print_file) if order_item else {}
+        files = order_item.print_files if order_item else []
+        fresh = file_object(files[0]) if len(files) == 1 else {}
         if not fresh:
             continue
         body = {"kind": "item", "position": failed["position"], "file": fresh}

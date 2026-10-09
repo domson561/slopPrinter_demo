@@ -50,7 +50,9 @@ idempotencja `submit` i callbacku płatności, pełna ścieżka klienta. Atrapa 
 |-----------------|-----------|
 | `apps/catalog`  | formaty, papiery, dostawa, `ShopSettings` (progi DPI, auto-zatwierdzanie, retencja), cennik |
 | `apps/assets`   | upload i walidacja, `AnalysisService` (Pillow), `MockContentSafety`, `MockUpscale`, `CropService`, `PrepressService` (PDF ze spadami, reportlab), `MockupService`, `run_pipeline`, komenda `cleanup_assets` |
-| `apps/orders`   | `Order`/`OrderItem`/`OrderStatusEvent`/`Payment`/`Shipment`/`Complaint`, maszyna stanów (`services.transition`, `force_transition`), `MockPaymentProvider`, powiadomienia, zadanie `process_order_task` |
+| `apps/products` | interfejs produktu (`Product`: kod, opcje, cena, pliki od kupującego, pliki do druku, opis dla GH) i rejestr z `SHOP_PRODUCTS`; rdzeń zna produkty tylko stąd |
+| `apps/poster`   | plakat z demo jako implementacja `Product` (`PosterProduct`), opcje pozycji, ustawienia w panelu; reszta kodu plakatu jeszcze w `assets` i `catalog` |
+| `apps/orders`   | `Order`/`OrderItem` (kod produktu + opcje JSON)/`OrderStatusEvent`/`Payment`/`Shipment`/`Complaint`, maszyna stanów (`services.transition`, `force_transition`), `MockPaymentProvider`, powiadomienia, zadanie `process_order_task` |
 | `apps/printing` | `PrintJob` (jedno zlecenie na koszyk), `GhApiProvider` (klient kontraktu v1, transport in-process do atrapy albo HTTP), body POST-a, submit z retry, polling `changes` co 5 min i mapowanie statusów GH |
 | `apps/gh_mock`  | atrapa GH: API z kontraktu pod `/shop-api/v1/` (token, idempotencja, pliki, zmiany), pulpit biura `/gh-mock/`, `GhMockSettings` (auto-symulacja) |
 | `apps/ops`      | panel operatora O1-O5 (`is_staff`) |

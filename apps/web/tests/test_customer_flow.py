@@ -58,7 +58,11 @@ def test_full_customer_path(client, catalog_data, image_upload):
     )
     assert resp.status_code == 302
     order = Order.objects.get()
-    assert order.status == S.DRAFT and order.item.enhancer_enabled and order.item.crop["h"] == 0.9
+    assert (
+        order.status == S.DRAFT
+        and order.item.options["enhancer"]
+        and order.item.options["crop"]["h"] == 0.9
+    )
 
     # S3
     resp = client.get(reverse("web:preview", args=[order.status_token]))

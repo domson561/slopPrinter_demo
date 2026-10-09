@@ -10,10 +10,8 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 
-from apps.assets import quality
-from apps.assets.services import FLAG_LABELS, run_pipeline
 from apps.catalog.models import ShopSettings
-from apps.catalog.services import quote
+from apps.products import ProductError, get_product
 
 from . import notifications
 from .models import (
@@ -59,7 +57,7 @@ CUSTOMER_LABELS: dict[str, tuple[str, str]] = {
     S.PAID: ("Płatność przyjęta", "Dziękujemy. Zaraz zajmiemy się Twoim plikiem."),
     S.PROCESSING: (
         "Przygotowujemy plik do druku",
-        "Poprawiamy jakość i przygotowujemy plik produkcyjny.",
+        "Przygotowujemy plik produkcyjny.",
     ),
     S.AWAITING_APPROVAL: (
         "Sprawdzamy plik",
@@ -70,9 +68,9 @@ CUSTOMER_LABELS: dict[str, tuple[str, str]] = {
         "Skontaktujemy się, jeśli będziemy czegoś potrzebować.",
     ),
     S.SENT_TO_PRINTER: ("W drukarni", "Plik został przekazany do druku."),
-    S.PRINTED: ("Wydrukowane", "Twój plakat jest gotowy i czeka na pakowanie."),
+    S.PRINTED: ("Wydrukowane", "Zamówienie jest gotowe i czeka na pakowanie."),
     S.SHIPPED: ("Nadane", "Paczka jest w drodze. Numer śledzenia znajdziesz poniżej."),
-    S.DELIVERED: ("Doręczone", "Mamy nadzieję, że plakat wygląda świetnie na ścianie."),
+    S.DELIVERED: ("Doręczone", "Mamy nadzieję, że wszystko się podoba."),
     S.REPRINT: ("Drukujemy ponownie", "Zleciliśmy dodruk. Nowa paczka jest w drodze do produkcji."),
     S.CANCELLED: (
         "Anulowane",
@@ -179,11 +177,10 @@ def _after_transition(order, event):
 
 def recalc_totals(order: Order) -> Order:
     subtotal = Decimal("0.00")
-    for item in order.items.select_related("format", "paper"):
-        q = quote(item.format, item.paper, item.quantity, item.white_margin)
-        item.unit_price = q.unit_price
+    for item in order.items.all():
+        item.unit_price = item.definition.unit_price(item.options)
         item.save(update_fields=["unit_price"])
-        subtotal += q.subtotal
+        subtotal += item.line_total
     order.subtotal = subtotal
     order.delivery_price = (
         Decimal(order.delivery_method.price) if order.delivery_method else Decimal("0.00")
@@ -195,26 +192,26 @@ def recalc_totals(order: Order) -> Order:
 
 
 def save_draft(
-    asset, fmt, paper, *, white_margin, quantity, crop, enhancer_enabled, order: Order | None = None
+    product_code: str, asset, options: dict, *, quantity, order: Order | None = None
 ) -> Order:
-    """Tworzy lub aktualizuje szkic z jedną pozycją. Kadr jest sanityzowany."""
-    crop = quality.sanitize_crop(crop, asset.width, asset.height, fmt)
-    q = quality.quality_for(asset.width, asset.height, fmt, ShopSettings.get(), crop)
-    if q.blocked:
-        raise TransitionError(f"Format {fmt.name} jest zablokowany dla tego pliku (za słaby plik).")
+    """
+    Tworzy lub aktualizuje szkic z jedną pozycją. Typ pliku i opcje sprawdza produkt;
+    niepasujące rzucają `ProductError` z komunikatem dla kupującego.
+    """
+    product = get_product(product_code)
+    if asset.mime not in product.accepted_mime:
+        raise ProductError(f"{product.name}: ten typ pliku nie jest obsługiwany.")
+    options = product.clean_options(options, asset)
     with transaction.atomic():
         if order is None or not order.is_draft:
             order = Order.objects.create(status=S.DRAFT)
         item = order.items.first()
         if item is None:
             item = OrderItem(order=order, asset=asset)
+        item.product = product.code
+        item.options = options
         item.asset = asset
-        item.format = fmt
-        item.paper = paper
-        item.white_margin = bool(white_margin)
         item.quantity = max(int(quantity or 1), 1)
-        item.crop = crop
-        item.enhancer_enabled = bool(enhancer_enabled)
         item.save()
         recalc_totals(order)
     return order
@@ -274,8 +271,8 @@ def process_order(order: Order):
         raise TransitionError(f"process_order: nieoczekiwany stan {order.status}")
 
     try:
-        for item in order.items.select_related("asset", "format"):
-            run_pipeline(item)
+        for item in order.items.select_related("asset"):
+            item.definition.build_print_files(item)
     except Exception as exc:  # noqa: BLE001 - każdy błąd pipeline ląduje w on_hold
         log.exception("pipeline failed for %s", order.number)
         transition(
@@ -288,11 +285,9 @@ def process_order(order: Order):
 
     flags = []
     for item in order.items.select_related("asset"):
-        analysis = getattr(item.asset, "analysis", None)
-        if analysis and analysis.content_flags:
-            flags.extend(analysis.content_flags)
+        flags.extend(item.definition.review_flags(item))
     if flags:
-        labels = ", ".join(FLAG_LABELS.get(f, f) for f in dict.fromkeys(flags))
+        labels = ", ".join(dict.fromkeys(flags))
         transition(order, S.ON_HOLD, Actor.SYSTEM, f"Treść do weryfikacji: {labels}")
         return
 
@@ -317,7 +312,7 @@ def approve_order(order: Order, actor=Actor.OPERATOR, actor_user=None, reason: s
         )
     if order.status != S.AWAITING_APPROVAL:
         raise TransitionError(f"Nie można zatwierdzić zamówienia w stanie {order.status}.")
-    if any(item.print_file is None for item in order.items.all()):
+    if any(not item.print_files for item in order.items.all()):
         raise TransitionError("Brak pliku do druku. Uruchom ponowne przetworzenie.")
     try:
         submit_order(order)

@@ -8,19 +8,17 @@ from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from apps.assets.services import FLAG_LABELS
 from apps.catalog.models import ShopSettings
 from apps.orders import services as order_services
 from apps.orders.models import Actor, Complaint, Order, OrderStatus
 from apps.orders.services import TransitionError
 from apps.printing.models import PollCursor, PrintJob
 from apps.printing.services import poll_changes, reset_poll_auth
+from apps.products import all_products
 
 from .forms import (
     ForceStatusForm,
-    FormatFormSet,
     OrderFilterForm,
-    PaperFormSet,
     ReasonForm,
     ResolveComplaintForm,
     ShopSettingsForm,
@@ -51,7 +49,7 @@ def order_list(request):
     qs = (
         Order.objects.exclude(status=OrderStatus.DRAFT)
         .select_related("delivery_method")
-        .prefetch_related("items__format")
+        .prefetch_related("items")
     )
     if form.is_valid():
         d = form.cleaned_data
@@ -103,15 +101,11 @@ def order_detail(request, number):
         PrintJob.objects.filter(order=order).select_related("reprint_of").prefetch_related("events")
     )
     poll_cursor = PollCursor.get()
-    analysis = getattr(item.asset, "analysis", None) if item else None
     context = {
         "order": order,
         "item": item,
-        "analysis": analysis,
+        "product_ctx": item.definition.operator_context(item) if item else {},
         "poll_cursor": poll_cursor,
-        "flag_labels": [
-            FLAG_LABELS.get(f, f) for f in (analysis.content_flags if analysis else [])
-        ],
         "jobs": jobs,
         "events": order.status_events.select_related("actor_user"),
         "payments": order.payments.all(),
@@ -224,35 +218,36 @@ def _require(reason):
 def order_print_file(request, number):
     order = get_object_or_404(Order, number=number)
     item = order.item
-    version = item.print_file if item else None
-    if version is None:
+    files = item.print_files if item else []
+    if not files:
         raise Http404("Brak PDF do druku.")
     return FileResponse(
-        version.file.open("rb"),
+        files[0].file.open("rb"),
         as_attachment=True,
-        filename=f"{order.number}_{item.format.code}.pdf",
+        filename=f"{order.number}_{item.definition.gh_line(item).product_code}.pdf",
     )
 
 
 @staff_required
 def settings_view(request):
+    """Ustawienia rdzenia plus sekcje ustawień każdego produktu (np. cennik)."""
     shop = ShopSettings.get()
-    if request.method == "POST":
-        form = ShopSettingsForm(request.POST, instance=shop)
-        formats = FormatFormSet(request.POST, prefix="formats")
-        papers = PaperFormSet(request.POST, prefix="papers")
-        if form.is_valid() and formats.is_valid() and papers.is_valid():
-            form.save()
-            formats.save()
-            papers.save()
-            messages.success(request, "Zapisano ustawienia.")
-            return redirect("ops:settings")
-    else:
-        form = ShopSettingsForm(instance=shop)
-        formats = FormatFormSet(prefix="formats")
-        papers = PaperFormSet(prefix="papers")
+    data = request.POST if request.method == "POST" else None
+    form = ShopSettingsForm(data, instance=shop)
+    sections = [
+        (product, product.settings_forms(data))
+        for product in all_products()
+        if product.settings_template
+    ]
+    product_forms = [f for _, forms in sections for f in forms.values()]
+    if data is not None and form.is_valid() and all(f.is_valid() for f in product_forms):
+        form.save()
+        for f in product_forms:
+            f.save()
+        messages.success(request, "Zapisano ustawienia.")
+        return redirect("ops:settings")
     return render(
         request,
         "ops/o5_settings.html",
-        {"form": form, "formats": formats, "papers": papers, "shop": shop},
+        {"form": form, "sections": sections, "shop": shop},
     )

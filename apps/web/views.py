@@ -22,6 +22,9 @@ from apps.catalog.services import active_deliveries, active_formats, active_pape
 from apps.orders import services as order_services
 from apps.orders.models import Order, OrderStatus
 from apps.orders.services import TransitionError, customer_label
+from apps.poster.options import format_of, paper_of
+from apps.poster.services import save_poster_draft
+from apps.products import ProductError
 
 from .forms import MAX_QUANTITY, CheckoutForm, ComplaintForm, ConfigureForm, UploadForm
 
@@ -94,21 +97,22 @@ def configure(request, asset_id):
     shop = ShopSettings.get()
     draft = _draft_for(request, asset)
     item = draft.item if draft else None
+    opts = item.options if item else {}
     cards = _format_cards(asset, shop)
 
     initial = {
-        "format": item.format_id if item else _default_format(cards),
-        "paper": item.paper_id if item else active_papers().first(),
-        "white_margin": item.white_margin if item else False,
+        "format": format_of(opts).pk if item else _default_format(cards),
+        "paper": paper_of(opts) if item else active_papers().first(),
+        "white_margin": opts.get("white_margin", False),
         "quantity": item.quantity if item else 1,
-        "enhancer_enabled": item.enhancer_enabled if item else False,
-        "crop": json.dumps(item.crop) if item else "",
+        "enhancer_enabled": opts.get("enhancer", False),
+        "crop": json.dumps(opts.get("crop") or {}) if item else "",
     }
     form = ConfigureForm(request.POST or None, initial=initial)
     if request.method == "POST" and form.is_valid():
         d = form.cleaned_data
         try:
-            order = order_services.save_draft(
+            order = save_poster_draft(
                 asset,
                 d["format"],
                 d["paper"],
@@ -118,7 +122,7 @@ def configure(request, asset_id):
                 enhancer_enabled=d["enhancer_enabled"],
                 order=draft,
             )
-        except TransitionError as exc:
+        except (TransitionError, ProductError) as exc:
             form.add_error("format", str(exc))
         else:
             _remember_draft(request, asset, order)
@@ -229,7 +233,10 @@ def mockup_image(request, token):
     item = order.item
     if item is None:
         raise Http404
-    return _png_response(render_mockup(item.asset, item.format, item.crop, item.white_margin))
+    opts = item.options
+    return _png_response(
+        render_mockup(item.asset, format_of(opts), opts.get("crop") or {}, opts.get("white_margin"))
+    )
 
 
 @require_GET
@@ -238,7 +245,8 @@ def fragment_image(request, token, mode):
     item = order.item
     if item is None or mode not in ("before", "after"):
         raise Http404
-    return _png_response(render_fragment(item.asset, item.crop, enhanced=(mode == "after")))
+    crop = item.options.get("crop") or {}
+    return _png_response(render_fragment(item.asset, crop, enhanced=(mode == "after")))
 
 
 # ---------------------------------------------------------------------------
@@ -252,8 +260,13 @@ _PRE_PAYMENT = (OrderStatus.DRAFT, OrderStatus.AWAITING_PAYMENT)
 def preview(request, token):
     order = _order_by_token(token, _PRE_PAYMENT)
     item = order.item
-    q = quality_for_selection(item.asset, item.format, item.crop)
-    return render(request, "web/s3_preview.html", {"order": order, "item": item, "quality": q})
+    fmt = format_of(item.options)
+    q = quality_for_selection(item.asset, fmt, item.options.get("crop"))
+    return render(
+        request,
+        "web/s3_preview.html",
+        {"order": order, "item": item, "fmt": fmt, "quality": q},
+    )
 
 
 @require_http_methods(["GET", "POST"])

@@ -1,0 +1,29 @@
+{# Ustawienia plakatu w panelu operatora (O5). Oczekuje: product, forms = PosterProduct.settings_forms(). #}
+<fieldset>
+  <legend>{{ product.name }}: progi jakości i pipeline</legend>
+  {{ forms.settings.as_p }}
+</fieldset>
+<fieldset>
+  <legend>{{ product.name }}: cennik formatów</legend>
+  {{ forms.formats.management_form }}
+  <table>
+    <thead><tr><th>Kod</th><th>Nazwa</th><th>Cena</th><th>Aktywny</th></tr></thead>
+    <tbody>
+    {% for f in forms.formats %}
+      <tr>{{ f.id }}<td>{{ f.code }}</td><td>{{ f.name }}</td><td>{{ f.base_price }}</td><td>{{ f.is_active }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</fieldset>
+<fieldset>
+  <legend>{{ product.name }}: papiery</legend>
+  {{ forms.papers.management_form }}
+  <table>
+    <thead><tr><th>Kod</th><th>Nazwa</th><th>Dopłata</th><th>Aktywny</th></tr></thead>
+    <tbody>
+    {% for p in forms.papers %}
+      <tr>{{ p.id }}<td>{{ p.code }}</td><td>{{ p.name }}</td><td>{{ p.price_delta }}</td><td>{{ p.is_active }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</fieldset>

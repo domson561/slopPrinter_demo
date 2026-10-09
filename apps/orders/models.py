@@ -6,6 +6,8 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.products import get_product
+
 
 class OrderStatus(models.TextChoices):
     DRAFT = "draft", "Szkic"
@@ -78,7 +80,7 @@ class Order(models.Model):
 
     @property
     def item(self):
-        return self.items.select_related("asset", "format", "paper").first()
+        return self.items.select_related("asset").order_by("pk").first()
 
     @property
     def is_draft(self):
@@ -126,46 +128,47 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
+    """
+    Pozycja koszyka. Rdzeń nie wie, co to za produkt: `product` to kod w rejestrze
+    (`apps.products`), a `options` rozumie i sprawdza tylko ten produkt.
+    """
+
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
-    asset = models.ForeignKey("assets.Asset", on_delete=models.PROTECT, related_name="order_items")
-    format = models.ForeignKey(
-        "catalog.Format", on_delete=models.PROTECT, related_name="order_items"
-    )
-    paper = models.ForeignKey(
-        "catalog.PaperOption",
-        null=True,
-        blank=True,
+    product = models.CharField(max_length=40, help_text="Kod produktu w rejestrze.")
+    options = models.JSONField(default=dict, blank=True, help_text="Opcje pozycji produktu.")
+    asset = models.ForeignKey(
+        "assets.Asset",
         on_delete=models.PROTECT,
         related_name="order_items",
+        help_text="Plik od kupującego.",
     )
-    white_margin = models.BooleanField(default=False)
     quantity = models.PositiveIntegerField(default=1)
-    crop = models.JSONField(default=dict, blank=True)
-    enhancer_enabled = models.BooleanField(default=False)
     unit_price = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))
 
     def __str__(self):
-        return f"{self.order} / {self.format.code} x{self.quantity}"
+        return f"{self.order} / {self.product} x{self.quantity}"
+
+    @property
+    def definition(self):
+        """Produkt z rejestru (`apps.products.Product`)."""
+        return get_product(self.product)
+
+    @property
+    def summary(self):
+        return self.definition.summary(self)
+
+    @property
+    def details(self):
+        return self.definition.details(self)
 
     @property
     def line_total(self):
         return (Decimal(self.unit_price) * self.quantity).quantize(Decimal("0.01"))
 
     @property
-    def orientation(self):
-        return (self.crop or {}).get("orientation", "portrait")
-
-    @property
-    def print_file(self):
-        return self.asset.version("print_pdf", self)
-
-    @property
-    def cropped_version(self):
-        return self.asset.version("cropped", self)
-
-    @property
-    def upscaled_version(self):
-        return self.asset.version("upscaled", self)
+    def print_files(self):
+        """PDF-y do druku pozycji, w kolejności powstania."""
+        return list(self.asset_versions.filter(kind="print_pdf").order_by("created_at", "pk"))
 
 
 class OrderStatusEvent(models.Model):

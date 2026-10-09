@@ -14,6 +14,8 @@ from apps.orders import services as order_services
 from apps.orders.models import Actor, OrderItem
 from apps.orders.models import OrderStatus as S
 from apps.orders.payments import MockPaymentProvider
+from apps.poster.options import poster_options
+from apps.poster.services import save_poster_draft
 from apps.printing import services as print_services
 from apps.printing.models import PollCursor, PrintJob
 from apps.printing.providers import GhApiProvider
@@ -29,7 +31,7 @@ from apps.printing.services import (
 def _approve_ready_order(image_upload, extra_items=0):
     """Zamówienie po płatności i pipeline, w awaiting_approval. `extra_items` dokłada pozycje A3."""
     asset = create_asset_from_upload(image_upload(size=(1448, 2048)))
-    order = order_services.save_draft(
+    order = save_poster_draft(
         asset,
         Format.objects.get(code="A2"),
         PaperOption.objects.get(code="matte"),
@@ -42,9 +44,12 @@ def _approve_ready_order(image_upload, extra_items=0):
         OrderItem.objects.create(
             order=order,
             asset=create_asset_from_upload(image_upload(size=(1448, 2048))),
-            format=Format.objects.get(code="A3"),
-            paper=PaperOption.objects.get(code="matte"),
-            white_margin=True,
+            product="poster",
+            options=poster_options(
+                Format.objects.get(code="A3"),
+                PaperOption.objects.get(code="matte"),
+                white_margin=True,
+            ),
             quantity=2,
         )
     order_services.start_checkout(

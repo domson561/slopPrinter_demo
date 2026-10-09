@@ -23,6 +23,7 @@ from apps.demo.images_gen import IMAGES_DIR, ensure_demo_images
 from apps.orders import services as order_services
 from apps.orders.models import Actor, Order
 from apps.orders.payments import MockPaymentProvider
+from apps.poster.services import save_poster_draft
 from apps.printing import services as print_services
 from apps.printing.models import PollCursor, PrintJob
 
@@ -139,7 +140,7 @@ class Command(BaseCommand):
         fmt = Format.objects.get(code=fmt_code)
         paper = PaperOption.objects.get(code=opts.get("paper", "matte"))
         q = asset.analysis.quality(fmt_code)
-        order = order_services.save_draft(
+        order = save_poster_draft(
             asset,
             fmt,
             paper,

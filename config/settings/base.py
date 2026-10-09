@@ -35,6 +35,8 @@ SITE_URL = env("SITE_URL", "http://localhost:8000").rstrip("/")
 # Prefiks numeru zamówienia (`PA-2026-000123`). Numer jest kluczem idempotencji w GH, więc każdy
 # sklep podpięty do tego samego GH musi mieć inny prefiks.
 ORDER_NUMBER_PREFIX = env("ORDER_NUMBER_PREFIX", "PA")
+# Produkty sklepu (interfejs `apps.products.Product`). Rdzeń zna je tylko przez rejestr.
+SHOP_PRODUCTS = ["apps.poster.product.PosterProduct"]
 
 INSTALLED_APPS = [
     "django.contrib.admin",

@@ -27,7 +27,7 @@
         <td><a href="{% url 'ops:order_detail' o.number %}">{{ o.number }}</a></td>
         <td>{{ o.created_at|date:"Y-m-d H:i" }}</td>
         <td>{{ o.full_name }}<br><small>{{ o.email }}</small></td>
-        <td>{% for i in o.items.all %}{{ i.format.code }} x{{ i.quantity }}{% endfor %}</td>
+        <td>{% for i in o.items.all %}{{ i.summary }} x{{ i.quantity }}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
         <td><span class="status status--{{ o.status }}">{{ o.status }}</span>{% if o.hold_reason %}<br><small>{{ o.hold_reason }}</small>{% endif %}</td>
         <td>{{ o.total }} {{ o.currency }}</td>
         <td><a href="{% url 'ops:order_detail' o.number %}">otwórz</a></td>

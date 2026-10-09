@@ -1,0 +1,29 @@
+{# Plakat w panelu operatora (O3). Oczekuje: item, ctx = PosterProduct.operator_context(item). #}
+<div class="file-compare">
+  {% if ctx.cropped %}
+  <figure>
+    <img src="{{ ctx.cropped.file.url }}" alt="Po przetworzeniu" width="240">
+    <figcaption>Po przetworzeniu: {{ ctx.cropped.width }} x {{ ctx.cropped.height }} px, ok. {{ ctx.cropped.params.effective_dpi }} DPI dla {{ ctx.format_code }}{% if ctx.cropped.params.upscaled_by %}, upscale: {{ ctx.cropped.params.upscaled_by }} <span class="tag tag--mock">symulacja</span>{% endif %}</figcaption>
+  </figure>
+  {% else %}
+  <p>Brak przetworzonego pliku (pipeline jeszcze nie ruszył lub się nie udał).</p>
+  {% endif %}
+</div>
+{% for pdf in item.print_files %}
+  <p><small>PDF: {{ pdf.params.format }} {{ pdf.params.orientation }}, spad {{ pdf.params.bleed_mm }} mm, {{ pdf.params.color_space }}, {{ pdf.params.effective_dpi }} DPI</small></p>
+{% endfor %}
+
+<h3>Analiza</h3>
+{% if ctx.analysis %}
+  <p>Proporcje {{ ctx.analysis.aspect_ratio }}. Flagi treści:
+    {% if ctx.flag_labels %}<span class="tag tag--warn">{{ ctx.flag_labels|join:", " }}</span>{% else %}brak{% endif %}
+    <span class="tag tag--mock">symulacja moderacji</span></p>
+  <table class="quality-table">
+    <thead><tr><th>Format</th><th>DPI</th><th>Po upscale</th><th>Werdykt</th></tr></thead>
+    <tbody>
+    {% for code, q in ctx.analysis.quality_per_format.items %}
+      <tr><td>{{ code }}</td><td>{{ q.effective_dpi }}</td><td>{{ q.dpi_after_upscale }}</td><td>{{ q.verdict_label }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% endif %}

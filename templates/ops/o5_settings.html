@@ -6,33 +6,12 @@
   <form method="post">
     {% csrf_token %}
     <fieldset>
-      <legend>Progi jakości i pipeline</legend>
+      <legend>Zamówienia i retencja</legend>
       {{ form.as_p }}
     </fieldset>
-    <fieldset>
-      <legend>Cennik formatów</legend>
-      {{ formats.management_form }}
-      <table>
-        <thead><tr><th>Kod</th><th>Nazwa</th><th>Cena</th><th>Aktywny</th></tr></thead>
-        <tbody>
-        {% for f in formats %}
-          <tr>{{ f.id }}<td>{{ f.code }}</td><td>{{ f.name }}</td><td>{{ f.base_price }}</td><td>{{ f.is_active }}</td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </fieldset>
-    <fieldset>
-      <legend>Papiery</legend>
-      {{ papers.management_form }}
-      <table>
-        <thead><tr><th>Kod</th><th>Nazwa</th><th>Dopłata</th><th>Aktywny</th></tr></thead>
-        <tbody>
-        {% for p in papers %}
-          <tr>{{ p.id }}<td>{{ p.code }}</td><td>{{ p.name }}</td><td>{{ p.price_delta }}</td><td>{{ p.is_active }}</td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </fieldset>
+    {% for product, forms in sections %}
+      {% include product.settings_template with product=product forms=forms %}
+    {% endfor %}
     <button type="submit" class="button button--primary">Zapisz</button>
   </form>
 </section>

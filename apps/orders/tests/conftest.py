@@ -4,6 +4,7 @@ from apps.assets.services import create_asset_from_upload
 from apps.catalog.models import DeliveryMethod, Format, PaperOption
 from apps.orders import services
 from apps.orders.models import Order, OrderStatus
+from apps.poster.services import save_poster_draft
 
 
 @pytest.fixture
@@ -12,7 +13,7 @@ def make_draft(catalog_data, image_upload):
         asset = create_asset_from_upload(image_upload(name=name, size=size))
         fmt = Format.objects.get(code=fmt_code)
         paper = PaperOption.objects.get(code="matte")
-        return services.save_draft(
+        return save_poster_draft(
             asset,
             fmt,
             paper,

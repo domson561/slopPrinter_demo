@@ -9,6 +9,7 @@ from apps.orders.models import OrderStatus as S
 from apps.orders.models import Payment
 from apps.orders.payments import MockPaymentProvider
 from apps.printing.models import PrintJob
+from apps.products import get_product
 
 
 @pytest.mark.django_db
@@ -21,7 +22,7 @@ def test_successful_payment_runs_pipeline_to_awaiting_approval(make_awaiting_pay
     assert order.status == S.AWAITING_APPROVAL
     statuses = [e.to_status for e in order.status_events.all()]
     assert statuses == [S.AWAITING_PAYMENT, S.PAID, S.PROCESSING, S.AWAITING_APPROVAL]
-    assert order.item.print_file is not None
+    assert order.item.print_files
     assert order.item.asset.expires_at is None
 
 
@@ -59,7 +60,7 @@ def test_flagged_content_goes_on_hold_after_pipeline(make_awaiting_payment):
     order.refresh_from_db()
     assert order.status == S.ON_HOLD
     assert "znaku towarowego" in order.hold_reason
-    assert order.item.print_file is not None  # plik przetworzony, operator widzi przed/po
+    assert order.item.print_files  # plik przetworzony, operator widzi przed/po
 
 
 @pytest.mark.django_db
@@ -67,7 +68,7 @@ def test_pipeline_error_goes_on_hold_with_technical_reason(make_awaiting_payment
     def boom(item):
         raise RuntimeError("upscale API timeout")
 
-    monkeypatch.setattr(services, "run_pipeline", boom)
+    monkeypatch.setattr(get_product("poster"), "build_print_files", boom)
     order = make_awaiting_payment()
     MockPaymentProvider().process_callback(order.payments.get().external_id, "success")
     order.refresh_from_db()
@@ -78,7 +79,7 @@ def test_pipeline_error_goes_on_hold_with_technical_reason(make_awaiting_payment
 @pytest.mark.django_db
 def test_reprocess_from_on_hold(make_awaiting_payment, monkeypatch):
     calls = {"n": 0}
-    real = services.run_pipeline
+    real = get_product("poster").build_print_files
 
     def flaky(item):
         calls["n"] += 1
@@ -86,7 +87,7 @@ def test_reprocess_from_on_hold(make_awaiting_payment, monkeypatch):
             raise RuntimeError("chwilowy błąd")
         return real(item)
 
-    monkeypatch.setattr(services, "run_pipeline", flaky)
+    monkeypatch.setattr(get_product("poster"), "build_print_files", flaky)
     order = make_awaiting_payment()
     MockPaymentProvider().process_callback(order.payments.get().external_id, "success")
     order.refresh_from_db()

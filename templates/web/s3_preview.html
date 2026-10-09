@@ -5,18 +5,18 @@
   <h1>Tak będzie wyglądał Twój plakat</h1>
 
   <figure class="preview__mockup">
-    <img src="{% url 'web:mockup_image' order.status_token %}" alt="Plakat {{ item.format.name }} na ścianie, w skali">
-    <figcaption>{{ item.format.name }} na ścianie, w skali. Sofa ma 200 cm szerokości. <span class="tag tag--mock">symulacja</span></figcaption>
+    <img src="{% url 'web:mockup_image' order.status_token %}" alt="Plakat {{ fmt.name }} na ścianie, w skali">
+    <figcaption>{{ fmt.name }} na ścianie, w skali. Sofa ma 200 cm szerokości. <span class="tag tag--mock">symulacja</span></figcaption>
   </figure>
 
   <section class="preview__fragments">
-    <h2>Wycinek 1:1 {% if item.enhancer_enabled %}przed i po poprawie jakości{% else %}(tak wydrukują się szczegóły){% endif %}</h2>
+    <h2>Wycinek 1:1 {% if item.options.enhancer %}przed i po poprawie jakości{% else %}(tak wydrukują się szczegóły){% endif %}</h2>
     <div class="fragments">
       <figure>
         <img src="{% url 'web:fragment_image' order.status_token 'before' %}" alt="Wycinek przed" width="300" height="300">
         <figcaption>Bez poprawy</figcaption>
       </figure>
-      {% if item.enhancer_enabled %}
+      {% if item.options.enhancer %}
       <figure>
         <img src="{% url 'web:fragment_image' order.status_token 'after' %}" alt="Wycinek po" width="300" height="300">
         <figcaption>Po poprawie <span class="tag tag--mock">symulacja</span></figcaption>

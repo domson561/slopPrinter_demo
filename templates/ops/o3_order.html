@@ -27,37 +27,15 @@
           <img src="{% url 'web:asset_preview' item.asset.pk %}" alt="Oryginał" width="240">
           <figcaption>Oryginał: {{ item.asset.width }} x {{ item.asset.height }} px, {{ item.asset.size_bytes|filesizeformat }}, {{ item.asset.mime }}</figcaption>
         </figure>
-        {% with cropped=item.cropped_version %}
-        {% if cropped %}
-        <figure>
-          <img src="{{ cropped.file.url }}" alt="Po przetworzeniu" width="240">
-          <figcaption>Po przetworzeniu: {{ cropped.width }} x {{ cropped.height }} px, ok. {{ cropped.params.effective_dpi }} DPI dla {{ item.format.code }}{% if cropped.params.upscaled_by %}, upscale: {{ cropped.params.upscaled_by }} <span class="tag tag--mock">symulacja</span>{% endif %}</figcaption>
-        </figure>
-        {% else %}
-        <p>Brak przetworzonego pliku (pipeline jeszcze nie ruszył lub się nie udał).</p>
-        {% endif %}
-        {% endwith %}
       </div>
-      {% with pdf=item.print_file %}
-        {% if pdf %}
+      {% with files=item.print_files %}
+        {% if files %}
           <p><a class="button button--secondary" href="{% url 'ops:order_print_file' order.number %}">Pobierz PDF do druku</a>
-            <small>{{ pdf.size_bytes|filesizeformat }}, {{ pdf.params.format }} {{ pdf.params.orientation }}, spad {{ pdf.params.bleed_mm }} mm, {{ pdf.params.color_space }}, {{ pdf.params.effective_dpi }} DPI</small></p>
+            <small>{% for pdf in files %}{{ pdf.size_bytes|filesizeformat }}{% if not forloop.last %}, {% endif %}{% endfor %}</small></p>
         {% endif %}
       {% endwith %}
-
-      <h3>Analiza</h3>
-      {% if analysis %}
-        <p>Proporcje {{ analysis.aspect_ratio }}. Flagi treści:
-          {% if flag_labels %}<span class="tag tag--warn">{{ flag_labels|join:", " }}</span>{% else %}brak{% endif %}
-          <span class="tag tag--mock">symulacja moderacji</span></p>
-        <table class="quality-table">
-          <thead><tr><th>Format</th><th>DPI</th><th>Po upscale</th><th>Werdykt</th></tr></thead>
-          <tbody>
-          {% for code, q in analysis.quality_per_format.items %}
-            <tr><td>{{ code }}</td><td>{{ q.effective_dpi }}</td><td>{{ q.dpi_after_upscale }}</td><td>{{ q.verdict_label }}</td></tr>
-          {% endfor %}
-          </tbody>
-        </table>
+      {% if item.definition.operator_template %}
+        {% include item.definition.operator_template with item=item ctx=product_ctx %}
       {% endif %}
     </section>
   </div>

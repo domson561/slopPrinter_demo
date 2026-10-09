@@ -17,6 +17,7 @@ from apps.assets.services import (
 )
 from apps.catalog.models import Format, PaperOption
 from apps.orders.models import Order, OrderItem
+from apps.poster.options import poster_options
 
 
 def make_upload(name="test.png", size=(800, 1200), fmt="PNG", color=(120, 80, 200)):
@@ -82,10 +83,9 @@ def test_pipeline_creates_versions_and_is_idempotent(a2, matte):
     item = OrderItem.objects.create(
         order=order,
         asset=asset,
-        format=a2,
-        paper=matte,
+        product="poster",
+        options=poster_options(a2, matte, enhancer=True),
         quantity=1,
-        enhancer_enabled=True,
         unit_price="89.00",
     )
 
@@ -108,7 +108,11 @@ def test_pipeline_without_enhancer_skips_upscale(a2, matte):
     asset = create_asset_from_upload(make_upload(size=(600, 900)))
     order = Order.objects.create(email="a@b.pl", full_name="Test")
     item = OrderItem.objects.create(
-        order=order, asset=asset, format=a2, paper=matte, enhancer_enabled=False, unit_price="89.00"
+        order=order,
+        asset=asset,
+        product="poster",
+        options=poster_options(a2, matte),
+        unit_price="89.00",
     )
     run_pipeline(item)
     assert asset.version("upscaled", item) is None

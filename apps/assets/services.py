@@ -24,6 +24,7 @@ from reportlab.pdfgen import canvas as pdf_canvas
 
 from apps.catalog.models import Format, ShopSettings
 from apps.catalog.services import active_formats
+from apps.poster.options import format_of
 
 from . import quality
 from .models import Asset, AssetAnalysis, AssetVersion
@@ -449,14 +450,16 @@ def run_pipeline(order_item, upscaler: UpscaleService | None = None) -> AssetVer
     Wyjątki propagują do wywołującego (orders.tasks), który przestawia zamówienie na on_hold.
     """
     asset = order_item.asset
-    fmt = order_item.format
+    options = order_item.options
+    fmt = format_of(options)
+    white_margin = bool(options.get("white_margin"))
     shop = ShopSettings.get()
     upscaler = upscaler or MockUpscale()
-    crop = quality.sanitize_crop(order_item.crop, asset.width, asset.height, fmt)
+    crop = quality.sanitize_crop(options.get("crop"), asset.width, asset.height, fmt)
 
     img = asset.open_image()
     provider_upscale = ""
-    if order_item.enhancer_enabled:
+    if options.get("enhancer"):
         img = upscaler.upscale(img, shop.upscale_factor)
         provider_upscale = upscaler.name
         save_version(
@@ -485,7 +488,7 @@ def run_pipeline(order_item, upscaler: UpscaleService | None = None) -> AssetVer
         cropped,
         fmt,
         crop["orientation"],
-        order_item.white_margin,
+        white_margin,
         meta={
             "title": f"{order_item.order.number} {fmt.code}",
             "subject": f"order={order_item.order.number} item={order_item.pk}",
@@ -502,7 +505,7 @@ def run_pipeline(order_item, upscaler: UpscaleService | None = None) -> AssetVer
         params={
             "format": fmt.code,
             "orientation": crop["orientation"],
-            "white_margin": order_item.white_margin,
+            "white_margin": white_margin,
             "bleed_mm": fmt.bleed_mm,
             "effective_dpi": round(dpi, 1),
             "color_space": "RGB",
