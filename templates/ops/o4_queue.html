@@ -6,7 +6,7 @@
   {% for o in orders %}
     {% with item=o.item %}
     <article class="queue-card">
-      <img src="{% url 'web:asset_preview' item.asset.pk %}" alt="" width="160">
+      {% if item.asset.preview %}<img src="{% url 'web:asset_preview' item.asset.pk %}" alt="" width="160">{% endif %}
       <div class="queue-card__body">
         <h2><a href="{% url 'ops:order_detail' o.number %}">{{ o.number }}</a> <span class="status status--{{ o.status }}">{{ o.status }}</span></h2>
         <p>{{ o.created_at|date:"Y-m-d H:i" }}, {{ o.full_name }}, {{ item.summary }} x{{ item.quantity }}, {{ o.total }} {{ o.currency }}</p>

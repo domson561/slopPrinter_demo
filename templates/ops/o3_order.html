@@ -24,8 +24,8 @@
       <h2>Plik</h2>
       <div class="file-compare">
         <figure>
-          <img src="{% url 'web:asset_preview' item.asset.pk %}" alt="Oryginał" width="240">
-          <figcaption>Oryginał: {{ item.asset.width }} x {{ item.asset.height }} px, {{ item.asset.size_bytes|filesizeformat }}, {{ item.asset.mime }}</figcaption>
+          {% if item.asset.preview %}<img src="{% url 'web:asset_preview' item.asset.pk %}" alt="Oryginał" width="240">{% endif %}
+          <figcaption>Oryginał: {% if item.asset.width %}{{ item.asset.width }} x {{ item.asset.height }} px, {% endif %}{{ item.asset.size_bytes|filesizeformat }}, {{ item.asset.mime }}</figcaption>
         </figure>
       </div>
       {% with files=item.print_files %}
