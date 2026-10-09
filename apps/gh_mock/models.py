@@ -12,6 +12,31 @@ from django.db import models
 from django.utils import timezone
 
 
+class GhMockSettings(models.Model):
+    """Przełącznik auto-symulacji biura GH (singleton). Ustawienie atrapy, nie sklepu."""
+
+    auto_simulate = models.BooleanField(
+        default=False, help_text="Biuro GH samo posuwa zlecenia co N sekund."
+    )
+    auto_interval_seconds = models.PositiveIntegerField(default=10)
+
+    class Meta:
+        verbose_name = "Ustawienia atrapy GH"
+        verbose_name_plural = "Ustawienia atrapy GH"
+
+    def __str__(self):
+        return "Ustawienia atrapy GH"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
 class GhShop(models.Model):
     """Sklep podpięty do GH: token przechowywany jako hash, cofany flagą `is_active`."""
 

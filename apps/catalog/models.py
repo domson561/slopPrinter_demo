@@ -81,10 +81,6 @@ class ShopSettings(models.Model):
     auto_approve = models.BooleanField(
         default=False, help_text="Po udanym pipeline wysyłaj do drukarni bez moderacji."
     )
-    printer_auto_simulate = models.BooleanField(
-        default=False, help_text="Mock drukarni sam posuwa zlecenia co N sekund."
-    )
-    printer_auto_interval_seconds = models.PositiveIntegerField(default=10)
     lead_time_days = models.PositiveIntegerField(
         default=5, help_text="Deklarowany czas realizacji pokazywany klientowi [ZAŁOŻENIE]."
     )

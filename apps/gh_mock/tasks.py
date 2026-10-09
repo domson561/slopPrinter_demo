@@ -7,13 +7,12 @@ huey dodatkowo zadanie okresowe co minutę.
 from huey import crontab
 from huey.contrib.djhuey import db_periodic_task
 
-from apps.catalog.models import ShopSettings
-
+from .models import GhMockSettings
 from .services import advance_all
 
 
 @db_periodic_task(crontab(minute="*"))
 def auto_simulate_gh():
-    if not ShopSettings.get().printer_auto_simulate:
+    if not GhMockSettings.get().auto_simulate:
         return 0
     return advance_all()

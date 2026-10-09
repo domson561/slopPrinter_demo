@@ -48,11 +48,11 @@ idempotencja `submit` i callbacku płatności, pełna ścieżka klienta. Atrapa 
 
 | Aplikacja       | Zawartość |
 |-----------------|-----------|
-| `apps/catalog`  | formaty, papiery, dostawa, `ShopSettings` (progi DPI, auto-zatwierdzanie, auto-symulacja), cennik |
+| `apps/catalog`  | formaty, papiery, dostawa, `ShopSettings` (progi DPI, auto-zatwierdzanie, retencja), cennik |
 | `apps/assets`   | upload i walidacja, `AnalysisService` (Pillow), `MockContentSafety`, `MockUpscale`, `CropService`, `PrepressService` (PDF ze spadami, reportlab), `MockupService`, `run_pipeline`, komenda `cleanup_assets` |
 | `apps/orders`   | `Order`/`OrderItem`/`OrderStatusEvent`/`Payment`/`Shipment`/`Complaint`, maszyna stanów (`services.transition`, `force_transition`), `MockPaymentProvider`, powiadomienia, zadanie `process_order_task` |
 | `apps/printing` | `PrintJob` (jedno zlecenie na koszyk), `GhApiProvider` (klient kontraktu v1, transport in-process do atrapy albo HTTP), body POST-a, submit z retry, polling `changes` co 5 min i mapowanie statusów GH |
-| `apps/gh_mock`  | atrapa GH: API z kontraktu pod `/shop-api/v1/` (token, idempotencja, pliki, zmiany), pulpit biura `/gh-mock/` |
+| `apps/gh_mock`  | atrapa GH: API z kontraktu pod `/shop-api/v1/` (token, idempotencja, pliki, zmiany), pulpit biura `/gh-mock/`, `GhMockSettings` (auto-symulacja) |
 | `apps/ops`      | panel operatora O1-O5 (`is_staff`) |
 | `apps/web`      | widoki klienta S1-S8, kadrowanie i cena na żywo (vanilla JS) |
 | `apps/demo`     | `seed_demo`, `make_demo_images` (obrazki rysowane Pillow) |

@@ -7,5 +7,5 @@
   {"model": "catalog.paperoption", "pk": 2, "fields": {"code": "satin", "name": "Satynowy", "price_delta": "10.00", "is_active": true, "sort_order": 20}},
   {"model": "catalog.deliverymethod", "pk": 1, "fields": {"code": "courier", "name": "Kurier", "price": "19.00", "is_active": true, "sort_order": 10}},
   {"model": "catalog.deliverymethod", "pk": 2, "fields": {"code": "parcel_locker", "name": "Paczkomat", "price": "14.00", "is_active": true, "sort_order": 20}},
-  {"model": "catalog.shopsettings", "pk": 1, "fields": {"dpi_sharp": 200, "dpi_ok": 120, "upscale_factor": 4, "auto_approve": false, "printer_auto_simulate": false, "printer_auto_interval_seconds": 10, "lead_time_days": 5, "retention_days_after_close": 30, "draft_retention_days": 7, "currency": "PLN"}}
+  {"model": "catalog.shopsettings", "pk": 1, "fields": {"dpi_sharp": 200, "dpi_ok": 120, "upscale_factor": 4, "auto_approve": false, "lead_time_days": 5, "retention_days_after_close": 30, "draft_retention_days": 7, "currency": "PLN"}}
 ]

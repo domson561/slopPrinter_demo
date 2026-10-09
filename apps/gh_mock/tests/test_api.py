@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.gh_mock import services
-from apps.gh_mock.models import GhOrder, GhOrderFile, GhShop
+from apps.gh_mock.models import GhMockSettings, GhOrder, GhOrderFile, GhShop
 
 TOKEN = "demo-shop-token"
 PDF = b"%PDF-1.4 test\n%%EOF\n"
@@ -252,3 +252,15 @@ def test_dashboard_renders_and_actions_work(client, shop):
     )
     file.refresh_from_db()
     assert file.state == "failed" and file.error == "expired"
+
+
+@pytest.mark.django_db
+def test_auto_simulation_toggle_lives_in_mock_settings(client, shop):
+    resp = client.post(reverse("gh_mock:toggle_auto"), {"interval": "1"})
+    assert resp.status_code == 302
+    sim = GhMockSettings.get()
+    assert sim.auto_simulate and sim.auto_interval_seconds == 2  # dolna granica
+    resp = client.post(reverse("gh_mock:tick"), HTTP_X_REQUESTED_WITH="fetch")
+    assert resp.json()["auto"] is True
+    client.post(reverse("gh_mock:toggle_auto"))
+    assert not GhMockSettings.get().auto_simulate

@@ -35,8 +35,6 @@ class ShopSettingsForm(forms.ModelForm):
             "dpi_ok",
             "upscale_factor",
             "auto_approve",
-            "printer_auto_simulate",
-            "printer_auto_interval_seconds",
             "lead_time_days",
             "retention_days_after_close",
             "draft_retention_days",

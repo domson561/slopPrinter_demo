@@ -7,9 +7,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from apps.catalog.models import ShopSettings
-
-from .models import GhOrder, GhOrderFile
+from .models import GhMockSettings, GhOrder, GhOrderFile
 from .services import (
     NotAllowed,
     advance_all,
@@ -27,12 +25,11 @@ STATUS_LABELS = {
 
 
 def dashboard(request):
-    shop = ShopSettings.get()
     orders = GhOrder.objects.select_related("shop").prefetch_related("items", "files")
     return render(
         request,
         "gh_mock/dashboard.html",
-        {"orders": orders, "shop": shop, "status_labels": STATUS_LABELS},
+        {"orders": orders, "sim": GhMockSettings.get(), "status_labels": STATUS_LABELS},
     )
 
 
@@ -86,17 +83,15 @@ def download_all(request):
 
 @require_POST
 def toggle_auto(request):
-    shop = ShopSettings.get()
-    shop.printer_auto_simulate = not shop.printer_auto_simulate
+    sim = GhMockSettings.get()
+    sim.auto_simulate = not sim.auto_simulate
     try:
-        interval = int(request.POST.get("interval", shop.printer_auto_interval_seconds))
-        shop.printer_auto_interval_seconds = max(2, min(interval, 600))
+        interval = int(request.POST.get("interval", sim.auto_interval_seconds))
+        sim.auto_interval_seconds = max(2, min(interval, 600))
     except ValueError:
         pass
-    shop.save()
-    messages.info(
-        request, "Auto-symulacja " + ("włączona." if shop.printer_auto_simulate else "wyłączona.")
-    )
+    sim.save()
+    messages.info(request, "Auto-symulacja " + ("włączona." if sim.auto_simulate else "wyłączona."))
     return redirect("gh_mock:dashboard")
 
 
@@ -105,8 +100,6 @@ def tick(request):
     """Jeden krok auto-symulacji: pobrania plus każde zlecenie o jeden status."""
     advanced = advance_all()
     if request.headers.get("X-Requested-With") == "fetch":
-        return JsonResponse(
-            {"advanced": advanced, "auto": ShopSettings.get().printer_auto_simulate}
-        )
+        return JsonResponse({"advanced": advanced, "auto": GhMockSettings.get().auto_simulate})
     messages.info(request, f"Posunięto: {advanced}")
     return redirect("gh_mock:dashboard")
