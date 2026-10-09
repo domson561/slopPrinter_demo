@@ -132,7 +132,7 @@
       <article class="complaint">
         <p><strong>{{ c.created_at|date:"Y-m-d H:i" }}</strong> {{ c.get_status_display }}</p>
         <p>{{ c.description }}</p>
-        {% for ph in c.photos.all %}<a href="{{ ph.image.url }}">zdjęcie {{ forloop.counter }}</a> {% endfor %}
+        {% for ph in c.photos.all %}<a href="{% url 'ops:complaint_photo' order.number ph.pk %}">zdjęcie {{ forloop.counter }}</a> {% endfor %}
         {% if c.resolution %}<p>Rozstrzygnięcie: {{ c.resolution }}{% if c.resolved_by %} ({{ c.resolved_by.username }}){% endif %}</p>{% endif %}
         {% if c.status == "open" %}
           <form method="post" action="{% url 'ops:order_action' order.number %}">{% csrf_token %}

@@ -11,7 +11,7 @@ REQUIRED = {
     "GH_API_TOKEN": "token-wydany-przez-gh",
     "SITE_URL": "https://sklep.pl/",
 }
-OPTIONAL = ("GH_MOCK_ENABLED",)
+OPTIONAL = ("GH_MOCK_ENABLED", "MEDIA_ROOT", "PRIVATE_MEDIA_ROOT")
 
 
 def load_settings(monkeypatch, module, env):
@@ -19,7 +19,8 @@ def load_settings(monkeypatch, module, env):
         monkeypatch.delenv(name, raising=False)
     for name, value in env.items():
         monkeypatch.setenv(name, value)
-    monkeypatch.delitem(sys.modules, f"config.settings.{module}", raising=False)
+    for name in ("base", module):  # base czyta zmienne przy imporcie, więc też od nowa
+        monkeypatch.delitem(sys.modules, f"config.settings.{name}", raising=False)
     return importlib.import_module(f"config.settings.{module}")
 
 
@@ -40,6 +41,16 @@ def test_production_refuses_gh_mock_path_or_plain_http(monkeypatch, base_url):
 def test_production_refuses_site_url_without_https(monkeypatch, site_url):
     with pytest.raises(ImproperlyConfigured, match="SITE_URL"):
         load_settings(monkeypatch, "production", {**REQUIRED, "SITE_URL": site_url})
+
+
+def test_production_refuses_private_files_inside_public_media(monkeypatch, tmp_path):
+    env = {**REQUIRED, "MEDIA_ROOT": str(tmp_path / "media")}
+    with pytest.raises(ImproperlyConfigured, match="PRIVATE_MEDIA_ROOT"):
+        load_settings(monkeypatch, "production", {**env, "PRIVATE_MEDIA_ROOT": env["MEDIA_ROOT"]})
+    prod = load_settings(
+        monkeypatch, "production", {**env, "PRIVATE_MEDIA_ROOT": str(tmp_path / "p")}
+    )
+    assert tmp_path / "p" == prod.PRIVATE_MEDIA_ROOT
 
 
 def test_production_reads_env_and_disables_debug(monkeypatch):

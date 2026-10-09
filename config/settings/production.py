@@ -40,6 +40,11 @@ SITE_URL = required("SITE_URL").rstrip("/")
 if not SITE_URL.startswith("https://"):
     raise ImproperlyConfigured("SITE_URL w produkcji musi być publicznym adresem https:// sklepu.")
 
+# Pliki od kupujących: serwer www wystawia MEDIA_ROOT pod /media/, więc katalog prywatny
+# w jego wnętrzu byłby publiczny.
+if PRIVATE_MEDIA_ROOT.resolve().is_relative_to(MEDIA_ROOT.resolve()):  # noqa: F405
+    raise ImproperlyConfigured("PRIVATE_MEDIA_ROOT nie może leżeć wewnątrz MEDIA_ROOT.")
+
 # HTTPS: aplikacja stoi za reverse proxy, które kończy TLS i ustawia X-Forwarded-Proto.
 # `manage.py check --deploy` ma przechodzić bez ostrzeżeń.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

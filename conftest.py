@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw
 def _fast_demo_settings(settings, tmp_path):
     """Testy: bez sztucznych opóźnień mocków, pliki w katalogu tymczasowym, e-maile w pamięci."""
     settings.MEDIA_ROOT = tmp_path / "media"
+    settings.PRIVATE_MEDIA_ROOT = tmp_path / "private_media"
     settings.MOCK_UPSCALE_DELAY_SECONDS = (0, 0)
     settings.PRINT_SUBMIT_RETRY_BACKOFF_SECONDS = 0
     settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"

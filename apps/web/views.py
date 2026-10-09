@@ -22,9 +22,9 @@ from apps.catalog.services import active_deliveries, active_formats, active_pape
 from apps.orders import services as order_services
 from apps.orders.models import Order, OrderStatus
 from apps.orders.services import TransitionError, customer_label
-from apps.poster.options import format_of, paper_of
+from apps.poster.options import PRODUCT_CODE, format_of, paper_of
 from apps.poster.services import save_poster_draft
-from apps.products import ProductError
+from apps.products import ProductError, get_product
 
 from .forms import MAX_QUANTITY, CheckoutForm, ComplaintForm, ConfigureForm, UploadForm
 
@@ -41,7 +41,9 @@ def upload(request):
     form = UploadForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid():
         try:
-            asset = create_asset_from_upload(form.cleaned_data["file"])
+            asset = create_asset_from_upload(
+                form.cleaned_data["file"], allowed_mime=get_product(PRODUCT_CODE).accepted_mime
+            )
         except UploadError as exc:
             form.add_error("file", str(exc))
         else:
@@ -331,7 +333,7 @@ def order_status(request, token):
             order_services.file_complaint(
                 order, form.cleaned_data["description"], form.cleaned_data["photos"]
             )
-        except TransitionError as exc:
+        except (TransitionError, UploadError) as exc:
             messages.error(request, str(exc))
         else:
             messages.success(request, "Dziękujemy, przyjęliśmy reklamację. Odpowiemy e-mailem.")

@@ -5,6 +5,7 @@ __pycache__/
 db.sqlite3
 huey.db*
 media/
+private_media/
 staticfiles/
 .pytest_cache/
 .env

@@ -1,12 +1,13 @@
 """Szkieletowy produkt przechodzi ścieżkę rdzenia: szkic, płatność, PDF, zatwierdzenie, GH, panel."""
 
-import hashlib
+import io
 from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from reportlab.pdfgen import canvas
 
 from apps.assets.models import Asset
 from apps.assets.services import create_asset_from_upload
@@ -20,8 +21,19 @@ from apps.orders.payments import MockPaymentProvider
 from apps.poster.services import save_poster_draft
 from apps.printing.services import poll_changes
 from apps.products import ProductError
+from apps.ready_pdf.product import ReadyPdfProduct
 
-PDF = b"%PDF-1.4\n% gotowy plik od klienta\n%%EOF\n"
+
+def _pdf() -> bytes:
+    buf = io.BytesIO()
+    page = canvas.Canvas(buf)
+    page.drawString(100, 750, "gotowy plik od klienta")
+    page.showPage()
+    page.save()
+    return buf.getvalue()
+
+
+PDF = _pdf()
 
 
 @pytest.fixture
@@ -35,18 +47,11 @@ def operator(db):
 
 
 def make_pdf_asset() -> Asset:
-    """Do czasu bramki plików PDF nie przechodzi przez upload; test składa `Asset` sam."""
-    asset = Asset(
-        original_filename="gotowy.pdf",
-        mime="application/pdf",
-        width=0,
-        height=0,
-        size_bytes=len(PDF),
-        sha256=hashlib.sha256(PDF).hexdigest(),
+    """Wgranie przez bramkę plików, z typami przyjmowanymi przez produkt."""
+    return create_asset_from_upload(
+        SimpleUploadedFile("gotowy.pdf", PDF, content_type="application/pdf"),
+        allowed_mime=ReadyPdfProduct.accepted_mime,
     )
-    asset.original_file.save("upload.pdf", ContentFile(PDF), save=False)
-    asset.save()
-    return asset
 
 
 def pay(order):

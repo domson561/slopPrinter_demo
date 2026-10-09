@@ -7,9 +7,12 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 
+from django.conf import settings
+from django.core.files.base import ContentFile
 from django.db import transaction
 from django.utils import timezone
 
+from apps.assets.gate import IMAGE_MIME, UploadError, check_upload
 from apps.catalog.models import ShopSettings
 from apps.products import ProductError, get_product
 
@@ -413,12 +416,22 @@ def mark_delivered(order: Order, actor=Actor.SYSTEM, actor_user=None, reason="do
 
 
 def file_complaint(order: Order, description: str, photos=()) -> Complaint:
+    """Zdjęcia przechodzą przez bramkę plików (tylko obrazy, limit liczby i rozmiaru)."""
     if not order.can_complain:
         raise TransitionError("Reklamację można zgłosić po doręczeniu.")
+    photos = list(photos)
+    if len(photos) > settings.COMPLAINT_PHOTOS_MAX:
+        raise UploadError(f"Możesz dołączyć najwyżej {settings.COMPLAINT_PHOTOS_MAX} zdjęć.")
+    clean = [
+        check_upload(p, allowed_mime=IMAGE_MIME, max_bytes=settings.COMPLAINT_PHOTO_MAX_BYTES)
+        for p in photos
+    ]
     with transaction.atomic():
         complaint = Complaint.objects.create(order=order, description=description)
-        for photo in photos:
-            ComplaintPhoto.objects.create(complaint=complaint, image=photo)
+        for photo in clean:
+            ComplaintPhoto(complaint=complaint).image.save(
+                f"photo{photo.ext}", ContentFile(photo.data)
+            )
         OrderStatusEvent.objects.create(
             order=order,
             from_status=order.status,

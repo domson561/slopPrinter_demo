@@ -5,6 +5,8 @@ from django.db import models
 from django.utils import timezone
 from PIL import Image, ImageOps
 
+from .storage import private_storage
+
 
 def original_upload_to(instance, filename):
     ext = os.path.splitext(filename)[1].lower() or ".bin"
@@ -17,10 +19,13 @@ def version_upload_to(instance, filename):
 
 
 class Asset(models.Model):
-    """Wgrany przez klienta plik. Identyfikator jest UUID, żeby URL-e nie były enumerowalne."""
+    """
+    Wgrany przez klienta plik, już po bramce (`gate`). Identyfikator jest UUID, żeby URL-e nie były
+    enumerowalne. Oryginał leży w prywatnym katalogu; wersje (podgląd, PDF) na razie w `/media/`.
+    """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    original_file = models.FileField(upload_to=original_upload_to)
+    original_file = models.FileField(upload_to=original_upload_to, storage=private_storage)
     original_filename = models.CharField(max_length=255, blank=True)
     mime = models.CharField(max_length=50)
     width = models.PositiveIntegerField()

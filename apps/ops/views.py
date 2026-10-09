@@ -1,5 +1,7 @@
 """Panel operatora O1-O5. Tylko is_staff. Każda akcja przechodzi przez orders.services."""
 
+import mimetypes
+
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.views import LoginView, LogoutView
@@ -10,7 +12,7 @@ from django.views.decorators.http import require_POST
 
 from apps.catalog.models import ShopSettings
 from apps.orders import services as order_services
-from apps.orders.models import Actor, Complaint, Order, OrderStatus
+from apps.orders.models import Actor, Complaint, ComplaintPhoto, Order, OrderStatus
 from apps.orders.services import TransitionError
 from apps.printing.models import PollCursor, PrintJob
 from apps.printing.services import poll_changes, reset_poll_auth
@@ -212,6 +214,16 @@ def poll_gh(request):
 def _require(reason):
     if not reason:
         raise TransitionError("Ta akcja wymaga podania powodu.")
+
+
+@staff_required
+def complaint_photo(request, number, pk):
+    """Zdjęcie do reklamacji z prywatnego katalogu; tylko dla operatora."""
+    photo = get_object_or_404(ComplaintPhoto, pk=pk, complaint__order__number=number)
+    content_type = mimetypes.guess_type(photo.image.name)[0] or "application/octet-stream"
+    resp = FileResponse(photo.image.open("rb"), content_type=content_type)
+    resp["X-Content-Type-Options"] = "nosniff"
+    return resp
 
 
 @staff_required

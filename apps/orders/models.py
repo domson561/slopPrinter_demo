@@ -1,3 +1,4 @@
+import os
 import secrets
 from decimal import Decimal
 
@@ -6,6 +7,7 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.assets.storage import private_storage
 from apps.products import get_product
 
 
@@ -252,12 +254,16 @@ class Complaint(models.Model):
 
 
 def complaint_photo_upload_to(instance, filename):
-    return f"complaints/{instance.complaint.order_id}/{secrets.token_hex(4)}_{filename}"
+    """Nazwę nadaje serwer; z nazwy od kupującego zostaje tylko rozszerzenie po bramce."""
+    ext = os.path.splitext(filename)[1].lower() or ".bin"
+    return f"complaints/{instance.complaint.order_id}/{secrets.token_hex(8)}{ext}"
 
 
 class ComplaintPhoto(models.Model):
+    """Zdjęcie do reklamacji po bramce plików, w prywatnym katalogu; wydaje je panel operatora."""
+
     complaint = models.ForeignKey(Complaint, on_delete=models.CASCADE, related_name="photos")
-    image = models.ImageField(upload_to=complaint_photo_upload_to)
+    image = models.ImageField(upload_to=complaint_photo_upload_to, storage=private_storage)
 
     def __str__(self):
         return f"Zdjęcie reklamacji #{self.complaint_id}"

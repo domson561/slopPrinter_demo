@@ -20,7 +20,7 @@ class ReadyPdfProduct(Product):
         return self.price
 
     def build_print_files(self, item) -> list:
-        """Plik do druku to kopia oryginału; sprawdzenie PDF-a robi bramka przy wgrywaniu."""
+        """Plik do druku to kopia oryginału; PDF sprawdziła bramka plików przy wgrywaniu."""
         with item.asset.original_file.open("rb") as fh:
             data = fh.read()
         version = save_version(

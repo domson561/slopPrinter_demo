@@ -122,6 +122,9 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = Path(env("MEDIA_ROOT", BASE_DIR / "media"))
+# Pliki od kupujących (oryginały, zdjęcia do reklamacji) poza publicznym /media/. Wydaje je
+# tylko widok z kontrolą dostępu. Nie może leżeć wewnątrz MEDIA_ROOT.
+PRIVATE_MEDIA_ROOT = Path(env("PRIVATE_MEDIA_ROOT", BASE_DIR / "private_media"))
 
 LOGIN_URL = "/ops/login/"
 LOGIN_REDIRECT_URL = "/ops/"
@@ -131,9 +134,13 @@ LOGOUT_REDIRECT_URL = "/ops/login/"
 EMAIL_BACKEND = env("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "zamowienia@example.invalid")
 
-# --- Upload -----------------------------------------------------------------
+# --- Upload (bramka plików, apps/assets/gate.py) -------------------------------
+# Typy dopuszczone w całym sklepie; produkt może listę tylko zawęzić.
 UPLOAD_MAX_BYTES = 30 * 1024 * 1024
-UPLOAD_ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}
+UPLOAD_ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
+UPLOAD_MAX_PDF_PAGES = 1000
+COMPLAINT_PHOTOS_MAX = 5
+COMPLAINT_PHOTO_MAX_BYTES = 10 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = UPLOAD_MAX_BYTES + 5 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 PIL_MAX_IMAGE_PIXELS = 80_000_000  # ok. 9000 x 9000 px

@@ -30,9 +30,11 @@ services:
       REDIS_URL: redis://redis:6379/0
       HUEY_IMMEDIATE: "0"
       MEDIA_ROOT: /app/media
+      PRIVATE_MEDIA_ROOT: /app/private_media
     volumes:
       - .:/app
       - media:/app/media
+      - private_media:/app/private_media
     ports:
       - "8000:8000"
     depends_on:
@@ -55,9 +57,11 @@ services:
       REDIS_URL: redis://redis:6379/0
       HUEY_IMMEDIATE: "0"
       MEDIA_ROOT: /app/media
+      PRIVATE_MEDIA_ROOT: /app/private_media
     volumes:
       - .:/app
       - media:/app/media
+      - private_media:/app/private_media
     depends_on:
       - web
       - redis
@@ -65,3 +69,4 @@ services:
 volumes:
   pgdata:
   media:
+  private_media:

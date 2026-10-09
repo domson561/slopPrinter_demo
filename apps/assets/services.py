@@ -27,6 +27,7 @@ from apps.catalog.services import active_formats
 from apps.poster.options import format_of
 
 from . import quality
+from .gate import UploadError, check_upload  # noqa: F401 - UploadError importowany stąd
 from .models import Asset, AssetAnalysis, AssetVersion
 
 log = logging.getLogger("slop.assets")
@@ -36,62 +37,35 @@ FRAGMENT_SOURCE_PX = 75  # fragment 1:1 pobierany z oryginału; x4 daje 300 px
 WHITE_MARGIN_MM = 15  # [PROPOZYCJA]
 
 
-class UploadError(Exception):
-    """Błąd walidacji wgranego pliku, komunikat po polsku dla klienta."""
-
-
 # ---------------------------------------------------------------------------
 # Upload i analiza
 # ---------------------------------------------------------------------------
 
-_MIME_BY_PIL_FORMAT = {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp"}
-_EXT_BY_MIME = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
 
-
-def create_asset_from_upload(uploaded_file) -> Asset:
-    """Waliduje plik po stronie serwera, zapisuje Asset, podgląd i analizę."""
-    if uploaded_file.size > settings.UPLOAD_MAX_BYTES:
-        limit_mb = settings.UPLOAD_MAX_BYTES // (1024 * 1024)
-        raise UploadError(f"Plik jest za duży. Maksymalny rozmiar to {limit_mb} MB.")
-
-    data = uploaded_file.read()
-    try:
-        img = Image.open(io.BytesIO(data))
-        pil_format = img.format
-        img.load()
-    except Image.DecompressionBombError as exc:
-        raise UploadError(
-            "Obraz ma za dużo pikseli, żebyśmy mogli go bezpiecznie otworzyć."
-        ) from exc
-    except Exception as exc:
-        raise UploadError("Nie udało się otworzyć obrazu. Plik może być uszkodzony.") from exc
-
-    mime = _MIME_BY_PIL_FORMAT.get(pil_format)
-    if mime not in settings.UPLOAD_ALLOWED_MIME:
-        raise UploadError("Obsługujemy tylko pliki JPG, PNG i WebP.")
-
-    img = ImageOps.exif_transpose(img)
-    width, height = img.size
-    if width < 64 or height < 64:
-        raise UploadError("Obraz jest za mały (minimum 64 x 64 px).")
-
-    sha = hashlib.sha256(data).hexdigest()
+def create_asset_from_upload(uploaded_file, allowed_mime=None) -> Asset:
+    """
+    Plik od kupującego przez bramkę bezpieczeństwa (`gate.check_upload`), potem zapis
+    w prywatnym katalogu. `allowed_mime` to typy przyjmowane przez produkt. Obraz dostaje
+    podgląd i analizę; PDF tylko liczbę stron w `Asset`.
+    """
+    clean = check_upload(uploaded_file, allowed_mime)
     shop = ShopSettings.get()
 
     with transaction.atomic():
         asset = Asset(
             original_filename=getattr(uploaded_file, "name", "")[:255],
-            mime=mime,
-            width=width,
-            height=height,
-            size_bytes=len(data),
-            sha256=sha,
+            mime=clean.mime,
+            width=clean.width,
+            height=clean.height,
+            size_bytes=len(clean.data),
+            sha256=hashlib.sha256(clean.data).hexdigest(),
             expires_at=timezone.now() + timedelta(days=shop.draft_retention_days),
         )
-        asset.original_file.save(f"upload{_EXT_BY_MIME[mime]}", ContentFile(data), save=False)
+        asset.original_file.save(f"upload{clean.ext}", ContentFile(clean.data), save=False)
         asset.save()
-        _save_preview(asset, img)
-        AnalysisService().analyze(asset, image=img)
+        if clean.image is not None:
+            _save_preview(asset, clean.image)
+            AnalysisService().analyze(asset, image=clean.image)
     return asset
 
 

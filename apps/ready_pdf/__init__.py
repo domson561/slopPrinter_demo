@@ -3,6 +3,6 @@ Szkieletowy produkt „gotowy PDF”: kupujący wgrywa plik gotowy do druku, skl
 do GH bez obróbki. Najmniejsza implementacja `apps.products.Product`, wzór dla nowego
 produktu i dowód, że rdzeń nie zależy od plakatu.
 
-Nie jest w `SHOP_PRODUCTS`: sklep demo go nie sprzedaje, włączają go testy. Przyjmowanie PDF-a
-od kupującego dojdzie z bramką bezpieczeństwa plików.
+Nie jest w `SHOP_PRODUCTS`: sklep demo go nie sprzedaje, włączają go testy. PDF od kupującego
+sprawdza bramka plików (`apps.assets.gate`) przy wgrywaniu.
 """

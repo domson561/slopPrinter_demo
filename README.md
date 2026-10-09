@@ -49,7 +49,7 @@ idempotencja `submit` i callbacku płatności, pełna ścieżka klienta. Atrapa 
 | Aplikacja       | Zawartość |
 |-----------------|-----------|
 | `apps/catalog`  | formaty, papiery, dostawa, `ShopSettings` (progi DPI, auto-zatwierdzanie, retencja), cennik |
-| `apps/assets`   | upload i walidacja, `AnalysisService` (Pillow), `MockContentSafety`, `MockUpscale`, `CropService`, `PrepressService` (PDF ze spadami, reportlab), `MockupService`, `run_pipeline`, komenda `cleanup_assets` |
+| `apps/assets`   | bramka plików od kupujących (`gate.py`: typ po zawartości, limity, obraz zapisany na nowo, PDF bez treści aktywnej), oryginały w prywatnym katalogu (`storage.py`), `AnalysisService` (Pillow), `MockContentSafety`, `MockUpscale`, `CropService`, `PrepressService` (PDF ze spadami, reportlab), `MockupService`, `run_pipeline`, komenda `cleanup_assets` |
 | `apps/products` | interfejs produktu (`Product`: kod, opcje, cena, pliki od kupującego, pliki do druku, opis dla GH) i rejestr z `SHOP_PRODUCTS`; rdzeń zna produkty tylko stąd |
 | `apps/poster`   | plakat z demo jako implementacja `Product` (`PosterProduct`), opcje pozycji, ustawienia w panelu; reszta kodu plakatu jeszcze w `assets` i `catalog` |
 | `apps/ready_pdf` | szkieletowy produkt „gotowy PDF” (bez obróbki): wzór najmniejszego `Product`, poza `SHOP_PRODUCTS`, włączany w testach |
@@ -72,7 +72,8 @@ wyłączony, a atrapa GH nigdy nie jest zainstalowana. Inne środowisko
 wybierasz zmienną `DJANGO_SETTINGS_MODULE`.
 
 Zmienne środowiskowe: patrz `.env.example`. Najważniejsze: `SITE_NAME`, `SITE_URL` (linki w e-mailach
-i linki do plików dla GH), `HUEY_IMMEDIATE`, `POSTGRES_HOST`, `REDIS_URL`, `GH_API_BASE_URL`
+i linki do plików dla GH), `PRIVATE_MEDIA_ROOT` (pliki od kupujących poza `/media/`, wydawane tylko
+przez widok; domyślnie `private_media/`), `HUEY_IMMEDIATE`, `POSTGRES_HOST`, `REDIS_URL`, `GH_API_BASE_URL`
 (ścieżka = atrapa w tym procesie, URL http(s) = prawdziwe GH), `GH_API_TOKEN`, `GH_MOCK_ENABLED`
 (atrapa GH pod `/shop-api/v1/` i `/gh-mock/`, w dev domyślnie włączona).
 
