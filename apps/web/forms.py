@@ -1,14 +1,6 @@
-import json
-
 from django import forms
 
-from apps.catalog.models import DeliveryMethod, Format, PaperOption
-
-MAX_QUANTITY = 20  # [PROPOZYCJA]
-
-
-class UploadForm(forms.Form):
-    file = forms.FileField(label="Plik JPG, PNG lub WebP")
+from apps.catalog.models import DeliveryMethod
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -25,29 +17,6 @@ class MultipleFileField(forms.FileField):
         if isinstance(data, (list, tuple)):
             return [single_clean(d, initial) for d in data]
         return [single_clean(data, initial)] if data else []
-
-
-class ConfigureForm(forms.Form):
-    format = forms.ModelChoiceField(
-        queryset=Format.objects.filter(is_active=True), label="Format", empty_label=None
-    )
-    paper = forms.ModelChoiceField(
-        queryset=PaperOption.objects.filter(is_active=True), label="Papier", empty_label=None
-    )
-    white_margin = forms.BooleanField(label="Biały margines", required=False)
-    quantity = forms.IntegerField(label="Ilość", min_value=1, max_value=MAX_QUANTITY, initial=1)
-    enhancer_enabled = forms.BooleanField(label="Popraw jakość (enhancer)", required=False)
-    crop = forms.CharField(widget=forms.HiddenInput, required=False)
-
-    def clean_crop(self):
-        raw = self.cleaned_data.get("crop") or ""
-        if not raw:
-            return {}
-        try:
-            data = json.loads(raw)
-        except json.JSONDecodeError:
-            return {}
-        return data if isinstance(data, dict) else {}
 
 
 class CheckoutForm(forms.Form):

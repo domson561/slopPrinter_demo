@@ -7,13 +7,14 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from apps.assets.services import create_asset_from_upload
-from apps.catalog.models import DeliveryMethod, Format, PaperOption
+from apps.catalog.models import DeliveryMethod
 from apps.gh_mock import services as gh_services
 from apps.gh_mock.models import GhOrder, GhOrderFile
 from apps.orders import services as order_services
 from apps.orders.models import Actor, OrderItem
 from apps.orders.models import OrderStatus as S
 from apps.orders.payments import MockPaymentProvider
+from apps.poster.models import Format, PaperOption
 from apps.poster.options import poster_options
 from apps.poster.services import save_poster_draft
 from apps.printing import services as print_services

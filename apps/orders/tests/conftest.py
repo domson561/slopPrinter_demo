@@ -1,9 +1,10 @@
 import pytest
 
 from apps.assets.services import create_asset_from_upload
-from apps.catalog.models import DeliveryMethod, Format, PaperOption
+from apps.catalog.models import DeliveryMethod
 from apps.orders import services
 from apps.orders.models import Order, OrderStatus
+from apps.poster.models import Format, PaperOption
 from apps.poster.services import save_poster_draft
 
 

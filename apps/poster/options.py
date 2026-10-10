@@ -1,6 +1,6 @@
-"""Opcje pozycji plakatu. Bez ciężkich importów, bo czyta je też pipeline w `apps.assets`."""
+"""Opcje pozycji plakatu. Bez ciężkich importów, bo czyta je też `pipeline`."""
 
-from apps.catalog.models import Format, PaperOption
+from .models import Format, PaperOption
 
 PRODUCT_CODE = "poster"
 

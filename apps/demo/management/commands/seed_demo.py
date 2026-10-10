@@ -17,13 +17,13 @@ from django.utils import timezone
 from huey.contrib.djhuey import HUEY
 
 from apps.assets.models import Asset
-from apps.assets.services import create_asset_from_upload
-from apps.catalog.models import DeliveryMethod, Format, PaperOption
+from apps.catalog.models import DeliveryMethod
 from apps.demo.images_gen import IMAGES_DIR, ensure_demo_images
 from apps.orders import services as order_services
 from apps.orders.models import Actor, Order
 from apps.orders.payments import MockPaymentProvider
-from apps.poster.services import save_poster_draft
+from apps.poster.models import Format, PaperOption
+from apps.poster.services import save_poster_draft, upload_poster_asset
 from apps.printing import services as print_services
 from apps.printing.models import PollCursor, PrintJob
 
@@ -81,7 +81,7 @@ class Command(BaseCommand):
         if options["flush"]:
             self._flush()
 
-        call_command("loaddata", "catalog.json", verbosity=0)
+        call_command("loaddata", "catalog.json", "poster.json", verbosity=0)
         self._operator()
         _gh_mock()[0].ensure_demo_shop()
         ensure_demo_images()
@@ -133,7 +133,7 @@ class Command(BaseCommand):
     def _upload(self, image_name):
         data = (IMAGES_DIR / image_name).read_bytes()
         mime = "image/png" if image_name.endswith(".png") else "image/jpeg"
-        return create_asset_from_upload(SimpleUploadedFile(image_name, data, content_type=mime))
+        return upload_poster_asset(SimpleUploadedFile(image_name, data, content_type=mime))
 
     def _make_order(self, image, fmt_code, target, customer, opts):
         asset = self._upload(image)

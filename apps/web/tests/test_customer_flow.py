@@ -8,11 +8,12 @@ from django.core import mail
 from django.urls import reverse
 
 from apps.assets.models import Asset
-from apps.catalog.models import DeliveryMethod, Format, PaperOption
+from apps.catalog.models import DeliveryMethod
 from apps.gh_mock import services as gh_services
 from apps.gh_mock.models import GhOrder
 from apps.orders.models import Order
 from apps.orders.models import OrderStatus as S
+from apps.poster.models import Format, PaperOption
 from apps.printing.models import PrintJob
 from apps.printing.services import poll_changes
 

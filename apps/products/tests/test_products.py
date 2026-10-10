@@ -8,8 +8,8 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 from apps.assets.services import create_asset_from_upload
-from apps.catalog.models import Format
 from apps.orders import services as order_services
+from apps.poster.models import Format, PosterSettings
 from apps.poster.options import poster_options
 from apps.poster.product import PosterProduct
 from apps.products import ProductError, all_products, get_product
@@ -83,7 +83,8 @@ def test_operator_settings_save_core_and_product_sections(client, catalog_data):
     from django.contrib.auth import get_user_model
     from django.urls import reverse
 
-    from apps.catalog.models import PaperOption, ShopSettings
+    from apps.catalog.models import ShopSettings
+    from apps.poster.models import PaperOption
 
     user = get_user_model().objects.create_user("op", password="x", is_staff=True)
     client.force_login(user)
@@ -116,5 +117,6 @@ def test_operator_settings_save_core_and_product_sections(client, catalog_data):
     assert resp.status_code == 302
     shop = ShopSettings.get()
     assert shop.auto_approve and shop.lead_time_days == 9
-    assert shop.dpi_sharp == 250 and shop.dpi_ok == 130
+    poster = PosterSettings.get()
+    assert poster.dpi_sharp == 250 and poster.dpi_ok == 130
     assert Format.objects.order_by("sort_order", "code").first().base_price == 99

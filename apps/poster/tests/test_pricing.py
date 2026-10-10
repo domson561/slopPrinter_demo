@@ -2,8 +2,9 @@ from decimal import Decimal
 
 import pytest
 
-from apps.catalog.models import DeliveryMethod, Format, PaperOption
-from apps.catalog.services import quote
+from apps.catalog.models import DeliveryMethod
+from apps.poster.models import Format, PaperOption
+from apps.poster.pricing import quote
 
 
 @pytest.mark.django_db

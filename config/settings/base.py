@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "huey.contrib.djhuey",
     "apps.catalog",
+    "apps.poster",
     "apps.assets",
     "apps.orders",
     "apps.printing",

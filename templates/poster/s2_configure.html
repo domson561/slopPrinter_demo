@@ -31,7 +31,7 @@
           <span class="format-card__name">{{ card.format.name }}</span>
           <span class="format-card__dims">{{ card.format.width_mm }} x {{ card.format.height_mm }} mm</span>
           <span class="format-card__price">od {{ card.price }} zł</span>
-          {% include "components/quality_badge.html" with quality=card.quality %}
+          {% include "poster/quality_badge.html" with quality=card.quality %}
           <span class="format-card__text">{{ card.quality.customer_text }}</span>
         </label>
       {% endfor %}
@@ -55,7 +55,7 @@
       <p>{{ form.quantity.label_tag }} {{ form.quantity }} (maks. {{ max_quantity }}) {{ form.quantity.errors }}</p>
       <p class="enhancer">
         {{ form.enhancer_enabled }} {{ form.enhancer_enabled.label_tag }} <span class="tag tag--mock">symulacja</span>
-        <span class="enhancer__help">Powiększa obrazek x{{ shop.upscale_factor }} i wyostrza detale. Włączamy automatycznie, gdy plik ma za mało szczegółów do wybranego formatu.</span>
+        <span class="enhancer__help">Powiększa obrazek x{{ poster_settings.upscale_factor }} i wyostrza detale. Włączamy automatycznie, gdy plik ma za mało szczegółów do wybranego formatu.</span>
         <span class="enhancer__auto" id="enhancer-auto" hidden>Zalecane dla tego formatu.</span>
       </p>
     </fieldset>

@@ -2,13 +2,13 @@
 
 from decimal import Decimal
 
-from apps.assets import quality
-from apps.assets.services import FLAG_LABELS, run_pipeline
-from apps.catalog import services as catalog_services
-from apps.catalog.models import Format, PaperOption, ShopSettings
+from apps.assets.services import FLAG_LABELS
 from apps.products import GhLine, Product, ProductError
 
+from . import pricing, quality
+from .models import Format, PaperOption, PosterSettings
 from .options import PRODUCT_CODE, format_of, paper_of
+from .pipeline import run_pipeline
 
 
 class PosterProduct(Product):
@@ -28,7 +28,7 @@ class PosterProduct(Product):
             if paper is None:
                 raise ProductError("Wybierz dostępny papier.")
         crop = quality.sanitize_crop(options.get("crop"), asset.width, asset.height, fmt)
-        q = quality.quality_for(asset.width, asset.height, fmt, ShopSettings.get(), crop)
+        q = quality.quality_for(asset.width, asset.height, fmt, PosterSettings.get(), crop)
         if q.blocked:
             raise ProductError(
                 f"Format {fmt.name} jest zablokowany dla tego pliku (za słaby plik)."
@@ -42,7 +42,7 @@ class PosterProduct(Product):
         }
 
     def unit_price(self, options: dict) -> Decimal:
-        return catalog_services.unit_price(
+        return pricing.unit_price(
             format_of(options), paper_of(options), options.get("white_margin", False)
         )
 
@@ -93,7 +93,7 @@ class PosterProduct(Product):
         from .forms import FormatFormSet, PaperFormSet, PosterSettingsForm
 
         return {
-            "settings": PosterSettingsForm(data, instance=ShopSettings.get()),
+            "settings": PosterSettingsForm(data, instance=PosterSettings.get()),
             "formats": FormatFormSet(data, prefix="formats"),
             "papers": PaperFormSet(data, prefix="papers"),
         }

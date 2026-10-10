@@ -1,8 +1,8 @@
 import pytest
 
-from apps.assets import quality
-from apps.assets.quality import Verdict
-from apps.catalog.models import Format, ShopSettings
+from apps.poster import quality
+from apps.poster.models import Format, PosterSettings
+from apps.poster.quality import Verdict
 
 
 @pytest.fixture
@@ -12,7 +12,7 @@ def a2():
 
 @pytest.fixture
 def shop(db):
-    return ShopSettings.get()  # 200 / 120 / x4
+    return PosterSettings.get()  # 200 / 120 / x4
 
 
 def test_default_crop_portrait_image_on_portrait_format(a2):

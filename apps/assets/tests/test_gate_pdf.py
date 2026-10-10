@@ -10,8 +10,8 @@ from pypdf.actions import JavaScript
 from pypdf.generic import ArrayObject, DictionaryObject, NameObject, TextStringObject
 
 from apps.assets.gate import PDF_MIME, UploadError, check_upload
-from apps.assets.services import PrepressService
-from apps.catalog.models import Format
+from apps.poster.models import Format
+from apps.poster.pipeline import PrepressService
 
 
 def make_pdf(pages=1, prepare=None) -> bytes:

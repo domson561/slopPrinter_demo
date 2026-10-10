@@ -28,10 +28,10 @@ def _reset_gh_provider():
 
 @pytest.fixture
 def catalog_data(db):
-    """Katalog z fixtury plus sklep demo w atrapie GH (token z GH_API_TOKEN)."""
+    """Ustawienia rdzenia, katalog plakatu i sklep demo w atrapie GH (token z GH_API_TOKEN)."""
     from apps.gh_mock.services import ensure_demo_shop
 
-    call_command("loaddata", "catalog.json", verbosity=0)
+    call_command("loaddata", "catalog.json", "poster.json", verbosity=0)
     ensure_demo_shop()
 
 

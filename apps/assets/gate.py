@@ -22,7 +22,7 @@ from PIL import Image, ImageOps
 
 PDF_MIME = "application/pdf"
 
-# Format Pillow -> (MIME, rozszerzenie na dysku).
+# Typ obrazu wg Pillow -> (MIME, rozszerzenie na dysku).
 _IMAGE_FORMATS = {
     "JPEG": ("image/jpeg", ".jpg"),
     "PNG": ("image/png", ".png"),

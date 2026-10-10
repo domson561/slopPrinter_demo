@@ -20,7 +20,9 @@ Ustalone 2026-10-03, szczegóły w `E:\DJANGO\graphic_house\demo_docs\scope.md`,
 
 ## Plan
 Mapa zadań: `E:\OBSIDIAN VAULTS\PROJECT_VAULTS\slopPrinter.canvas`, zmiany tylko przez skill `canvas`.
-Otwarta decyzja: jeden silnik dla kilku marek czy osobny sklep per marka.
+Granica rdzeń ↔ sklep (co wspólne, co per sklep, co jeszcze do przeniesienia): `docs/rdzen-vs-sklep.md`.
+Ustalone 2026-10-08: jeden rdzeń, wiele sklepów (sklep = rdzeń + własny produkt + własne szablony, osobna instalacja).
+Otwarte: która marka i produkt startują pierwsze; blokuje dopiero grupę 3.
 
 ## Praca
 - Testy: `.venv\Scripts\python -m pytest` (ok. 2,5 min). Podgląd na porcie 8010 (`.claude/launch.json`).
