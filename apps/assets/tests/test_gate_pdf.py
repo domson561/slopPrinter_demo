@@ -6,6 +6,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
 from pypdf import PdfWriter
+from pypdf.actions import JavaScript
 from pypdf.generic import ArrayObject, DictionaryObject, NameObject, TextStringObject
 
 from apps.assets.gate import PDF_MIME, UploadError, check_upload
@@ -57,7 +58,7 @@ def test_our_own_print_pdf_passes():
 @pytest.mark.parametrize(
     ("prepare", "message"),
     [
-        (lambda w: w.add_js("app.alert('x');"), "JavaScript"),
+        (lambda w: w.add_open_action(JavaScript("app.alert('x');")), "JavaScript"),
         (lambda w: w.add_attachment("faktura.exe", b"MZ"), "załączniki"),
         (launch_on_open, "uruchamianie programów"),
         (lambda w: w.encrypt("haslo"), "zaszyfrowany"),
