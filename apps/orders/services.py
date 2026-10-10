@@ -180,7 +180,7 @@ def _after_transition(order, event):
 
 def recalc_totals(order: Order) -> Order:
     subtotal = Decimal("0.00")
-    for item in order.items.all():
+    for item in OrderItem.objects.filter(order=order):  # świeżo, nie z cache prefetch
         item.unit_price = item.definition.unit_price(item.options)
         item.save(update_fields=["unit_price"])
         subtotal += item.line_total
@@ -195,11 +195,18 @@ def recalc_totals(order: Order) -> Order:
 
 
 def save_draft(
-    product_code: str, asset, options: dict, *, quantity, order: Order | None = None
-) -> Order:
+    product_code: str,
+    asset,
+    options: dict,
+    *,
+    quantity,
+    order: Order | None = None,
+    item: OrderItem | None = None,
+) -> OrderItem:
     """
-    Tworzy lub aktualizuje szkic z jedną pozycją. Typ pliku i opcje sprawdza produkt;
-    niepasujące rzucają `ProductError` z komunikatem dla kupującego.
+    Dodaje pozycję do koszyka (szkicu) albo aktualizuje wskazaną `item`. Bez `order` lub gdy
+    `order` nie jest już szkicem, zakłada nowy koszyk. Typ pliku i opcje sprawdza produkt;
+    niepasujące rzucają `ProductError` z komunikatem dla kupującego. Zwraca zapisaną pozycję.
     """
     product = get_product(product_code)
     if asset.mime not in product.accepted_mime:
@@ -208,14 +215,28 @@ def save_draft(
     with transaction.atomic():
         if order is None or not order.is_draft:
             order = Order.objects.create(status=S.DRAFT)
-        item = order.items.first()
+            item = None
         if item is None:
             item = OrderItem(order=order, asset=asset)
+        elif item.order_id != order.pk:
+            raise ValueError("Pozycja nie należy do tego koszyka.")
         item.product = product.code
         item.options = options
         item.asset = asset
         item.quantity = max(int(quantity or 1), 1)
         item.save()
+        recalc_totals(order)
+    return item
+
+
+def remove_item(order: Order, item: OrderItem) -> Order:
+    """Usuwa pozycję z koszyka; tylko w szkicu. Pusty koszyk zostaje szkicem bez pozycji."""
+    if not order.is_draft:
+        raise TransitionError("Zamówienie jest już złożone, nie można zmieniać pozycji.")
+    if item.order_id != order.pk:
+        raise ValueError("Pozycja nie należy do tego koszyka.")
+    with transaction.atomic():
+        item.delete()
         recalc_totals(order)
     return order
 

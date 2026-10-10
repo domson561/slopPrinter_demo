@@ -1,0 +1,63 @@
+{
+  "version": "1.0",
+  "updated": "2026-10-10",
+  "description": "Słownik product_code wspólny dla sklepów i Graphic House (kontrakt v1, pkt 10). Opis formatu: docs/slownik-produktow.md.",
+  "products": {
+    "poster-a3-matte": {
+      "name": "Plakat A3, papier matowy",
+      "format": "A3, 297 x 420 mm",
+      "paper": "matowy",
+      "finish": "bez wykończenia, spady 3 mm",
+      "files": [{"role": "print", "pages": 1, "description": "PDF ze spadami, RGB, jedna strona"}]
+    },
+    "poster-a3-satin": {
+      "name": "Plakat A3, papier satynowy",
+      "format": "A3, 297 x 420 mm",
+      "paper": "satynowy",
+      "finish": "bez wykończenia, spady 3 mm",
+      "files": [{"role": "print", "pages": 1, "description": "PDF ze spadami, RGB, jedna strona"}]
+    },
+    "poster-a2-matte": {
+      "name": "Plakat A2, papier matowy",
+      "format": "A2, 420 x 594 mm",
+      "paper": "matowy",
+      "finish": "bez wykończenia, spady 3 mm",
+      "files": [{"role": "print", "pages": 1, "description": "PDF ze spadami, RGB, jedna strona"}]
+    },
+    "poster-a2-satin": {
+      "name": "Plakat A2, papier satynowy",
+      "format": "A2, 420 x 594 mm",
+      "paper": "satynowy",
+      "finish": "bez wykończenia, spady 3 mm",
+      "files": [{"role": "print", "pages": 1, "description": "PDF ze spadami, RGB, jedna strona"}]
+    },
+    "poster-50x70-matte": {
+      "name": "Plakat 50 x 70 cm, papier matowy",
+      "format": "500 x 700 mm",
+      "paper": "matowy",
+      "finish": "bez wykończenia, spady 3 mm",
+      "files": [{"role": "print", "pages": 1, "description": "PDF ze spadami, RGB, jedna strona"}]
+    },
+    "poster-50x70-satin": {
+      "name": "Plakat 50 x 70 cm, papier satynowy",
+      "format": "500 x 700 mm",
+      "paper": "satynowy",
+      "finish": "bez wykończenia, spady 3 mm",
+      "files": [{"role": "print", "pages": 1, "description": "PDF ze spadami, RGB, jedna strona"}]
+    },
+    "poster-b2-matte": {
+      "name": "Plakat B2, papier matowy",
+      "format": "B2, 500 x 707 mm",
+      "paper": "matowy",
+      "finish": "bez wykończenia, spady 3 mm",
+      "files": [{"role": "print", "pages": 1, "description": "PDF ze spadami, RGB, jedna strona"}]
+    },
+    "poster-b2-satin": {
+      "name": "Plakat B2, papier satynowy",
+      "format": "B2, 500 x 707 mm",
+      "paper": "satynowy",
+      "finish": "bez wykończenia, spady 3 mm",
+      "files": [{"role": "print", "pages": 1, "description": "PDF ze spadami, RGB, jedna strona"}]
+    }
+  }
+}

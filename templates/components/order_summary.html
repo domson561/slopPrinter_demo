@@ -1,10 +1,6 @@
-{# oczekuje: order, item #}
-<dl class="order-summary">
-  <dt>Produkt</dt><dd>{{ item.definition.name }}</dd>
-  {% for label, value in item.details %}<dt>{{ label }}</dt><dd>{{ value }}</dd>
-  {% endfor %}
-  <dt>Ilość</dt><dd>{{ item.quantity }}</dd>
-  <dt>Cena za sztukę</dt><dd>{{ item.unit_price }} {{ order.currency }}</dd>
-  {% if order.delivery_method %}<dt>Dostawa</dt><dd>{{ order.delivery_method.name }} ({{ order.delivery_price }} {{ order.currency }})</dd>{% endif %}
-  <dt>Razem</dt><dd class="order-summary__total">{{ order.total }} {{ order.currency }}</dd>
-</dl>
+{# oczekuje: order; wszystkie pozycje koszyka plus dostawa i suma #}
+{% for item in order.items.all %}
+  <h3>Pozycja {{ forloop.counter }}: {{ item.summary }}</h3>
+  {% include "components/item_summary.html" with item=item %}
+{% endfor %}
+{% include "components/order_totals.html" %}

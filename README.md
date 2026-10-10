@@ -50,14 +50,14 @@ idempotencja `submit` i callbacku płatności, pełna ścieżka klienta. Atrapa 
 |-----------------|-----------|
 | `apps/catalog`  | metody dostawy i `ShopSettings` rdzenia (auto-zatwierdzanie, czas realizacji, retencja, waluta) |
 | `apps/assets`   | bramka plików od kupujących (`gate.py`: typ po zawartości, limity, obraz zapisany na nowo, PDF bez treści aktywnej), oryginały w prywatnym katalogu (`storage.py`), `Asset`/`AssetVersion`, podgląd, `AnalysisService` z `MockContentSafety` (flagi treści), komenda `cleanup_assets` |
-| `apps/products` | interfejs produktu (`Product`: kod, opcje, cena, pliki od kupującego, pliki do druku, opis dla GH) i rejestr z `SHOP_PRODUCTS`; rdzeń zna produkty tylko stąd |
+| `apps/products` | interfejs produktu (`Product`: kod, opcje, cena, pliki od kupującego, pliki do druku, opis dla GH), rejestr z `SHOP_PRODUCTS` i słownik `product_code` wspólny z GH (`slownik.json`, `dictionary.py`); rdzeń zna produkty tylko stąd |
 | `apps/poster`   | plakat z demo jako implementacja `Product` (`PosterProduct`): formaty, papiery, `PosterSettings` (progi DPI), cennik, ocena jakości (`quality.py`), `pipeline.py` (`MockUpscale`, `CropService`, `PrepressService` z reportlab, `MockupService`, `run_pipeline`), widoki S1-S3 i obrazy, szablony `templates/poster`, sekcje panelu O3/O5 |
 | `apps/ready_pdf` | szkieletowy produkt „gotowy PDF” (bez obróbki): wzór najmniejszego `Product`, poza `SHOP_PRODUCTS`, włączany w testach |
 | `apps/orders`   | `Order`/`OrderItem` (kod produktu + opcje JSON)/`OrderStatusEvent`/`Payment`/`Shipment`/`Complaint`, maszyna stanów (`services.transition`, `force_transition`), `MockPaymentProvider`, powiadomienia, zadanie `process_order_task` |
-| `apps/printing` | `PrintJob` (jedno zlecenie na koszyk), `GhApiProvider` (klient kontraktu v1, transport in-process do atrapy albo HTTP), body POST-a, submit z retry, polling `changes` co 5 min i mapowanie statusów GH |
+| `apps/printing` | `PrintJob` (jedno zlecenie na koszyk), `GhApiProvider` (klient kontraktu v1, transport in-process do atrapy albo HTTP), body POST-a, podpisane wygasające linki do plików (`links.py`, `/files/signed/<token>.pdf`), submit z retry, polling `changes` co 5 min i mapowanie statusów GH |
 | `apps/gh_mock`  | atrapa GH: API z kontraktu pod `/shop-api/v1/` (token, idempotencja, pliki, zmiany), pulpit biura `/gh-mock/`, `GhMockSettings` (auto-symulacja) |
 | `apps/ops`      | panel operatora O1-O5 (`is_staff`) |
-| `apps/web`      | widoki klienta rdzenia S4-S8 (dane, potwierdzenie, status, reklamacja, strony) i trasy `web:*`; S1-S3 wpina produkt |
+| `apps/web`      | widoki klienta rdzenia: koszyk (sesja trzyma jeden szkic, pozycje z wielu plików), S4-S8 (dane, potwierdzenie, status, reklamacja, strony) i trasy `web:*`; S1-S3 wpina produkt |
 | `apps/demo`     | `seed_demo`, `make_demo_images` (obrazki rysowane Pillow) |
 
 Logika biznesowa jest w `services.py` każdej aplikacji; widoki są cienkie. Wygląd: `static/css/tokens.css`

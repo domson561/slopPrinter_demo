@@ -40,7 +40,7 @@
     <p class="checkout__note">Koszt dostawy zostanie doliczony po wyborze metody.</p>
 
     <p class="checkout__actions">
-      <a class="button button--secondary" href="{% url 'web:preview' order.status_token %}">Wróć do podglądu</a>
+      <a class="button button--secondary" href="{% url 'web:cart' order.status_token %}">Wróć do koszyka</a>
       <button type="submit" class="button button--primary">Przejdź do płatności</button>
     </p>
   </form>

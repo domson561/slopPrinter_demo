@@ -59,23 +59,46 @@ def test_full_customer_path(client, catalog_data, image_upload):
     )
     assert resp.status_code == 302
     order = Order.objects.get()
-    assert (
-        order.status == S.DRAFT
-        and order.item.options["enhancer"]
-        and order.item.options["crop"]["h"] == 0.9
-    )
+    item = order.item
+    assert order.status == S.DRAFT and item.options["enhancer"] and item.options["crop"]["h"] == 0.9
+    assert resp.url == reverse("web:preview", args=[order.status_token, item.pk])
 
     # S3
-    resp = client.get(reverse("web:preview", args=[order.status_token]))
+    resp = client.get(resp.url)
     assert resp.status_code == 200 and "symulacja" in resp.content.decode()
     assert (
-        client.get(reverse("web:mockup_image", args=[order.status_token]))["Content-Type"]
+        client.get(reverse("web:mockup_image", args=[order.status_token, item.pk]))["Content-Type"]
         == "image/png"
     )
     assert (
-        client.get(reverse("web:fragment_image", args=[order.status_token, "after"])).status_code
+        client.get(
+            reverse("web:fragment_image", args=[order.status_token, item.pk, "after"])
+        ).status_code
         == 200
     )
+
+    # Koszyk: drugi plik trafia do tego samego szkicu, potem go usuwamy
+    client.post(reverse("web:upload"), {"file": image_upload(name="drugi.png", size=(1448, 2048))})
+    second_asset = Asset.objects.exclude(pk=asset.pk).get()
+    resp = client.post(
+        reverse("web:configure", args=[second_asset.pk]),
+        {
+            "format": Format.objects.get(code="A3").pk,
+            "paper": PaperOption.objects.get(code="matte").pk,
+            "quantity": 2,
+        },
+    )
+    assert resp.status_code == 302 and Order.objects.count() == 1
+    order.refresh_from_db()
+    assert order.items.count() == 2 and order.subtotal == item.line_total + 2 * 59
+    resp = client.get(reverse("web:cart", args=[order.status_token]))
+    html = resp.content.decode()
+    assert resp.status_code == 200 and "Koszyk (2)" in html and "drugi.png" in html
+    second_item = order.items.exclude(pk=item.pk).get()
+    resp = client.post(reverse("web:cart", args=[order.status_token]), {"item": second_item.pk})
+    assert resp.status_code == 302 and order.items.count() == 1
+    order.refresh_from_db()
+    assert order.subtotal == item.line_total
 
     # S4
     resp = client.post(
@@ -133,10 +156,8 @@ def test_full_customer_path(client, catalog_data, image_upload):
     assert resp.status_code == 200 and order.number in resp.content.decode()
     resp = client.get(reverse("ops:order_detail", args=[order.number]))
     assert resp.status_code == 200 and "Pobierz PDF" in resp.content.decode()
-    assert (
-        client.get(reverse("ops:order_print_file", args=[order.number]))["Content-Type"]
-        == "application/pdf"
-    )
+    resp = client.get(reverse("ops:order_print_file", args=[order.number, item.pk]))
+    assert resp["Content-Type"] == "application/pdf"
     resp = client.post(reverse("ops:order_action", args=[order.number]), {"action": "approve"})
     order.refresh_from_db()
     assert order.status == S.SENT_TO_PRINTER and GhOrder.objects.count() == 1

@@ -1,7 +1,7 @@
 """
-Widoki klienta rdzenia: S4 dane i dostawa, S6 potwierdzenie, S7 status z reklamacją, S8 strony
-statyczne. Cienkie: walidacja formularza -> wywołanie services -> redirect/render.
-S1-S3 (wgranie, konfigurator, podgląd) dostarcza produkt, np. `apps.poster.views`.
+Widoki klienta rdzenia: koszyk, S4 dane i dostawa, S6 potwierdzenie, S7 status z reklamacją,
+S8 strony statyczne. Cienkie: walidacja formularza -> wywołanie services -> redirect/render.
+S1-S3 (wgranie, konfigurator, podgląd pozycji) dostarcza produkt, np. `apps.poster.views`.
 """
 
 from django.contrib import messages
@@ -29,6 +29,28 @@ def order_by_token(token, statuses=None):
 
 
 # ---------------------------------------------------------------------------
+# Koszyk
+# ---------------------------------------------------------------------------
+
+
+@require_http_methods(["GET", "POST"])
+def cart(request, token):
+    order = order_by_token(token, PRE_PAYMENT)
+    if request.method == "POST":
+        if not order.is_draft:
+            raise Http404
+        item = get_object_or_404(order.items, pk=request.POST.get("item"))
+        order_services.remove_item(order, item)
+        messages.success(request, "Usunęliśmy pozycję z koszyka.")
+        return redirect("web:cart", token=token)
+    return render(
+        request,
+        "web/cart.html",
+        {"order": order, "items": order.items.select_related("asset").order_by("pk")},
+    )
+
+
+# ---------------------------------------------------------------------------
 # S4 - dane, S6 - potwierdzenie, S7 - status
 # ---------------------------------------------------------------------------
 
@@ -36,6 +58,9 @@ def order_by_token(token, statuses=None):
 @require_http_methods(["GET", "POST"])
 def checkout(request, token):
     order = order_by_token(token, PRE_PAYMENT)
+    if not order.items.exists():
+        messages.error(request, "Koszyk jest pusty.")
+        return redirect("web:cart", token=token)
     a = order.shipping_address or {}
     initial = {
         "email": order.email,
@@ -63,22 +88,20 @@ def checkout(request, token):
     return render(
         request,
         "web/s4_checkout.html",
-        {"order": order, "item": order.item, "form": form, "deliveries": active_deliveries()},
+        {"order": order, "form": form, "deliveries": active_deliveries()},
     )
 
 
 @require_GET
 def order_confirmation(request, token):
     order = order_by_token(token)
-    if order.status == OrderStatus.DRAFT:
-        return redirect("web:checkout", token=token)
-    if order.status == OrderStatus.AWAITING_PAYMENT:
+    if order.status in PRE_PAYMENT:
         return redirect("web:checkout", token=token)
     shop = ShopSettings.get()
     return render(
         request,
         "web/s6_confirmation.html",
-        {"order": order, "item": order.item, "lead_time_days": shop.lead_time_days},
+        {"order": order, "lead_time_days": shop.lead_time_days},
     )
 
 
@@ -86,7 +109,7 @@ def order_confirmation(request, token):
 def order_status(request, token):
     order = order_by_token(token)
     if order.status == OrderStatus.DRAFT:
-        return redirect("web:preview", token=token)
+        return redirect("web:cart", token=token)
     form = (
         ComplaintForm(request.POST or None, request.FILES or None) if order.can_complain else None
     )
@@ -112,7 +135,7 @@ def order_status(request, token):
         "web/s7_status.html",
         {
             "order": order,
-            "item": order.item,
+            "items": order.items.select_related("asset").order_by("pk"),
             "title": title,
             "description": description,
             "history": history,

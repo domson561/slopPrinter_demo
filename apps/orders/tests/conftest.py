@@ -22,7 +22,7 @@ def make_draft(catalog_data, image_upload):
             quantity=quantity,
             crop=None,
             enhancer_enabled=enhancer,
-        )
+        ).order
 
     return _make
 

@@ -32,7 +32,7 @@ def test_registry_rejects_duplicate_codes(settings):
 def test_core_checks_file_type_and_options_through_product(catalog_data, image_upload, monkeypatch):
     asset = create_asset_from_upload(image_upload(size=(1448, 2048)))
     options = poster_options(Format.objects.get(code="A3"))
-    order = order_services.save_draft("poster", asset, options, quantity=2)
+    order = order_services.save_draft("poster", asset, options, quantity=2).order
     item = order.item
     assert item.product == "poster" and item.options["crop"]["orientation"] == "portrait"
     assert order.subtotal == item.line_total and item.summary.startswith("Plakat A3")

@@ -14,6 +14,7 @@
     <nav class="site-header__nav">
       {% block nav %}
         <a href="{% url 'web:upload' %}">Wgraj plik</a>
+        {% if cart_count %}<a href="{% url 'web:cart' cart.status_token %}">Koszyk ({{ cart_count }})</a>{% endif %}
         <a href="{% url 'web:static_page' 'faq' %}">FAQ</a>
       {% endblock %}
     </nav>

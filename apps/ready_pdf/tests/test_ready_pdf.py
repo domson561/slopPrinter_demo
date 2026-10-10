@@ -71,7 +71,7 @@ def pay(order):
 
 @pytest.mark.django_db
 def test_ready_pdf_goes_through_core_to_gh(ready_pdf, operator, client):
-    order = order_services.save_draft("ready_pdf", make_pdf_asset(), {}, quantity=2)
+    order = order_services.save_draft("ready_pdf", make_pdf_asset(), {}, quantity=2).order
     assert order.subtotal == Decimal("50.00") and order.item.summary == "Gotowy PDF od klienta"
 
     pay(order)
@@ -102,7 +102,7 @@ def test_ready_pdf_goes_through_core_to_gh(ready_pdf, operator, client):
 
     client.force_login(operator)
     assert client.get(reverse("ops:order_detail", args=[order.number])).status_code == 200
-    resp = client.get(reverse("ops:order_print_file", args=[order.number]))
+    resp = client.get(reverse("ops:order_print_file", args=[order.number, order.item.pk]))
     assert b"".join(resp.streaming_content) == PDF
 
 
@@ -116,7 +116,7 @@ def test_mixed_cart_is_one_gh_order_with_lines_from_each_product(ready_pdf, oper
         quantity=1,
         crop=None,
         enhancer_enabled=False,
-    )
+    ).order
     OrderItem.objects.create(order=order, product="ready_pdf", asset=make_pdf_asset(), quantity=3)
     order_services.recalc_totals(order)
     pay(order)

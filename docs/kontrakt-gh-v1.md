@@ -186,6 +186,8 @@ Anulowanie w GH, numer przesyłki, webhooki, strukturalny opis produktu w żąda
 
 Znaczenie wartości `product_code` jest poza kontraktem, w osobnym pliku słownika utrzymywanym wspólnie przez sklep i GH, wersjonowanym niezależnie od API. Dodanie produktu nie zmienia kontraktu. Docelowo wpis słownika może nieść specyfikację (format, papier, wykończenie) i gotowe etapy produkcji; w v1 biuro dobiera etapy ręcznie na podstawie `name` i kodu.
 
+Plik słownika: `apps/products/slownik.json` w repo sklepu (opis formatu i szablony wpisów: `docs/slownik-produktow.md`), od 2026-10-10 w wersji 1.0. GH trzyma własną kopię tego pliku; atrapa GH w sklepie czyta ten sam plik.
+
 ## 11. Zgodność ze scope pkt 6 i wymagane zmiany
 
 W GH:
@@ -202,7 +204,7 @@ W sklepie:
 - `PrintJob` na poziomie `Order`, pozycje w `spec` (wcześniej jedno zlecenie na `OrderItem`). Zrobione 2026-10-08.
 - Atrapa GH (`apps/gh_mock`) o kształcie z tego dokumentu zamiast `MockPrinterJob` i `MockPrintProvider`; jej statusy to statusy GH plus stany plików. Zrobione 2026-10-08.
 - `accepted` znaczy „GH ma wszystkie pliki”. Zrobione 2026-10-08.
-- Podpisane, wygasające linki z sumą kontrolną zamiast publicznego `/media/`. Do zrobienia (task „Pliki do druku”).
+- Podpisane, wygasające linki z sumą kontrolną zamiast publicznego `/media/` (`apps/printing/links.py`, trasa `/files/signed/<token>.pdf`; po terminie 410, zły podpis 404; dosłanie wystawia nowy podpis). Zrobione 2026-10-10.
 
 Poza kontraktem, do ustalenia między stronami: rozliczenie i faktura zbiorcza, umowa powierzenia danych z etykiet (RODO), minimalna ważność linku, zawartość słownika produktów, X dni retencji plików w GH.
 

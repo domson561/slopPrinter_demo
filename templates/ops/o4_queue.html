@@ -4,14 +4,18 @@
 <section class="ops-queue">
   <h1>Kolejka moderacji</h1>
   {% for o in orders %}
-    {% with item=o.item %}
     <article class="queue-card">
-      {% if item.asset.preview %}<img src="{% url 'web:asset_preview' item.asset.pk %}" alt="" width="160">{% endif %}
       <div class="queue-card__body">
         <h2><a href="{% url 'ops:order_detail' o.number %}">{{ o.number }}</a> <span class="status status--{{ o.status }}">{{ o.status }}</span></h2>
-        <p>{{ o.created_at|date:"Y-m-d H:i" }}, {{ o.full_name }}, {{ item.summary }} x{{ item.quantity }}, {{ o.total }} {{ o.currency }}</p>
+        <p>{{ o.created_at|date:"Y-m-d H:i" }}, {{ o.full_name }}, {{ o.total }} {{ o.currency }}</p>
         {% if o.hold_reason %}<p class="notice notice--warn">{{ o.hold_reason }}</p>{% endif %}
-        {% with files=item.print_files %}{% if files %}<p>PDF do druku: {{ files|length }}{% for pdf in files %}{% if pdf.params.effective_dpi %}, {{ pdf.params.effective_dpi }} DPI{% endif %}{% endfor %}</p>{% else %}<p>Brak PDF.</p>{% endif %}{% endwith %}
+        {% for item in o.items.all %}
+          <p>
+            {% if item.asset.preview %}<img src="{% url 'web:asset_preview' item.asset.pk %}" alt="" width="80">{% endif %}
+            {{ forloop.counter }}. {{ item.summary }} x{{ item.quantity }}
+            {% with files=item.print_files %}{% if files %}, PDF: {{ files|length }}{% for pdf in files %}{% if pdf.params.effective_dpi %}, {{ pdf.params.effective_dpi }} DPI{% endif %}{% endfor %}{% else %}, brak PDF{% endif %}{% endwith %}
+          </p>
+        {% endfor %}
         <form method="post" action="{% url 'ops:order_action' o.number %}" class="inline-form">{% csrf_token %}
           <input type="hidden" name="action" value="approve"><input type="hidden" name="next" value="{% url 'ops:queue' %}">
           <button type="submit" class="button button--primary">Zatwierdź</button>
@@ -24,7 +28,6 @@
         <a href="{% url 'ops:order_detail' o.number %}">szczegóły</a>
       </div>
     </article>
-    {% endwith %}
   {% empty %}
     <p>Kolejka pusta.</p>
   {% endfor %}

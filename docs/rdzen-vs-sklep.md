@@ -21,7 +21,7 @@ w `orders`, `printing`, `ops` albo `assets`, to brakuje czegoś w interfejsie, n
 | Druk | `apps/printing` | `PrintJob` (koszyk = jedno zlecenie), `GhApiProvider`, budowa body wg kontraktu, submit z retry, polling `changes`, mapowanie statusów GH. |
 | Pliki | `apps/assets` | `Asset`, `AssetVersion`, bramka `gate.py` (typ po zawartości, limity, sanityzacja obrazów i PDF), prywatny storage oryginałów, `save_version`. |
 | Panel operatora | `apps/ops` | O1-O5: lista, kolejka, zamówienie, akcje, ustawienia. Fragmenty per produkt wpina przez `operator_template` i `settings_template`. |
-| Proces zakupu po konfiguracji | `apps/web` S4-S8 | checkout, płatność, potwierdzenie, status, reklamacja, strony statyczne. Logika z `orders.services`, szablony sklepu. |
+| Koszyk i proces zakupu po konfiguracji | `apps/web` koszyk, S4-S8 | koszyk w sesji (`web/cart.py`, jeden szkic z listą pozycji), checkout, płatność, potwierdzenie, status, reklamacja, strony statyczne. Logika z `orders.services`, szablony sklepu. |
 | Ustawienia sklepu | `catalog.ShopSettings` (część), `catalog.DeliveryMethod` | auto-zatwierdzanie, czas realizacji, retencja, waluta, metody dostawy. |
 | Atrapa GH | `apps/gh_mock` | tylko development, pod `GH_MOCK_ENABLED`. |
 | Konfiguracja | `config/settings` | `SHOP_PRODUCTS`, `GH_API_*`, `PRIVATE_MEDIA_ROOT`, `SITE_URL`, `ORDER_NUMBER_PREFIX`, huey, e-mail. |
@@ -31,7 +31,7 @@ w `orders`, `printing`, `ops` albo `assets`, to brakuje czegoś w interfejsie, n
 | Obszar | Co dostarcza sklep |
 |---|---|
 | Produkt | Klasa `Product`: kod, opcje i ich walidacja, cena, dozwolone typy plików, produkcja PDF-ów do druku, powody weryfikacji, opis pozycji dla GH, podsumowanie i szczegóły, fragmenty panelu i formularze ustawień (np. cennik). Własne modele konfiguracji (dla plakatu: formaty, papiery, progi DPI). |
-| Proces zakupu do konfiguracji | `apps/web` S1-S3: upload, konfigurator, podgląd. Formularz opcji, kadrowanie, makieta, cena na żywo, JS. |
+| Proces zakupu do konfiguracji | S1-S3 w aplikacji produktu (`apps/poster/views.py`): upload, konfigurator, podgląd pozycji. Formularz opcji, kadrowanie, makieta, cena na żywo, JS. Po podglądzie odsyła do koszyka rdzenia. |
 | Wygląd | `templates/web`, `static/css/tokens.css`, `base.css`, treści S8 (FAQ, regulamin, prywatność). Szablony maili w `templates/emails` może nadpisać. |
 | Konfiguracja wdrożenia | domena i `SITE_URL`, token GH, prefiks numeru, metody dostawy, cennik, `SHOP_PRODUCTS`. |
 
@@ -41,7 +41,7 @@ w `orders`, `printing`, `ops` albo `assets`, to brakuje czegoś w interfejsie, n
 2. Pozycja to `product` (kod) + `options` (JSON). Rdzeń przechowuje opcje, nigdy ich nie interpretuje. Zmiana opcji produktu nie wymaga migracji rdzenia.
 3. Każdy plik z zewnątrz (plik do produktu, zdjęcie do reklamacji) przechodzi przez `assets.gate`. Produkt może listę typów zawęzić (`accepted_mime`), nigdy poszerzyć. Bramka ocenia bezpieczeństwo, produkt przydatność do druku.
 4. Pliki do druku to `AssetVersion` rodzaju `print_pdf` przypięte do pozycji; robi je produkt w `build_print_files`, w tle. Kontrakt v1 przyjmuje dokładnie jeden plik na pozycję, więcej daje czytelny błąd przy wysyłce (do v1.1/v2).
-5. Opis pozycji dla GH to `GhLine(product_code, name)` z produktu. Docelowo oba pola ze słownika `product_code` (osobny task), nie składane w kodzie.
+5. Opis pozycji dla GH to `GhLine(product_code, name)` z produktu. Oba pola ze słownika `apps/products/slownik.json` (`apps.products.dictionary`), nie składane w kodzie. Kod spoza słownika GH oznacza „do weryfikacji”.
 6. Cena: produkt daje cenę detaliczną za sztukę z opcji. Cena hurtowa dojdzie z taskiem „Katalog” i będzie wartością zlecenia w GH.
 7. Panel operatora jest rdzeniem. Produkt dostarcza tylko fragment szablonu i dane do niego (`operator_context`, `settings_forms`), nie własne widoki.
 8. Rdzeń nie zna GH inaczej niż przez `GhApiProvider`; sklep nie woła GH bezpośrednio ani nie buduje body zlecenia.

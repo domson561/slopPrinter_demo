@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Koszyk - {{ site_name }}{% endblock %}
+{% block content %}
+<section class="cart">
+  <h1>Koszyk</h1>
+  {% if items %}
+    <table class="cart-table">
+      <thead><tr><th></th><th>Pozycja</th><th>Ilość</th><th>Wartość</th><th></th></tr></thead>
+      <tbody>
+      {% for item in items %}
+        <tr>
+          <td>{% if item.asset.preview %}<img src="{% url 'web:asset_preview' item.asset.pk %}" alt="" width="80">{% endif %}</td>
+          <td>{{ item.summary }}<br><small>{{ item.asset.original_filename }}</small></td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.line_total }} {{ order.currency }}</td>
+          <td>
+            <a href="{% url 'web:preview' order.status_token item.pk %}">podgląd</a>
+            {% if order.is_draft %}
+              <a href="{% url 'web:configure' item.asset.pk %}?item={{ item.pk }}">zmień</a>
+              <form method="post" class="inline-form">{% csrf_token %}
+                <input type="hidden" name="item" value="{{ item.pk }}">
+                <button type="submit" class="button button--link">usuń</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% include "components/order_totals.html" %}
+    <p class="checkout__note">Koszt dostawy doliczymy po wyborze metody w następnym kroku.</p>
+  {% else %}
+    <p>Koszyk jest pusty.</p>
+  {% endif %}
+  <p class="cart__actions">
+    <a class="button button--secondary" href="{% url 'web:upload' %}">Dodaj kolejny plik</a>
+    {% if items %}<a class="button button--primary" href="{% url 'web:checkout' order.status_token %}">Zamawiam</a>{% endif %}
+  </p>
+</section>
+{% endblock %}

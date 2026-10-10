@@ -9,10 +9,14 @@
     <p>Numer śledzenia: <strong>{{ shipment.tracking_number }}</strong> ({{ shipment.carrier }})</p>
   {% endif %}
 
+  {% for item in items %}
   <div class="order-status__item">
-    <img src="{% url 'web:asset_preview' item.asset.pk %}" alt="" width="120">
-    {% include "components/order_summary.html" %}
+    {% if item.asset.preview %}<img src="{% url 'web:asset_preview' item.asset.pk %}" alt="" width="120">{% endif %}
+    <h3>Pozycja {{ forloop.counter }}: {{ item.summary }}</h3>
+    {% include "components/item_summary.html" with item=item %}
   </div>
+  {% endfor %}
+  {% include "components/order_totals.html" %}
 
   <h2>Historia</h2>
   <ol class="order-status__history">

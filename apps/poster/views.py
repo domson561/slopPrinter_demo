@@ -1,6 +1,6 @@
 """
-Widoki plakatu: S1 wgranie, S2 konfigurator z ceną na żywo, S3 podgląd, obrazy (podgląd, makieta,
-wycinek). Reszta ścieżki (checkout, płatność, status) jest w rdzeniu (`apps.web`).
+Widoki plakatu: S1 wgranie, S2 konfigurator z ceną na żywo, S3 podgląd pozycji, obrazy (podgląd,
+makieta, wycinek). Koszyk, checkout, płatność i status są w rdzeniu (`apps.web`).
 """
 
 import io
@@ -13,9 +13,9 @@ from django.views.decorators.http import require_GET, require_http_methods
 from apps.assets.gate import UploadError
 from apps.assets.models import Asset
 from apps.catalog.models import ShopSettings
-from apps.orders.models import Order, OrderStatus
 from apps.orders.services import TransitionError
 from apps.products import ProductError
+from apps.web.cart import cart_for, remember_cart
 from apps.web.views import PRE_PAYMENT, order_by_token
 
 from . import quality
@@ -25,9 +25,6 @@ from .options import format_of, paper_of
 from .pipeline import quality_for_selection, render_fragment, render_mockup
 from .pricing import active_formats, active_papers, quote
 from .services import save_poster_draft, upload_poster_asset
-
-SESSION_DRAFTS = "drafts"  # {asset_id: status_token}
-
 
 # ---------------------------------------------------------------------------
 # S1 - upload
@@ -56,17 +53,14 @@ def upload(request):
 # ---------------------------------------------------------------------------
 
 
-def _draft_for(request, asset):
-    token = (request.session.get(SESSION_DRAFTS) or {}).get(str(asset.pk))
-    if not token:
-        return None
-    return Order.objects.filter(status_token=token, status=OrderStatus.DRAFT).first()
-
-
-def _remember_draft(request, asset, order):
-    drafts = dict(request.session.get(SESSION_DRAFTS) or {})
-    drafts[str(asset.pk)] = order.status_token
-    request.session[SESSION_DRAFTS] = drafts
+def _cart_item(request, asset):
+    """Koszyk z sesji i edytowana pozycja (`?item=` / pole `item`), jeśli należy do niego."""
+    cart = cart_for(request)
+    item_id = request.POST.get("item") or request.GET.get("item") or ""
+    item = None
+    if cart is not None and item_id.isdigit():
+        item = cart.items.filter(pk=int(item_id), asset=asset).first()
+    return cart, item
 
 
 def _format_cards(asset, poster_settings):
@@ -93,8 +87,7 @@ def configure(request, asset_id):
     if asset.is_expired:
         raise Http404("Plik wygasł.")
     poster_settings = PosterSettings.get()
-    draft = _draft_for(request, asset)
-    item = draft.item if draft else None
+    cart, item = _cart_item(request, asset)
     opts = item.options if item else {}
     cards = _format_cards(asset, poster_settings)
 
@@ -110,7 +103,7 @@ def configure(request, asset_id):
     if request.method == "POST" and form.is_valid():
         d = form.cleaned_data
         try:
-            order = save_poster_draft(
+            item = save_poster_draft(
                 asset,
                 d["format"],
                 d["paper"],
@@ -118,13 +111,14 @@ def configure(request, asset_id):
                 quantity=d["quantity"],
                 crop=d["crop"],
                 enhancer_enabled=d["enhancer_enabled"],
-                order=draft,
+                order=cart,
+                item=item,
             )
         except (TransitionError, ProductError) as exc:
             form.add_error("format", str(exc))
         else:
-            _remember_draft(request, asset, order)
-            return redirect("web:preview", token=order.status_token)
+            remember_cart(request, item.order)
+            return redirect("web:preview", token=item.order.status_token, item_id=item.pk)
 
     return render(
         request,
@@ -132,6 +126,7 @@ def configure(request, asset_id):
         {
             "asset": asset,
             "form": form,
+            "item": item,
             "cards": cards,
             "cards_json": json.dumps(
                 {
@@ -218,12 +213,14 @@ def asset_preview(request, asset_id):
     return FileResponse(version.file.open("rb"), content_type="image/jpeg")
 
 
+def _item(token, item_id, statuses=None):
+    order = order_by_token(token, statuses)
+    return order, get_object_or_404(order.items.select_related("asset"), pk=item_id)
+
+
 @require_GET
-def mockup_image(request, token):
-    order = order_by_token(token)
-    item = order.item
-    if item is None:
-        raise Http404
+def mockup_image(request, token, item_id):
+    _, item = _item(token, item_id)
     opts = item.options
     return _png_response(
         render_mockup(item.asset, format_of(opts), opts.get("crop") or {}, opts.get("white_margin"))
@@ -231,24 +228,22 @@ def mockup_image(request, token):
 
 
 @require_GET
-def fragment_image(request, token, mode):
-    order = order_by_token(token)
-    item = order.item
-    if item is None or mode not in ("before", "after"):
+def fragment_image(request, token, item_id, mode):
+    if mode not in ("before", "after"):
         raise Http404
+    _, item = _item(token, item_id)
     crop = item.options.get("crop") or {}
     return _png_response(render_fragment(item.asset, crop, enhanced=(mode == "after")))
 
 
 # ---------------------------------------------------------------------------
-# S3 - podgląd
+# S3 - podgląd pozycji
 # ---------------------------------------------------------------------------
 
 
 @require_GET
-def preview(request, token):
-    order = order_by_token(token, PRE_PAYMENT)
-    item = order.item
+def preview(request, token, item_id):
+    order, item = _item(token, item_id, PRE_PAYMENT)
     fmt = format_of(item.options)
     q = quality_for_selection(item.asset, fmt, item.options.get("crop"))
     return render(

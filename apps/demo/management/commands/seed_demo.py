@@ -148,7 +148,7 @@ class Command(BaseCommand):
             quantity=opts.get("quantity", 1),
             crop=None,
             enhancer_enabled=opts.get("enhancer", q["enhancer_recommended"]),
-        )
+        ).order
         if target == "draft":
             return order
 

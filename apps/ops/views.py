@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST
 
 from apps.catalog.models import ShopSettings
 from apps.orders import services as order_services
-from apps.orders.models import Actor, Complaint, ComplaintPhoto, Order, OrderStatus
+from apps.orders.models import Actor, Complaint, ComplaintPhoto, Order, OrderItem, OrderStatus
 from apps.orders.services import TransitionError
 from apps.printing.models import PollCursor, PrintJob
 from apps.printing.services import poll_changes, reset_poll_auth
@@ -98,15 +98,14 @@ def order_detail(request, number):
         ),
         number=number,
     )
-    item = order.item
+    items = list(order.items.select_related("asset").order_by("pk"))
     jobs = (
         PrintJob.objects.filter(order=order).select_related("reprint_of").prefetch_related("events")
     )
     poll_cursor = PollCursor.get()
     context = {
         "order": order,
-        "item": item,
-        "product_ctx": item.definition.operator_context(item) if item else {},
+        "items_ctx": [(item, item.definition.operator_context(item)) for item in items],
         "poll_cursor": poll_cursor,
         "jobs": jobs,
         "events": order.status_events.select_related("actor_user"),
@@ -227,16 +226,16 @@ def complaint_photo(request, number, pk):
 
 
 @staff_required
-def order_print_file(request, number):
+def order_print_file(request, number, pk):
     order = get_object_or_404(Order, number=number)
-    item = order.item
-    files = item.print_files if item else []
+    item = get_object_or_404(OrderItem, pk=pk, order=order)
+    files = item.print_files
     if not files:
         raise Http404("Brak PDF do druku.")
     return FileResponse(
         files[0].file.open("rb"),
         as_attachment=True,
-        filename=f"{order.number}_{item.definition.gh_line(item).product_code}.pdf",
+        filename=f"{order.number}_{item.pk}_{item.definition.gh_line(item).product_code}.pdf",
     )
 
 

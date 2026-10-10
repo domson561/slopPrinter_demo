@@ -1,0 +1,9 @@
+{# oczekuje: item, order (waluta) #}
+<dl class="order-summary">
+  <dt>Produkt</dt><dd>{{ item.definition.name }}</dd>
+  {% for label, value in item.details %}<dt>{{ label }}</dt><dd>{{ value }}</dd>
+  {% endfor %}
+  <dt>Ilość</dt><dd>{{ item.quantity }}</dd>
+  <dt>Cena za sztukę</dt><dd>{{ item.unit_price }} {{ order.currency }}</dd>
+  <dt>Wartość</dt><dd>{{ item.line_total }} {{ order.currency }}</dd>
+</dl>

@@ -40,7 +40,7 @@ def _approve_ready_order(image_upload, extra_items=0):
         quantity=1,
         crop=None,
         enhancer_enabled=False,
-    )
+    ).order
     for _ in range(extra_items):
         OrderItem.objects.create(
             order=order,

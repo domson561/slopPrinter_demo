@@ -18,12 +18,23 @@ def upload_poster_asset(uploaded_file):
 
 
 def save_poster_draft(
-    asset, fmt, paper, *, white_margin, quantity, crop, enhancer_enabled, order=None
+    asset,
+    fmt,
+    paper,
+    *,
+    white_margin,
+    quantity,
+    crop,
+    enhancer_enabled,
+    order=None,
+    item=None,
 ):
+    """Dodaje plakat do koszyka `order` (albo nowego) lub aktualizuje `item`. Zwraca pozycję."""
     return order_services.save_draft(
         PRODUCT_CODE,
         asset,
         poster_options(fmt, paper, white_margin=white_margin, crop=crop, enhancer=enhancer_enabled),
         quantity=quantity,
         order=order,
+        item=item,
     )

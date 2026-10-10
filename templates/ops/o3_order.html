@@ -21,22 +21,29 @@
     </section>
 
     <section class="ops-order__files">
-      <h2>Plik</h2>
-      <div class="file-compare">
-        <figure>
-          {% if item.asset.preview %}<img src="{% url 'web:asset_preview' item.asset.pk %}" alt="Oryginał" width="240">{% endif %}
-          <figcaption>Oryginał: {% if item.asset.width %}{{ item.asset.width }} x {{ item.asset.height }} px, {% endif %}{{ item.asset.size_bytes|filesizeformat }}, {{ item.asset.mime }}</figcaption>
-        </figure>
-      </div>
-      {% with files=item.print_files %}
-        {% if files %}
-          <p><a class="button button--secondary" href="{% url 'ops:order_print_file' order.number %}">Pobierz PDF do druku</a>
-            <small>{% for pdf in files %}{{ pdf.size_bytes|filesizeformat }}{% if not forloop.last %}, {% endif %}{% endfor %}</small></p>
+      <h2>Pliki</h2>
+      {% for item, product_ctx in items_ctx %}
+      <article class="ops-order__item">
+        <h3>Pozycja {{ forloop.counter }}: {{ item.summary }} x{{ item.quantity }}</h3>
+        <div class="file-compare">
+          <figure>
+            {% if item.asset.preview %}<img src="{% url 'web:asset_preview' item.asset.pk %}" alt="Oryginał" width="240">{% endif %}
+            <figcaption>Oryginał: {% if item.asset.width %}{{ item.asset.width }} x {{ item.asset.height }} px, {% endif %}{{ item.asset.size_bytes|filesizeformat }}, {{ item.asset.mime }}</figcaption>
+          </figure>
+        </div>
+        {% with files=item.print_files %}
+          {% if files %}
+            <p><a class="button button--secondary" href="{% url 'ops:order_print_file' order.number item.pk %}">Pobierz PDF do druku</a>
+              <small>{% for pdf in files %}{{ pdf.size_bytes|filesizeformat }}{% if not forloop.last %}, {% endif %}{% endfor %}</small></p>
+          {% endif %}
+        {% endwith %}
+        {% if item.definition.operator_template %}
+          {% include item.definition.operator_template with item=item ctx=product_ctx %}
         {% endif %}
-      {% endwith %}
-      {% if item.definition.operator_template %}
-        {% include item.definition.operator_template with item=item ctx=product_ctx %}
-      {% endif %}
+      </article>
+      {% empty %}
+        <p>Brak pozycji.</p>
+      {% endfor %}
     </section>
   </div>
 

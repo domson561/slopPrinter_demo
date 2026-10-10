@@ -6,7 +6,6 @@ zmian (sklep pyta, GH nie woła) i mapowanie statusów GH na stan zlecenia i zam
 import hashlib
 import logging
 import time
-from datetime import timedelta
 
 from django.conf import settings
 from django.db import transaction
@@ -15,6 +14,7 @@ from django.utils.dateparse import parse_datetime
 
 from apps.orders.models import Actor, OrderStatus, Shipment
 
+from . import links
 from .models import PollCursor, PrintJob, PrintJobEvent
 from .providers import (
     ProviderAuthError,
@@ -90,18 +90,17 @@ def check_print_files(order) -> None:
 
 def file_object(version) -> dict:
     """
-    Obiekt pliku z pkt 4. Link jest dziś publiczny (`/media/`), a `expires_at` nominalne;
-    podpisane, wygasające linki wejdą z taskiem „Pliki do druku”.
+    Obiekt pliku z pkt 4: podpisany, wygasający link (`links.issue`), suma i rozmiar.
+    `expires_at` to dokładnie termin ważności podpisu. Każde wywołanie wystawia świeży link.
     """
     if version is None:
         return {}
+    url, expires_at = links.issue(version)
     return {
-        "url": settings.SITE_URL + version.file.url,
+        "url": url,
         "sha256": _sha256_of(version),
         "size": _size_of(version),
-        "expires_at": (timezone.now() + timedelta(hours=settings.GH_FILE_LINK_TTL_HOURS))
-        .replace(microsecond=0)
-        .isoformat(),
+        "expires_at": expires_at.isoformat(),
     }
 
 

@@ -3,12 +3,17 @@
 from decimal import Decimal
 
 from apps.assets.services import FLAG_LABELS
-from apps.products import GhLine, Product, ProductError
+from apps.products import GhLine, Product, ProductError, dictionary
 
 from . import pricing, quality
 from .models import Format, PaperOption, PosterSettings
 from .options import PRODUCT_CODE, format_of, paper_of
 from .pipeline import run_pipeline
+
+
+def dictionary_code(fmt: Format, paper: PaperOption) -> str:
+    """Kod ze słownika produktów dla pary format + papier, np. `poster-a2-matte`."""
+    return f"poster-{fmt.code.lower()}-{paper.code}"
 
 
 class PosterProduct(Product):
@@ -22,11 +27,15 @@ class PosterProduct(Product):
         fmt = Format.objects.filter(code=options.get("format"), is_active=True).first()
         if fmt is None:
             raise ProductError("Wybierz dostępny format.")
-        paper = None
         if options.get("paper"):
             paper = PaperOption.objects.filter(code=options["paper"], is_active=True).first()
-            if paper is None:
-                raise ProductError("Wybierz dostępny papier.")
+        else:
+            # Brak papieru w opcjach = pierwszy aktywny; kod dla GH zawsze ma papier.
+            paper = PaperOption.objects.filter(is_active=True).first()
+        if paper is None:
+            raise ProductError("Wybierz dostępny papier.")
+        if not dictionary.known(dictionary_code(fmt, paper)):
+            raise ProductError(f"Plakat {fmt.name} na papierze {paper.name} nie jest dostępny.")
         crop = quality.sanitize_crop(options.get("crop"), asset.width, asset.height, fmt)
         q = quality.quality_for(asset.width, asset.height, fmt, PosterSettings.get(), crop)
         if q.blocked:
@@ -35,7 +44,7 @@ class PosterProduct(Product):
             )
         return {
             "format": fmt.code,
-            "paper": paper.code if paper else None,
+            "paper": paper.code,
             "white_margin": bool(options.get("white_margin")),
             "crop": crop,
             "enhancer": bool(options.get("enhancer")),
@@ -54,14 +63,18 @@ class PosterProduct(Product):
         return [FLAG_LABELS.get(f, f) for f in (analysis.content_flags if analysis else [])]
 
     def gh_line(self, item) -> GhLine:
+        """Kod i nazwa ze słownika produktów; biały margines jest w PDF-ie, GH go nie obchodzi."""
         fmt, paper = format_of(item.options), paper_of(item.options)
-        code = "-".join(p for p in ("poster", fmt.code.lower(), paper.code if paper else None) if p)
-        parts = [f"Plakat {fmt.name}"]
-        if paper:
-            parts.append(paper.name)
+        if paper is None:
+            raise ProductError("Pozycja plakatu bez papieru; brak kodu dla GH.")
+        entry = dictionary.get(dictionary_code(fmt, paper))
+        return GhLine(product_code=entry.code, name=entry.name)
+
+    def summary(self, item) -> str:
+        text = self.gh_line(item).name
         if item.options.get("white_margin"):
-            parts.append("biały margines")
-        return GhLine(product_code=code, name=", ".join(parts))
+            text += ", biały margines"
+        return text
 
     def details(self, item) -> list[tuple[str, str]]:
         fmt, paper = format_of(item.options), paper_of(item.options)

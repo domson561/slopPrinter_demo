@@ -12,17 +12,16 @@ from decimal import Decimal, InvalidOperation
 
 import requests
 from django.conf import settings
-from django.core.files.storage import default_storage
 from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
+from apps.printing import links as file_links
+from apps.products import dictionary
+
 from .models import GhOrder, GhOrderFile, GhOrderItem, GhShop
 
 log = logging.getLogger("slop.gh_mock")
-
-# Zastępuje słownik produktów (kontrakt pkt 10) do czasu osobnego taska.
-KNOWN_PRODUCT_PREFIXES = ("poster-",)
 
 # Dane kupującego nie mają prawa wejść do GH (kontrakt pkt 1). Szukane rekurencyjnie.
 FORBIDDEN_KEYS = {
@@ -251,9 +250,8 @@ def accept_order(shop: GhShop, body: dict) -> tuple[GhOrder, bool]:
         currency=clean["currency"],
         note_for_production=clean["note_for_production"],
         body_hash=digest,
-        needs_review=any(
-            not item["product_code"].startswith(KNOWN_PRODUCT_PREFIXES) for item in clean["items"]
-        ),
+        # Słownik produktów (kontrakt pkt 10); prawdziwe GH trzyma własną kopię pliku.
+        needs_review=any(not dictionary.known(item["product_code"]) for item in clean["items"]),
     )
     for item in clean["items"]:
         GhOrderItem.objects.create(
@@ -330,13 +328,15 @@ def replace_file_link(order: GhOrder, body: dict) -> GhOrderFile:
 
 def fetch_url(url: str) -> bytes:
     """
-    Pobranie pliku. Linki do własnego `/media/` sklepu atrapa czyta z dysku (jeden proces,
-    bez zależności od portu). Prawdziwe GH pobiera wyłącznie przez HTTP.
+    Pobranie pliku. Podpisane linki własnego sklepu atrapa rozwiązuje w procesie tym samym kodem,
+    co widok `printing:file` (podpis i termin sprawdzone, zły link = wyjątek = `unreachable`),
+    bez zależności od portu. Prawdziwe GH pobiera wyłącznie przez HTTP.
     """
-    media_prefix = settings.SITE_URL + settings.MEDIA_URL
-    if url.startswith(media_prefix):
-        relative = url[len(media_prefix) :].split("?", 1)[0]
-        with default_storage.open(relative, "rb") as fh:
+    signed_prefix = settings.SITE_URL + "/files/signed/"
+    if url.startswith(signed_prefix):
+        token = url[len(signed_prefix) :].split("?", 1)[0].removesuffix(".pdf")
+        version = file_links.resolve(token)
+        with version.file.open("rb") as fh:
             return fh.read()
     resp = requests.get(url, timeout=60)
     resp.raise_for_status()

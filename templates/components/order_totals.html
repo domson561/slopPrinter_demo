@@ -1,0 +1,6 @@
+{# oczekuje: order #}
+<dl class="order-summary">
+  <dt>Pozycje razem</dt><dd>{{ order.subtotal }} {{ order.currency }}</dd>
+  {% if order.delivery_method %}<dt>Dostawa</dt><dd>{{ order.delivery_method.name }} ({{ order.delivery_price }} {{ order.currency }})</dd>{% endif %}
+  <dt>Razem</dt><dd class="order-summary__total">{{ order.total }} {{ order.currency }}</dd>
+</dl>
