@@ -1,6 +1,10 @@
 """Plakat z demo jako `Product`: opcje, cena, PDF ze spadami, opis dla GH i panelu."""
 
+import io
 from decimal import Decimal
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from PIL import Image
 
 from apps.assets.services import FLAG_LABELS
 from apps.products import GhLine, Product, ProductError, dictionary
@@ -22,6 +26,7 @@ class PosterProduct(Product):
     accepted_mime = ("image/jpeg", "image/png", "image/webp")
     operator_template = "poster/ops_item.html"
     settings_template = "poster/ops_settings.html"
+    fixtures = ("poster.json",)
 
     def clean_options(self, options: dict, asset) -> dict:
         fmt = Format.objects.filter(code=options.get("format"), is_active=True).first()
@@ -63,12 +68,12 @@ class PosterProduct(Product):
         return [FLAG_LABELS.get(f, f) for f in (analysis.content_flags if analysis else [])]
 
     def gh_line(self, item) -> GhLine:
-        """Kod i nazwa ze słownika produktów; biały margines jest w PDF-ie, GH go nie obchodzi."""
+        """Kod, nazwa i stawka ze słownika; biały margines jest w PDF-ie, GH go nie obchodzi."""
         fmt, paper = format_of(item.options), paper_of(item.options)
         if paper is None:
             raise ProductError("Pozycja plakatu bez papieru; brak kodu dla GH.")
         entry = dictionary.get(dictionary_code(fmt, paper))
-        return GhLine(product_code=entry.code, name=entry.name)
+        return GhLine(product_code=entry.code, name=entry.name, print_rate=entry.print_rate)
 
     def summary(self, item) -> str:
         text = self.gh_line(item).name
@@ -101,6 +106,13 @@ class PosterProduct(Product):
             "analysis": analysis,
             "flag_labels": self.review_flags(item),
         }
+
+    def contract_sample(self) -> tuple:
+        """PNG 1448 x 2048 px, którego jakość wystarcza na A3, i plakat A3 na papierze matowym."""
+        buf = io.BytesIO()
+        Image.new("RGB", (1448, 2048), (120, 80, 200)).save(buf, "PNG")
+        upload = SimpleUploadedFile("probka.png", buf.getvalue(), content_type="image/png")
+        return upload, {"format": "A3", "paper": "matte"}
 
     def settings_forms(self, data=None) -> dict:
         from .forms import FormatFormSet, PaperFormSet, PosterSettingsForm

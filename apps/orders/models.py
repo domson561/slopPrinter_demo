@@ -85,6 +85,11 @@ class Order(models.Model):
         return self.items.select_related("asset").order_by("pk").first()
 
     @property
+    def print_total(self):
+        """Wartość zlecenia dla GH: suma stawek za druk, nie cena dla kupującego."""
+        return sum((item.print_line_total for item in self.items.all()), Decimal("0.00"))
+
+    @property
     def is_draft(self):
         return self.status == OrderStatus.DRAFT
 
@@ -150,7 +155,15 @@ class OrderItem(models.Model):
         help_text="Plik od kupującego.",
     )
     quantity = models.PositiveIntegerField(default=1)
-    unit_price = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))
+    unit_price = models.DecimalField(
+        max_digits=8, decimal_places=2, default=Decimal("0.00"), help_text="Cena detaliczna."
+    )
+    print_rate = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Stawka GH za druk sztuki ze słownika, zapisana razem z ceną. Idzie do GH.",
+    )
 
     def __str__(self):
         return f"{self.order} / {self.product} x{self.quantity}"
@@ -171,6 +184,10 @@ class OrderItem(models.Model):
     @property
     def line_total(self):
         return (Decimal(self.unit_price) * self.quantity).quantize(Decimal("0.01"))
+
+    @property
+    def print_line_total(self):
+        return (Decimal(self.print_rate) * self.quantity).quantize(Decimal("0.01"))
 
     @property
     def print_files(self):

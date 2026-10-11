@@ -21,7 +21,7 @@ from apps.orders.payments import MockPaymentProvider
 from apps.poster.models import Format, PaperOption
 from apps.poster.services import save_poster_draft
 from apps.printing.services import poll_changes
-from apps.products import ProductError
+from apps.products import ProductError, dictionary
 from apps.ready_pdf.product import ReadyPdfProduct
 
 
@@ -125,7 +125,8 @@ def test_mixed_cart_is_one_gh_order_with_lines_from_each_product(ready_pdf, oper
     gh_order = GhOrder.objects.get(shop_order_number=order.number)
     lines = [(i.position, i.product_code, i.quantity) for i in gh_order.items.all()]
     assert lines == [(1, "poster-a2-matte", 1), (2, "ready-pdf", 3)]
-    assert gh_order.total_value == order.subtotal
+    poster_rate = dictionary.get("poster-a2-matte").print_rate
+    assert gh_order.total_value == order.print_total == poster_rate + 3 * ReadyPdfProduct.print_rate
 
 
 @pytest.mark.django_db

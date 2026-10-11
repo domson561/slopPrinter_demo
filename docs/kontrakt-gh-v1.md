@@ -70,7 +70,7 @@ Pola:
 | `items[].name` | tak | Opis dla człowieka, trafia na kartę PDF zlecenia, żeby operator wiedział, który plik drukuje. |
 | `items[].product_code` | tak | Identyfikator ze słownika produktów (pkt 10). Nieznany kod nie odrzuca zlecenia, GH oznacza je „do weryfikacji”. |
 | `items[].quantity` | tak | Nakład pozycji. |
-| `items[].unit_price` | tak | Cena jednostkowa pozycji dla rozliczeń GH. |
+| `items[].unit_price` | tak | Cena jednostkowa pozycji dla rozliczeń GH: stawka GH za druk sztuki ze słownika (pkt 10), nie cena detaliczna sklepu. |
 | `items[].file` | tak | Plik do druku, patrz pkt 4. |
 | `label` | tak | PDF etykiety z danymi kupującego, patrz pkt 4. |
 | `note_for_production` | nie | Uwagi dla produkcji. Bez danych kupującego. |
@@ -186,7 +186,9 @@ Anulowanie w GH, numer przesyłki, webhooki, strukturalny opis produktu w żąda
 
 Znaczenie wartości `product_code` jest poza kontraktem, w osobnym pliku słownika utrzymywanym wspólnie przez sklep i GH, wersjonowanym niezależnie od API. Dodanie produktu nie zmienia kontraktu. Docelowo wpis słownika może nieść specyfikację (format, papier, wykończenie) i gotowe etapy produkcji; w v1 biuro dobiera etapy ręcznie na podstawie `name` i kodu.
 
-Plik słownika: `apps/products/slownik.json` w repo sklepu (opis formatu i szablony wpisów: `docs/slownik-produktow.md`), od 2026-10-10 w wersji 1.0. GH trzyma własną kopię tego pliku; atrapa GH w sklepie czyta ten sam plik.
+Plik słownika: `apps/products/slownik.json` w repo sklepu (opis formatu i szablony wpisów: `docs/slownik-produktow.md`), od 2026-10-11 w wersji 1.1. GH trzyma własną kopię tego pliku; atrapa GH w sklepie czyta ten sam plik.
+
+Od wersji 1.1 wpis niesie też stawkę GH za druk (`print_rate`, PLN netto za sztukę). Sklep wysyła ją jako `items[].unit_price`, a `total_value` to suma stawek. Cena detaliczna, obrót i marża sklepu do GH nie trafiają. Stawki w pliku są tymczasowe; wysokość stawek i rozliczenie (należność za zlecenia „wysłane” w okresie, dodruki przy wadzie GH) czekają na potwierdzenie GH.
 
 ## 11. Zgodność ze scope pkt 6 i wymagane zmiany
 
@@ -205,6 +207,7 @@ W sklepie:
 - Atrapa GH (`apps/gh_mock`) o kształcie z tego dokumentu zamiast `MockPrinterJob` i `MockPrintProvider`; jej statusy to statusy GH plus stany plików. Zrobione 2026-10-08.
 - `accepted` znaczy „GH ma wszystkie pliki”. Zrobione 2026-10-08.
 - Podpisane, wygasające linki z sumą kontrolną zamiast publicznego `/media/` (`apps/printing/links.py`, trasa `/files/signed/<token>.pdf`; po terminie 410, zły podpis 404; dosłanie wystawia nowy podpis). Zrobione 2026-10-10.
+- Testy zgodności z tym dokumentem, wspólne dla każdego sklepu na rdzeniu: `apps/printing/tests/contract` (body pkt 3-4, brak danych kupującego, idempotencja, 400/401/409 i błędy przejściowe z pkt 7, polling i mapowanie z pkt 5-6, dosłanie linku). Koszyk z próbek produktów sklepu, na atrapie GH. Zrobione 2026-10-11.
 - Etykieta (`label`): przesyłkę i PDF etykiety robi sklep przed POST-em, przez wymiennego przewoźnika (`apps/orders/shipping.py`, w dev atrapa kuriera). PDF w prywatnym katalogu, do GH tym samym podpisanym linkiem; anulowana etykieta daje 404. Nieudany POST nie zużywa etykiety, każde zlecenie przyjęte przez GH (także dodruk) dostaje własną. Atrapa GH wymaga etykiety. Zrobione 2026-10-10.
 
 Poza kontraktem, do ustalenia między stronami: rozliczenie i faktura zbiorcza, umowa powierzenia danych z etykiet (RODO), minimalna ważność linku, zawartość słownika produktów, X dni retencji plików w GH.

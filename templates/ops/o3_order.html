@@ -25,6 +25,7 @@
       {% for item, product_ctx in items_ctx %}
       <article class="ops-order__item">
         <h3>Pozycja {{ forloop.counter }}: {{ item.summary }} x{{ item.quantity }}</h3>
+        <p><small>Cena {{ item.unit_price }} {{ order.currency }}, stawka GH {{ item.print_rate }} {{ order.currency }} za sztukę.</small></p>
         <div class="file-compare">
           <figure>
             {% if item.asset.preview %}<img src="{% url 'web:asset_preview' item.asset.pk %}" alt="Oryginał" width="240">{% endif %}
@@ -102,6 +103,7 @@
 
   <section class="ops-order__jobs">
     <h2>Zlecenia w Graphic House</h2>
+    <p>Wartość zlecenia dla GH: {{ order.print_total }} {{ order.currency }} (stawki za druk ze słownika produktów; kupujący płaci za pozycje {{ order.subtotal }} {{ order.currency }}).</p>
     {% if poll_cursor.auth_failed %}
       <div class="ops-alert">GH odrzuciło token sklepu. Wysyłka i polling wstrzymane.
         <form method="post" action="{% url 'ops:poll_gh' %}" class="printer-inline">{% csrf_token %}<input type="hidden" name="action" value="reset_auth"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button type="submit" class="button button--secondary">Token wymieniony, wznów</button></form>

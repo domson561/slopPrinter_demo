@@ -1,6 +1,6 @@
 # Granica rdzeń ↔ sklep
 
-Stan na 2026-10-10, gałąź `v1/rdzen`. Uzupełnia `kontrakt-gh-v1.md` (granica sklep ↔ GH).
+Stan na 2026-10-11, gałąź `v1/rdzen`. Uzupełnia `kontrakt-gh-v1.md` (granica sklep ↔ GH).
 
 ## Zasada
 
@@ -30,7 +30,7 @@ w `orders`, `printing`, `ops` albo `assets`, to brakuje czegoś w interfejsie, n
 
 | Obszar | Co dostarcza sklep |
 |---|---|
-| Produkt | Klasa `Product`: kod, opcje i ich walidacja, cena, dozwolone typy plików, produkcja PDF-ów do druku, powody weryfikacji, opis pozycji dla GH, podsumowanie i szczegóły, fragmenty panelu i formularze ustawień (np. cennik). Własne modele konfiguracji (dla plakatu: formaty, papiery, progi DPI). |
+| Produkt | Klasa `Product`: kod, opcje i ich walidacja, cena detaliczna, dozwolone typy plików, produkcja PDF-ów do druku, powody weryfikacji, opis pozycji dla GH (kod, nazwa, stawka za druk), podsumowanie i szczegóły, fragmenty panelu i formularze ustawień (np. cennik). Własne modele konfiguracji (dla plakatu: formaty, papiery, progi DPI). |
 | Proces zakupu do konfiguracji | S1-S3 w aplikacji produktu (`apps/poster/views.py`): upload, konfigurator, podgląd pozycji. Formularz opcji, kadrowanie, makieta, cena na żywo, JS. Po podglądzie odsyła do koszyka rdzenia. |
 | Wygląd | `templates/web`, `static/css/tokens.css`, `base.css`, treści S8 (FAQ, regulamin, prywatność). Szablony maili w `templates/emails` może nadpisać. |
 | Konfiguracja wdrożenia | domena i `SITE_URL`, token GH, prefiks numeru, metody dostawy, cennik, `SHOP_PRODUCTS`. |
@@ -41,11 +41,12 @@ w `orders`, `printing`, `ops` albo `assets`, to brakuje czegoś w interfejsie, n
 2. Pozycja to `product` (kod) + `options` (JSON). Rdzeń przechowuje opcje, nigdy ich nie interpretuje. Zmiana opcji produktu nie wymaga migracji rdzenia.
 3. Każdy plik z zewnątrz (plik do produktu, zdjęcie do reklamacji) przechodzi przez `assets.gate`. Produkt może listę typów zawęzić (`accepted_mime`), nigdy poszerzyć. Bramka ocenia bezpieczeństwo, produkt przydatność do druku.
 4. Pliki do druku to `AssetVersion` rodzaju `print_pdf` przypięte do pozycji; robi je produkt w `build_print_files`, w tle. Kontrakt v1 przyjmuje dokładnie jeden plik na pozycję, więcej daje czytelny błąd przy wysyłce (do v1.1/v2).
-5. Opis pozycji dla GH to `GhLine(product_code, name)` z produktu. Oba pola ze słownika `apps/products/slownik.json` (`apps.products.dictionary`), nie składane w kodzie. Kod spoza słownika GH oznacza „do weryfikacji”.
-6. Cena: produkt daje cenę detaliczną za sztukę z opcji. Cena hurtowa dojdzie z taskiem „Katalog” i będzie wartością zlecenia w GH.
+5. Opis pozycji dla GH to `GhLine(product_code, name, print_rate)` z produktu. Wszystkie trzy pola ze słownika `apps/products/slownik.json` (`apps.products.dictionary`), nie składane w kodzie. Kod spoza słownika GH oznacza „do weryfikacji”.
+6. Ceny: produkt daje cenę detaliczną za sztukę z opcji (`unit_price`), słownik stawkę GH za druk (`print_rate`). Rdzeń zapisuje obie na pozycji przy przeliczeniu koszyka. Do GH idzie tylko stawka: `unit_price` w zleceniu to `print_rate`, `total_value` to `Order.print_total`. Cena detaliczna, obrót i marża zostają w sklepie.
 7. Panel operatora jest rdzeniem. Produkt dostarcza tylko fragment szablonu i dane do niego (`operator_context`, `settings_forms`), nie własne widoki.
 8. Rdzeń nie zna GH inaczej niż przez `GhApiProvider`; sklep nie woła GH bezpośrednio ani nie buduje body zlecenia.
 9. Numer przesyłki i etykietę robi rdzeń przez `orders.shipping` (przewoźnik wymienny jak płatności), zanim zlecenie pójdzie do GH. Dane kupującego są tylko w PDF etykiety. Produkt nie wie o wysyłce.
+10. Zgodność z kontraktem sprawdza jeden zestaw testów rdzenia (`apps/printing/tests/contract`), wspólny dla wszystkich sklepów. Produkt daje do niego tylko próbkę (`Product.contract_sample`: plik i opcje) i swoje fixtury (`Product.fixtures`).
 
 ## Stan obecny
 
@@ -63,8 +64,8 @@ Co gdzie wylądowało:
 ## Lista kontrolna nowego sklepu
 
 1. Zainstalować rdzeń (te same aplikacje, te same migracje).
-2. Napisać klasę `Product` i wpisać ją do `SHOP_PRODUCTS`; wzór najmniejszy: `apps/ready_pdf`, pełny: `apps/poster`.
+2. Napisać klasę `Product` i wpisać ją do `SHOP_PRODUCTS`; wzór najmniejszy: `apps/ready_pdf`, pełny: `apps/poster`. Razem z próbką do testów zgodności (`contract_sample`) i fixturami danych produktu (`fixtures`).
 3. Dostarczyć widoki S1-S3 i szablony `templates/web`, tokeny CSS.
 4. Ustawić `.env`: `SITE_URL`, `GH_API_BASE_URL`, `GH_API_TOKEN`, `ORDER_NUMBER_PREFIX`, `PRIVATE_MEDIA_ROOT`, `CARRIER_PROVIDER` (domyślnie atrapa kuriera).
 5. Zasiać metody dostawy i ustawienia sklepu.
-6. Przejść testy zgodności na atrapie GH (task „seed nowego sklepu”, jeszcze nie ma).
+6. Przejść testy zgodności z kontraktem na atrapie GH: `.venv\Scripts\python -m pytest apps/printing/tests/contract`. Koszyk składa się z próbek wszystkich produktów z `SHOP_PRODUCTS`; testy sprawdzają body, brak danych kupującego, stawki zamiast cen detalicznych, idempotencję, błędy 400/401/409 i przejściowe, polling, mapowanie statusów i dosłanie linku. Nie znają plakatu, pilnuje tego test w `apps/products/tests`.

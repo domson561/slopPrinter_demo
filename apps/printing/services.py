@@ -43,15 +43,15 @@ class PrintSubmitError(Exception):
 def build_request(job: PrintJob) -> dict:
     """
     Jedno zlecenie na koszyk, pozycje listą. Bez danych kupującego: adres, telefon i e-mail
-    są wyłącznie w PDF etykiety (`label`), który GH pobiera podpisanym linkiem. `total_value`
-    to na razie wartość detaliczna pozycji; cena hurtowa wejdzie z taskiem „Katalog”.
+    są wyłącznie w PDF etykiety (`label`), który GH pobiera podpisanym linkiem. Ceny to stawki
+    GH za druk ze słownika (`print_rate`), nigdy cena detaliczna: GH nie widzi obrotu sklepu.
     """
     order = job.order
     items = order.items.select_related("asset").order_by("pk")
     body = {
         "shop_order_number": job.shop_order_number,
         "title": f"Zamówienie {job.shop_order_number}",
-        "total_value": str(order.subtotal),
+        "total_value": str(order.print_total),
         "currency": order.currency,
         "items": [_item_body(position, item) for position, item in enumerate(items, start=1)],
         "label": file_object(job.shipment),
@@ -72,7 +72,7 @@ def _item_body(position: int, item) -> dict:
         "name": line.name,
         "product_code": line.product_code,
         "quantity": item.quantity,
-        "unit_price": str(item.unit_price),
+        "unit_price": str(item.print_rate),
         "file": file_object(files[0] if files else None),
     }
 

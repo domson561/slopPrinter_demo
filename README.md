@@ -44,13 +44,20 @@ Pokrycie wg §12 seeda: tabela przejść stanów, DPI i werdykty, pipeline z moc
 idempotencja `submit` i callbacku płatności, pełna ścieżka klienta. Atrapa GH jako serwer kontraktu
 (`apps/gh_mock/tests`) i sklep jako jego klient (`apps/printing/tests`).
 
+Testy zgodności z kontraktem v1, wspólne dla każdego sklepu na rdzeniu (koszyk z próbek
+produktów z `SHOP_PRODUCTS`, `Product.contract_sample`):
+
+```bash
+pytest apps/printing/tests/contract
+```
+
 ## Struktura
 
 | Aplikacja       | Zawartość |
 |-----------------|-----------|
 | `apps/catalog`  | metody dostawy i `ShopSettings` rdzenia (auto-zatwierdzanie, czas realizacji, retencja, waluta) |
 | `apps/assets`   | bramka plików od kupujących (`gate.py`: typ po zawartości, limity, obraz zapisany na nowo, PDF bez treści aktywnej), oryginały w prywatnym katalogu (`storage.py`), `Asset`/`AssetVersion`, podgląd, `AnalysisService` z `MockContentSafety` (flagi treści), komenda `cleanup_assets` |
-| `apps/products` | interfejs produktu (`Product`: kod, opcje, cena, pliki od kupującego, pliki do druku, opis dla GH), rejestr z `SHOP_PRODUCTS` i słownik `product_code` wspólny z GH (`slownik.json`, `dictionary.py`); rdzeń zna produkty tylko stąd |
+| `apps/products` | interfejs produktu (`Product`: kod, opcje, cena, pliki od kupującego, pliki do druku, opis dla GH), rejestr z `SHOP_PRODUCTS` i słownik `product_code` wspólny z GH, zarazem tabela stawek GH za druk (`slownik.json`, `dictionary.py`); do GH idzie stawka, nie cena detaliczna; rdzeń zna produkty tylko stąd |
 | `apps/poster`   | plakat z demo jako implementacja `Product` (`PosterProduct`): formaty, papiery, `PosterSettings` (progi DPI), cennik, ocena jakości (`quality.py`), `pipeline.py` (`MockUpscale`, `CropService`, `PrepressService` z reportlab, `MockupService`, `run_pipeline`), widoki S1-S3 i obrazy, szablony `templates/poster`, sekcje panelu O3/O5 |
 | `apps/ready_pdf` | szkieletowy produkt „gotowy PDF” (bez obróbki): wzór najmniejszego `Product`, poza `SHOP_PRODUCTS`, włączany w testach |
 | `apps/orders`   | `Order`/`OrderItem` (kod produktu + opcje JSON)/`OrderStatusEvent`/`Payment`/`Shipment`/`Complaint`, maszyna stanów (`services.transition`, `force_transition`), `MockPaymentProvider`, przesyłka i etykieta PDF za interfejsem przewoźnika (`shipping.py`, `MockCarrierProvider`, `CARRIER_PROVIDER`), powiadomienia, zadanie `process_order_task` |

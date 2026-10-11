@@ -78,6 +78,19 @@ def test_core_has_no_poster_references():
     assert hits == []
 
 
+def test_contract_suite_is_product_agnostic():
+    """Testy zgodności z kontraktem uruchamia każdy sklep, więc nie znają plakatu ani jego kodów."""
+    pattern = re.compile(r"apps\.poster|\bFormat\b|PaperOption|plakat|poster", re.IGNORECASE)
+    suite = Path(settings.BASE_DIR) / "apps/printing/tests/contract"
+    hits = [
+        f"{path.name}:{n}: {line.strip()}"
+        for path in sorted(suite.rglob("*.py"))
+        for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1)
+        if pattern.search(line)
+    ]
+    assert hits == []
+
+
 @pytest.mark.django_db
 def test_operator_settings_save_core_and_product_sections(client, catalog_data):
     from django.contrib.auth import get_user_model

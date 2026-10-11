@@ -1,4 +1,8 @@
-"""Słownik product_code: kompletność wpisów, pokrycie plakatu, produkt bierze kod i nazwę ze słownika."""
+"""Słownik product_code: kompletność wpisów, stawki GH, pokrycie plakatu, produkt bierze stąd
+kod, nazwę i stawkę."""
+
+import json
+from decimal import Decimal
 
 import pytest
 
@@ -12,13 +16,29 @@ from apps.products.dictionary import UnknownProductCode
 
 
 def test_dictionary_has_version_and_complete_entries():
-    assert dictionary.version() == "1.0"
+    assert dictionary.version() == "1.1"
     entries = dictionary.all_entries()
     assert entries
     for code, entry in entries.items():
         assert entry.code == code and code == code.lower()
         assert entry.name and entry.format and entry.paper and entry.finish
+        assert isinstance(entry.print_rate, Decimal) and entry.print_rate > 0
         assert entry.files and all({"role", "description"} <= set(f) for f in entry.files)
+
+
+@pytest.mark.parametrize("rate", [32, "0.00", "-5.00", "12.345", "abc", None])
+def test_rate_must_be_positive_amount_as_text(tmp_path, monkeypatch, rate):
+    data = json.loads(dictionary.PATH.read_text(encoding="utf-8"))
+    data["products"]["poster-a2-matte"]["print_rate"] = rate
+    path = tmp_path / "slownik.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    monkeypatch.setattr(dictionary, "PATH", path)
+    dictionary._load.cache_clear()
+    try:
+        with pytest.raises(ValueError, match="print_rate"):
+            dictionary.all_entries()
+    finally:
+        dictionary._load.cache_clear()
 
 
 def test_unknown_code_is_rejected_by_lookup():
@@ -45,7 +65,12 @@ def test_poster_line_for_gh_comes_from_dictionary(catalog_data, image_upload):
     item = order.item
     line = item.definition.gh_line(item)
     entry = dictionary.get("poster-a2-satin")
-    assert (line.product_code, line.name) == (entry.code, entry.name)
+    assert (line.product_code, line.name, line.print_rate) == (
+        entry.code,
+        entry.name,
+        entry.print_rate,
+    )
+    assert item.print_rate == entry.print_rate != item.unit_price
     assert item.summary == f"{entry.name}, biały margines"
 
     # Bez papieru w opcjach: pierwszy aktywny, żeby kod dla GH zawsze był w słowniku.

@@ -1,18 +1,20 @@
 """
 Słownik `product_code` wspólny dla sklepów i GH (kontrakt v1, pkt 10). Plik `slownik.json` obok,
-wersjonowany niezależnie od API; GH trzyma własną kopię tego pliku. Produkt bierze stąd kod
-i nazwę pozycji dla GH zamiast składać je w kodzie. Opis formatu: `docs/slownik-produktow.md`.
+wersjonowany niezależnie od API; GH trzyma własną kopię tego pliku. Produkt bierze stąd kod,
+nazwę pozycji i stawkę GH za druk zamiast składać je w kodzie. Opis formatu:
+`docs/slownik-produktow.md`.
 """
 
 import json
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from functools import cache
 from pathlib import Path
 
 from .base import ProductError
 
 PATH = Path(__file__).with_name("slownik.json")
-REQUIRED = ("name", "format", "paper", "finish", "files")
+REQUIRED = ("name", "print_rate", "format", "paper", "finish", "files")
 
 
 class UnknownProductCode(ProductError):
@@ -23,6 +25,7 @@ class UnknownProductCode(ProductError):
 class Entry:
     code: str
     name: str  # nazwa dla produkcji, idzie w `items[].name`
+    print_rate: Decimal  # stawka GH za sztukę, PLN netto, idzie w `items[].unit_price`
     format: str
     paper: str
     finish: str
@@ -40,12 +43,26 @@ def _load() -> tuple[str, dict[str, Entry]]:
         entries[code] = Entry(
             code=code,
             name=raw["name"],
+            print_rate=_rate(code, raw["print_rate"]),
             format=raw["format"],
             paper=raw["paper"],
             finish=raw["finish"],
             files=tuple(raw["files"]),
         )
     return data["version"], entries
+
+
+def _rate(code: str, value) -> Decimal:
+    """Stawka jako tekst z dwoma miejscami po przecinku, np. "32.00"; liczba w JSON-ie gubi grosze."""
+    try:
+        rate = Decimal(value) if isinstance(value, str) else None
+    except InvalidOperation:
+        rate = None
+    if rate is None or not rate.is_finite() or rate <= 0 or rate != rate.quantize(Decimal("0.01")):
+        raise ValueError(
+            f"slownik.json: wpis {code!r}, print_rate {value!r} to nie kwota w groszach."
+        )
+    return rate.quantize(Decimal("0.01"))
 
 
 def version() -> str:

@@ -180,10 +180,13 @@ def _after_transition(order, event):
 
 
 def recalc_totals(order: Order) -> Order:
+    """Cena detaliczna i stawka GH za druk zapisane na pozycji; późniejsza zmiana cennika
+    albo słownika nie zmienia zamówienia ani zlecenia, które z niego pójdzie."""
     subtotal = Decimal("0.00")
     for item in OrderItem.objects.filter(order=order):  # świeżo, nie z cache prefetch
         item.unit_price = item.definition.unit_price(item.options)
-        item.save(update_fields=["unit_price"])
+        item.print_rate = item.definition.gh_line(item).print_rate
+        item.save(update_fields=["unit_price", "print_rate"])
         subtotal += item.line_total
     order.subtotal = subtotal
     order.delivery_price = (

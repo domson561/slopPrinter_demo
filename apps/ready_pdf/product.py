@@ -1,4 +1,8 @@
+import io
 from decimal import Decimal
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from reportlab.pdfgen import canvas
 
 from apps.assets.models import AssetVersion
 from apps.assets.services import save_version
@@ -10,6 +14,8 @@ class ReadyPdfProduct(Product):
     name = "Gotowy PDF"
     accepted_mime = ("application/pdf",)
     price = Decimal("25.00")
+    # Kod spoza słownika (GH oznaczy pozycję „do weryfikacji”), więc stawkę za druk podaje sam.
+    print_rate = Decimal("10.00")
 
     def clean_options(self, options: dict, asset) -> dict:
         if options:
@@ -33,5 +39,16 @@ class ReadyPdfProduct(Product):
         )
         return [version]
 
+    def contract_sample(self) -> tuple:
+        buf = io.BytesIO()
+        page = canvas.Canvas(buf)
+        page.drawString(100, 750, "próbka gotowego pliku")
+        page.showPage()
+        page.save()
+        upload = SimpleUploadedFile("probka.pdf", buf.getvalue(), content_type="application/pdf")
+        return upload, {}
+
     def gh_line(self, item) -> GhLine:
-        return GhLine(product_code="ready-pdf", name="Gotowy PDF od klienta")
+        return GhLine(
+            product_code="ready-pdf", name="Gotowy PDF od klienta", print_rate=self.print_rate
+        )

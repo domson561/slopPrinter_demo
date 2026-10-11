@@ -1,6 +1,6 @@
 """
 Interfejs produktu: wszystko, co rdzeń sklepu wie o produkcie. Rdzeń nie zna plakatu ani
-książki, zna tylko sześć elementów poniżej. Wygląd i proces zakupu (formularz, kadrowanie,
+książki, zna tylko sześć elementów poniżej i próbkę do testów zgodności. Wygląd i proces zakupu (formularz, kadrowanie,
 podgląd, cena na żywo) należą do sklepu, nie do interfejsu.
 
 Pozycja zamówienia trzyma kod produktu, opcje (JSON, rozumie je tylko produkt), plik od
@@ -18,10 +18,15 @@ class ProductError(ValueError):
 
 @dataclass(frozen=True)
 class GhLine:
-    """Opis pozycji dla GH (kontrakt pkt 3): kod ze słownika produktów i nazwa dla operatora GH."""
+    """
+    Opis pozycji dla GH (kontrakt pkt 3): kod ze słownika produktów, nazwa dla operatora GH
+    i stawka GH za druk jednej sztuki (`unit_price` w zleceniu). Stawka pochodzi z tabeli stawek
+    w słowniku, nigdy z ceny detalicznej: GH nie widzi ceny dla kupującego ani marży sklepu.
+    """
 
     product_code: str
     name: str
+    print_rate: Decimal
 
 
 class Product(ABC):
@@ -39,6 +44,10 @@ class Product(ABC):
     operator_template: str | None = None
     settings_template: str | None = None
 
+    # Fixtury Django z danymi produktu (np. formaty i papiery plakatu); ładują je seed sklepu
+    # i testy zgodności z kontraktem.
+    fixtures: tuple[str, ...] = ()
+
     # 2. Opcje
     @abstractmethod
     def clean_options(self, options: dict, asset) -> dict:
@@ -47,7 +56,7 @@ class Product(ABC):
     # 3. Cena
     @abstractmethod
     def unit_price(self, options: dict) -> Decimal:
-        """Cena detaliczna za sztukę. Cena hurtowa dojdzie z taskiem „Katalog”."""
+        """Cena detaliczna za sztukę. Zostaje w sklepie; GH dostaje stawkę z `gh_line`."""
 
     # 5. Pliki do druku
     @abstractmethod
@@ -61,7 +70,7 @@ class Product(ABC):
     # 6. Opis pozycji
     @abstractmethod
     def gh_line(self, item) -> GhLine:
-        """`product_code` i nazwa pozycji w zleceniu do GH."""
+        """`product_code`, nazwa i stawka za druk pozycji w zleceniu do GH."""
 
     def summary(self, item) -> str:
         """Krótki tekst dla operatora, maila i strony statusu, np. „Plakat A2, mat”."""
@@ -78,3 +87,11 @@ class Product(ABC):
     def settings_forms(self, data=None) -> dict:
         """Formularze ustawień produktu w panelu (O5), klucz = nazwa w `settings_template`."""
         return {}
+
+    # Testy zgodności z kontraktem GH (`apps/printing/contract_tests`)
+    def contract_sample(self) -> tuple:
+        """
+        Plik od kupującego (`UploadedFile`) i opcje, z których powstaje poprawna pozycja.
+        Woła ją tylko zestaw testów zgodności; produkt bez próbki go nie przejdzie.
+        """
+        raise NotImplementedError(f"{type(self).__name__}: brak contract_sample().")
