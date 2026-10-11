@@ -188,7 +188,9 @@ Znaczenie wartości `product_code` jest poza kontraktem, w osobnym pliku słowni
 
 Plik słownika: `apps/products/slownik.json` w repo sklepu (opis formatu i szablony wpisów: `docs/slownik-produktow.md`), od 2026-10-11 w wersji 1.1. GH trzyma własną kopię tego pliku; atrapa GH w sklepie czyta ten sam plik.
 
-Od wersji 1.1 wpis niesie też stawkę GH za druk (`print_rate`, PLN netto za sztukę). Sklep wysyła ją jako `items[].unit_price`, a `total_value` to suma stawek. Cena detaliczna, obrót i marża sklepu do GH nie trafiają. Stawki w pliku są tymczasowe; wysokość stawek i rozliczenie (należność za zlecenia „wysłane” w okresie, dodruki przy wadzie GH) czekają na potwierdzenie GH.
+Od wersji 1.1 wpis niesie też stawkę GH za druk (`print_rate`, PLN netto za sztukę). Sklep wysyła ją jako `items[].unit_price`, a `total_value` to suma stawek. Cena detaliczna, obrót i marża sklepu do GH nie trafiają. Stawki w pliku są tymczasowe; wysokość stawek i rozliczenie (należność za zlecenia „wysłane” w okresie) czekają na potwierdzenie GH.
+
+Dodruk (pkt 6, `failed`) idzie do GH jak zwykłe zlecenie, po zwykłych stawkach. Propozycja sklepu, czeka na zgodę GH: dodruk z winy GH (wada druku) jest bezpłatny i rozliczany ręcznie korektą przy fakturze, poza API; dodruki z winy kuriera, pliku albo sklepu płaci sklep.
 
 ## 11. Zgodność ze scope pkt 6 i wymagane zmiany
 
