@@ -19,6 +19,11 @@ urlpatterns = [
         name="order_print_file",
     ),
     path(
+        "orders/<str:number>/shipments/<int:pk>/label.pdf",
+        views.shipment_label,
+        name="shipment_label",
+    ),
+    path(
         "orders/<str:number>/complaint-photos/<int:pk>/",
         views.complaint_photo,
         name="complaint_photo",

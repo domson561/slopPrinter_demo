@@ -17,14 +17,14 @@ w `orders`, `printing`, `ops` albo `assets`, to brakuje czegoś w interfejsie, n
 | Obszar | Kod | Co robi |
 |---|---|---|
 | Interfejs produktu | `apps/products` | `Product`, `GhLine`, `ProductError`, rejestr z `SHOP_PRODUCTS`. Jedyne miejsce, przez które rdzeń widzi produkt. |
-| Zamówienia | `apps/orders` | `Order`, `OrderItem` (kod produktu + opcje JSON + plik), maszyna stanów, płatność, wysyłka, reklamacje ze zdjęciami, maile o statusie, `process_order`. |
+| Zamówienia | `apps/orders` | `Order`, `OrderItem` (kod produktu + opcje JSON + plik), maszyna stanów, płatność, przesyłka i etykieta PDF za interfejsem przewoźnika (`shipping.py`), reklamacje ze zdjęciami, maile o statusie, `process_order`. |
 | Druk | `apps/printing` | `PrintJob` (koszyk = jedno zlecenie), `GhApiProvider`, budowa body wg kontraktu, submit z retry, polling `changes`, mapowanie statusów GH. |
 | Pliki | `apps/assets` | `Asset`, `AssetVersion`, bramka `gate.py` (typ po zawartości, limity, sanityzacja obrazów i PDF), prywatny storage oryginałów, `save_version`. |
 | Panel operatora | `apps/ops` | O1-O5: lista, kolejka, zamówienie, akcje, ustawienia. Fragmenty per produkt wpina przez `operator_template` i `settings_template`. |
 | Koszyk i proces zakupu po konfiguracji | `apps/web` koszyk, S4-S8 | koszyk w sesji (`web/cart.py`, jeden szkic z listą pozycji), checkout, płatność, potwierdzenie, status, reklamacja, strony statyczne. Logika z `orders.services`, szablony sklepu. |
 | Ustawienia sklepu | `catalog.ShopSettings` (część), `catalog.DeliveryMethod` | auto-zatwierdzanie, czas realizacji, retencja, waluta, metody dostawy. |
 | Atrapa GH | `apps/gh_mock` | tylko development, pod `GH_MOCK_ENABLED`. |
-| Konfiguracja | `config/settings` | `SHOP_PRODUCTS`, `GH_API_*`, `PRIVATE_MEDIA_ROOT`, `SITE_URL`, `ORDER_NUMBER_PREFIX`, huey, e-mail. |
+| Konfiguracja | `config/settings` | `SHOP_PRODUCTS`, `GH_API_*`, `PAYMENT_PROVIDER`, `CARRIER_PROVIDER`, `PRIVATE_MEDIA_ROOT`, `SITE_URL`, `ORDER_NUMBER_PREFIX`, huey, e-mail. |
 
 ## Sklep (każdy robi po swojemu)
 
@@ -45,6 +45,7 @@ w `orders`, `printing`, `ops` albo `assets`, to brakuje czegoś w interfejsie, n
 6. Cena: produkt daje cenę detaliczną za sztukę z opcji. Cena hurtowa dojdzie z taskiem „Katalog” i będzie wartością zlecenia w GH.
 7. Panel operatora jest rdzeniem. Produkt dostarcza tylko fragment szablonu i dane do niego (`operator_context`, `settings_forms`), nie własne widoki.
 8. Rdzeń nie zna GH inaczej niż przez `GhApiProvider`; sklep nie woła GH bezpośrednio ani nie buduje body zlecenia.
+9. Numer przesyłki i etykietę robi rdzeń przez `orders.shipping` (przewoźnik wymienny jak płatności), zanim zlecenie pójdzie do GH. Dane kupującego są tylko w PDF etykiety. Produkt nie wie o wysyłce.
 
 ## Stan obecny
 
@@ -64,6 +65,6 @@ Co gdzie wylądowało:
 1. Zainstalować rdzeń (te same aplikacje, te same migracje).
 2. Napisać klasę `Product` i wpisać ją do `SHOP_PRODUCTS`; wzór najmniejszy: `apps/ready_pdf`, pełny: `apps/poster`.
 3. Dostarczyć widoki S1-S3 i szablony `templates/web`, tokeny CSS.
-4. Ustawić `.env`: `SITE_URL`, `GH_API_BASE_URL`, `GH_API_TOKEN`, `ORDER_NUMBER_PREFIX`, `PRIVATE_MEDIA_ROOT`.
+4. Ustawić `.env`: `SITE_URL`, `GH_API_BASE_URL`, `GH_API_TOKEN`, `ORDER_NUMBER_PREFIX`, `PRIVATE_MEDIA_ROOT`, `CARRIER_PROVIDER` (domyślnie atrapa kuriera).
 5. Zasiać metody dostawy i ustawienia sklepu.
 6. Przejść testy zgodności na atrapie GH (task „seed nowego sklepu”, jeszcze nie ma).

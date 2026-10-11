@@ -205,6 +205,7 @@ W sklepie:
 - Atrapa GH (`apps/gh_mock`) o kształcie z tego dokumentu zamiast `MockPrinterJob` i `MockPrintProvider`; jej statusy to statusy GH plus stany plików. Zrobione 2026-10-08.
 - `accepted` znaczy „GH ma wszystkie pliki”. Zrobione 2026-10-08.
 - Podpisane, wygasające linki z sumą kontrolną zamiast publicznego `/media/` (`apps/printing/links.py`, trasa `/files/signed/<token>.pdf`; po terminie 410, zły podpis 404; dosłanie wystawia nowy podpis). Zrobione 2026-10-10.
+- Etykieta (`label`): przesyłkę i PDF etykiety robi sklep przed POST-em, przez wymiennego przewoźnika (`apps/orders/shipping.py`, w dev atrapa kuriera). PDF w prywatnym katalogu, do GH tym samym podpisanym linkiem; anulowana etykieta daje 404. Nieudany POST nie zużywa etykiety, każde zlecenie przyjęte przez GH (także dodruk) dostaje własną. Atrapa GH wymaga etykiety. Zrobione 2026-10-10.
 
 Poza kontraktem, do ustalenia między stronami: rozliczenie i faktura zbiorcza, umowa powierzenia danych z etykiet (RODO), minimalna ważność linku, zawartość słownika produktów, X dni retencji plików w GH.
 

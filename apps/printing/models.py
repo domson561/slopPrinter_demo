@@ -37,6 +37,14 @@ class PrintJob(models.Model):
     reprint_of = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="reprints"
     )
+    shipment = models.ForeignKey(
+        "orders.Shipment",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="print_jobs",
+        help_text="Przesyłka, której etykieta poszła w zleceniu (`spec['label']`).",
+    )
     reason = models.CharField(max_length=500, blank=True)
     attempts = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)

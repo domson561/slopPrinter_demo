@@ -16,7 +16,7 @@ from apps.assets.gate import IMAGE_MIME, UploadError, check_upload
 from apps.catalog.models import ShopSettings
 from apps.products import ProductError, get_product
 
-from . import notifications
+from . import notifications, shipping
 from .models import (
     Actor,
     Complaint,
@@ -26,6 +26,7 @@ from .models import (
     OrderStatus,
     OrderStatusEvent,
     Payment,
+    Shipment,
 )
 
 log = logging.getLogger("slop.orders")
@@ -326,7 +327,10 @@ def process_order(order: Order):
 
 
 def approve_order(order: Order, actor=Actor.OPERATOR, actor_user=None, reason: str = ""):
-    """Zatwierdzenie: wysyła zlecenia do drukarni; sukces -> sent_to_printer, porażka -> on_hold."""
+    """
+    Zatwierdzenie: etykieta u przewoźnika i zlecenie do drukarni; sukces -> sent_to_printer,
+    porażka którejkolwiek strony -> on_hold.
+    """
     from apps.printing.services import PrintSubmitError, submit_order
 
     order.refresh_from_db()
@@ -340,6 +344,9 @@ def approve_order(order: Order, actor=Actor.OPERATOR, actor_user=None, reason: s
         raise TransitionError("Brak pliku do druku. Uruchom ponowne przetworzenie.")
     try:
         submit_order(order)
+    except shipping.CarrierError as exc:
+        transition(order, S.ON_HOLD, Actor.SYSTEM, f"Przewoźnik nie wystawił etykiety: {exc}"[:500])
+        return
     except PrintSubmitError as exc:
         transition(order, S.ON_HOLD, Actor.SYSTEM, f"Drukarnia nie przyjęła zlecenia: {exc}"[:500])
         return
@@ -371,6 +378,11 @@ def cancel_order(order: Order, actor, reason: str, actor_user=None):
         from apps.printing.services import cancel_print_job
 
         cancel_print_job(job, reason)
+    for shipment in order.shipments.filter(status=Shipment.Status.CREATED):
+        try:
+            shipping.cancel_shipment(shipment)
+        except shipping.CarrierError as exc:
+            log.warning("cancel %s: etykieta %s zostaje: %s", order.number, shipment, exc)
 
 
 def _open_print_jobs(order):
@@ -421,6 +433,9 @@ def request_reprint(order: Order, actor, reason: str, actor_user=None):
         force_transition(order, S.REPRINT, actor_user, reason)
     try:
         submit_reprint(order, reason)
+    except shipping.CarrierError as exc:
+        transition(order, S.ON_HOLD, Actor.SYSTEM, f"Przewoźnik nie wystawił etykiety: {exc}"[:500])
+        return
     except PrintSubmitError as exc:
         transition(order, S.ON_HOLD, Actor.SYSTEM, f"Drukarnia nie przyjęła dodruku: {exc}"[:500])
         return

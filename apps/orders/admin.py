@@ -39,7 +39,7 @@ class PaymentAdmin(admin.ModelAdmin):
 
 @admin.register(Shipment)
 class ShipmentAdmin(admin.ModelAdmin):
-    list_display = ("order", "carrier", "tracking_number", "shipped_at")
+    list_display = ("order", "carrier", "tracking_number", "status", "created_at", "shipped_at")
 
 
 class ComplaintPhotoInline(admin.TabularInline):

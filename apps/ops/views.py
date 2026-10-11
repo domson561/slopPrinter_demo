@@ -12,7 +12,15 @@ from django.views.decorators.http import require_POST
 
 from apps.catalog.models import ShopSettings
 from apps.orders import services as order_services
-from apps.orders.models import Actor, Complaint, ComplaintPhoto, Order, OrderItem, OrderStatus
+from apps.orders.models import (
+    Actor,
+    Complaint,
+    ComplaintPhoto,
+    Order,
+    OrderItem,
+    OrderStatus,
+    Shipment,
+)
 from apps.orders.services import TransitionError
 from apps.printing.models import PollCursor, PrintJob
 from apps.printing.services import poll_changes, reset_poll_auth
@@ -223,6 +231,19 @@ def complaint_photo(request, number, pk):
     resp = FileResponse(photo.image.open("rb"), content_type=content_type)
     resp["X-Content-Type-Options"] = "nosniff"
     return resp
+
+
+@staff_required
+def shipment_label(request, number, pk):
+    """Etykieta z danymi kupującego, z prywatnego katalogu; tylko dla operatora."""
+    shipment = get_object_or_404(Shipment, pk=pk, order__number=number)
+    if not shipment.label:
+        raise Http404("Brak etykiety.")
+    return FileResponse(
+        shipment.label.open("rb"),
+        as_attachment=True,
+        filename=f"{number}_{shipment.tracking_number}.pdf",
+    )
 
 
 @staff_required

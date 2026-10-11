@@ -115,7 +115,12 @@ class Order(models.Model):
 
     @property
     def latest_shipment(self):
-        return self.shipments.order_by("-shipped_at").first()
+        """Ostatnia nadana przesyłka (numer śledzenia dla kupującego)."""
+        return (
+            self.shipments.filter(status=Shipment.Status.SHIPPED)
+            .order_by("-shipped_at", "-pk")
+            .first()
+        )
 
     @property
     def shipping_address_lines(self):
@@ -220,14 +225,45 @@ class Payment(models.Model):
         return self.provider.startswith("Mock")
 
 
+def label_upload_to(instance, filename):
+    return f"labels/{instance.order_id}/{secrets.token_hex(8)}.pdf"
+
+
 class Shipment(models.Model):
+    """
+    Przesyłka sklepu. Numer i PDF etykiety daje przewoźnik (`orders.shipping`), zanim zlecenie
+    trafi do GH; GH tylko nakleja etykietę. Każde zlecenie przyjęte przez GH, także dodruk,
+    to osobna paczka. Etykieta niesie dane kupującego, więc leży w prywatnym katalogu i wychodzi
+    wyłącznie podpisanym linkiem dla GH albo przez panel operatora.
+    """
+
+    class Status(models.TextChoices):
+        CREATED = "created", "Etykieta gotowa"
+        SHIPPED = "shipped", "Nadana"
+        CANCELLED = "cancelled", "Anulowana"
+
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="shipments")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.CREATED)
+    provider = models.CharField(max_length=50, blank=True)
     carrier = models.CharField(max_length=50, blank=True)
     tracking_number = models.CharField(max_length=100, blank=True)
-    shipped_at = models.DateTimeField(default=timezone.now)
+    external_id = models.CharField(
+        max_length=100, blank=True, help_text="Identyfikator przesyłki u przewoźnika."
+    )
+    label = models.FileField(upload_to=label_upload_to, storage=private_storage, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    shipped_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
 
     def __str__(self):
         return f"{self.carrier} {self.tracking_number}"
+
+    @property
+    def is_mock(self):
+        return self.provider.startswith("Mock")
 
 
 class Complaint(models.Model):

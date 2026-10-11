@@ -139,7 +139,7 @@ def test_reprint_and_complaint_flow(make_awaiting_payment):
         gh_services.set_status(gh_order, status)
     poll_changes()
     order.refresh_from_db()
-    assert order.status == S.SHIPPED and order.latest_shipment.carrier == "Graphic House"
+    assert order.status == S.SHIPPED and order.latest_shipment.tracking_number.startswith("MOCK")
     services.mark_delivered(order)
     complaint = services.file_complaint(order, "zagięty róg")
     assert order.needs_attention

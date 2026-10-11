@@ -151,6 +151,8 @@ MOCK_UPSCALE_DELAY_SECONDS = tuple(
     float(x) for x in env("MOCK_UPSCALE_DELAY_SECONDS", "3,8").split(",")
 )
 PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", "apps.orders.payments.MockPaymentProvider")
+# Przewoźnik: numer przesyłki i PDF etykiety (apps/orders/shipping.py).
+CARRIER_PROVIDER = env("CARRIER_PROVIDER", "apps.orders.shipping.MockCarrierProvider")
 
 # --- Graphic House (kontrakt v1, docs/kontrakt-gh-v1.md) ----------------------
 PRINT_PROVIDER = env("PRINT_PROVIDER", "apps.printing.providers.GhApiProvider")

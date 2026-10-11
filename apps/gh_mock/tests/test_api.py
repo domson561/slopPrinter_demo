@@ -41,6 +41,7 @@ def order_body(number="SP-1", items=1, **extra):
             }
             for i in range(items)
         ],
+        "label": file_obj(url=f"http://localhost:8000/media/{number}-label.pdf"),
     }
     body.update(extra)
     return body
@@ -85,8 +86,11 @@ def test_post_is_idempotent_and_conflicts_on_changed_body(client, shop):
     assert first.status_code == 201
     data = first.json()
     assert data["status"] == "new" and data["gh_number"].endswith(f"/{timezone.now().year}")
-    assert [f["state"] for f in data["files"]] == ["pending", "pending"]
-    assert [f["position"] for f in data["files"]] == [1, 2]
+    assert data["files"] == [
+        {"kind": "item", "position": 1, "state": "pending"},
+        {"kind": "item", "position": 2, "state": "pending"},
+        {"kind": "label", "state": "pending"},
+    ]
 
     again = post(client, url, body)  # retry po timeoucie: identyczne body
     assert again.status_code == 200 and again.json()["gh_number"] == data["gh_number"]
@@ -117,6 +121,9 @@ def test_validation_rejects_customer_data_and_bad_totals(client, shop):
 
     resp = post(client, url, order_body(currency="EUR", items=0))
     assert resp.status_code == 400 and {"currency", "items"} <= set(resp.json()["errors"])
+
+    resp = post(client, url, order_body(label=None))  # etykieta wymagana (pkt 3)
+    assert resp.status_code == 400 and "label" in resp.json()["errors"]
     assert (
         client.post(
             url,
@@ -152,10 +159,10 @@ def test_download_verifies_header_size_and_checksum(shop):
             raise OSError("brak sieci")
         return b"not a pdf" if "SP-TXT" in url else PDF
 
-    assert services.download_pending_files(fetch) == 5
+    assert services.download_pending_files(fetch) == 10  # pozycja i etykieta w każdym
     states = {
         f.order.shop_order_number: (f.state, f.error)
-        for f in GhOrderFile.objects.select_related("order")
+        for f in GhOrderFile.objects.filter(kind="item").select_related("order")
     }
     assert states["SP-OK"] == ("downloaded", "")
     assert states["SP-SHA"] == ("failed", "checksum_mismatch")
@@ -212,25 +219,30 @@ def test_changes_since_uses_server_time_cursor(client, shop):
 @pytest.mark.django_db
 def test_file_resend_only_for_pending_or_failed(client, shop):
     order, _ = services.accept_order(shop, order_body("SP-F"))
-    file = order.files.get()
-    services.expire_file(file)
+    services.expire_file(order.files.get(kind="item"))
+    services.expire_file(order.files.get(kind="label"))
     url = reverse("gh_mock:api_files", args=["SP-F"])
 
     resp = post(client, url, {"kind": "item", "position": 1, "file": file_obj()})
     assert resp.status_code == 200
-    assert resp.json()["files"] == [{"kind": "item", "position": 1, "state": "pending"}]
+    assert resp.json()["files"] == [
+        {"kind": "item", "position": 1, "state": "pending"},
+        {"kind": "label", "state": "failed", "error": "expired"},
+    ]
+    resp = post(client, url, {"kind": "label", "file": file_obj()})
+    assert resp.status_code == 200 and {"kind": "label", "state": "pending"} in resp.json()["files"]
 
     assert post(client, url, {"kind": "item", "position": 9, "file": file_obj()}).status_code == 400
     assert post(client, url, {"kind": "item", "position": 1, "file": {}}).status_code == 400
     assert post(client, reverse("gh_mock:api_files", args=["SP-X"]), {}).status_code == 404
 
     services.download_pending_files(fetch=lambda url: PDF)
-    resp = post(client, url, {"kind": "item", "position": 1, "file": file_obj()})
-    assert resp.status_code == 400 and "file" in resp.json()["errors"]
-
-    # Etykietę można dosłać, choć POST jej nie miał (do czasu taska „Etykieta”).
-    resp = post(client, url, {"kind": "label", "file": file_obj()})
-    assert resp.status_code == 200 and {"kind": "label", "state": "pending"} in resp.json()["files"]
+    for body in (
+        {"kind": "item", "position": 1, "file": file_obj()},
+        {"kind": "label", "file": file_obj()},
+    ):
+        resp = post(client, url, body)
+        assert resp.status_code == 400 and "file" in resp.json()["errors"]
 
 
 @pytest.mark.django_db

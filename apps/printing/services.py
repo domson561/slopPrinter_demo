@@ -12,6 +12,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
+from apps.orders import shipping
 from apps.orders.models import Actor, OrderStatus, Shipment
 
 from . import links
@@ -42,8 +43,8 @@ class PrintSubmitError(Exception):
 def build_request(job: PrintJob) -> dict:
     """
     Jedno zlecenie na koszyk, pozycje listą. Bez danych kupującego: adres, telefon i e-mail
-    idą wyłącznie na etykietę. `total_value` to na razie wartość detaliczna pozycji; cena
-    hurtowa wejdzie z taskiem „Katalog”. Etykieta (`label`) dojdzie z taskiem „Etykieta”.
+    są wyłącznie w PDF etykiety (`label`), który GH pobiera podpisanym linkiem. `total_value`
+    to na razie wartość detaliczna pozycji; cena hurtowa wejdzie z taskiem „Katalog”.
     """
     order = job.order
     items = order.items.select_related("asset").order_by("pk")
@@ -53,6 +54,7 @@ def build_request(job: PrintJob) -> dict:
         "total_value": str(order.subtotal),
         "currency": order.currency,
         "items": [_item_body(position, item) for position, item in enumerate(items, start=1)],
+        "label": file_object(job.shipment),
     }
     note = ""
     if job.reprint_of is not None:
@@ -88,37 +90,39 @@ def check_print_files(order) -> None:
             )
 
 
-def file_object(version) -> dict:
+def file_object(obj) -> dict:
     """
-    Obiekt pliku z pkt 4: podpisany, wygasający link (`links.issue`), suma i rozmiar.
-    `expires_at` to dokładnie termin ważności podpisu. Każde wywołanie wystawia świeży link.
+    Obiekt pliku z pkt 4 dla PDF-a do druku (`AssetVersion`) albo etykiety (`Shipment`):
+    podpisany, wygasający link (`links.issue`), suma i rozmiar. `expires_at` to dokładnie
+    termin ważności podpisu. Każde wywołanie wystawia świeży link.
     """
-    if version is None:
+    if obj is None:
         return {}
-    url, expires_at = links.issue(version)
+    file = links.file_of(obj)
+    url, expires_at = links.issue(obj)
     return {
         "url": url,
-        "sha256": _sha256_of(version),
-        "size": _size_of(version),
+        "sha256": _sha256_of(file),
+        "size": _size_of(file),
         "expires_at": expires_at.isoformat(),
     }
 
 
-def _sha256_of(version) -> str:
+def _sha256_of(file) -> str:
     h = hashlib.sha256()
     try:
-        version.file.open("rb")
-        for chunk in version.file.chunks():
+        file.open("rb")
+        for chunk in file.chunks():
             h.update(chunk)
-        version.file.close()
+        file.close()
     except (OSError, ValueError):
         return ""
     return h.hexdigest()
 
 
-def _size_of(version) -> int:
+def _size_of(file) -> int:
     try:
-        return version.file.size
+        return file.size
     except (OSError, ValueError):
         return 0
 
@@ -134,12 +138,30 @@ def _next_shop_order_number(order) -> str:
     return order.number if earlier == 0 else f"{order.number}-D{earlier}"
 
 
+def shipment_for(order) -> Shipment:
+    """
+    Przesyłka do zlecenia. Etykieta, której nie wziął jeszcze żaden POST przyjęty przez GH
+    (np. po nieudanej wysyłce), idzie ponownie. Zlecenie przyjęte przez GH, także dodruk,
+    to osobna paczka, więc kolejne dostaje nową etykietę. `shipping.CarrierError` gdy
+    przewoźnik jej nie wystawi.
+    """
+    unused = (
+        order.shipments.filter(status=Shipment.Status.CREATED)
+        .exclude(print_jobs__sent_at__isnull=False)
+        .order_by("-created_at", "-pk")
+        .first()
+    )
+    return unused or shipping.create_shipment(order)
+
+
 def create_print_job(order, reprint_of: PrintJob | None = None, reason: str = "") -> PrintJob:
     check_print_files(order)
+    shipment = shipment_for(order)
     job = PrintJob.objects.create(
         order=order,
         shop_order_number=_next_shop_order_number(order),
         reprint_of=reprint_of,
+        shipment=shipment,
         reason=reason[:500],
     )
     job.spec = build_request(job)
@@ -302,10 +324,9 @@ def _advance_order(job, new_status, state, order_services) -> str:
             order_services.transition(order, S.PRINTED, Actor.PRINTER, "GH zgłosiło gotowość")
         return "zamówienie: wydrukowane"
     if new_status == J.SHIPPED:
-        shipped_at = parse_datetime(state.shipped_at) if state.shipped_at else None
-        Shipment.objects.create(
-            order=order, carrier="Graphic House", shipped_at=shipped_at or timezone.now()
-        )
+        if job.shipment is not None:
+            shipped_at = parse_datetime(state.shipped_at) if state.shipped_at else None
+            shipping.mark_shipped(job.shipment, shipped_at)
         if order.status == S.SENT_TO_PRINTER:
             order_services.transition(
                 order,
@@ -320,25 +341,37 @@ def _advance_order(job, new_status, state, order_services) -> str:
     return ""
 
 
+def _fresh_file_body(job: PrintJob, failed: dict) -> dict | None:
+    """Body dosłania (pkt 4) dla pliku `failed` z GH albo None, gdy sklep nie ma czego dosłać."""
+    if failed.get("kind") == "label":
+        shipment = job.shipment
+        if shipment is None or shipment.status == Shipment.Status.CANCELLED:
+            return None
+        return {"kind": "label", "file": file_object(shipment)}
+    position = failed.get("position")
+    positions = {item["position"] for item in job.spec.get("items", [])}
+    if failed.get("kind") != "item" or position not in positions:
+        return None
+    order_items = list(job.order.items.order_by("pk"))
+    order_item = order_items[position - 1] if 0 < position <= len(order_items) else None
+    files = order_item.print_files if order_item else []
+    if len(files) != 1:
+        return None
+    return {"kind": "item", "position": position, "file": file_object(files[0])}
+
+
 def resend_failed_files(job: PrintJob, provider) -> int:
     """Plik `failed` w GH nie zmienia statusu w sklepie, tylko uruchamia dosłanie linku."""
     sent = 0
-    items = {item["position"]: item for item in job.spec.get("items", [])}
     for failed in job.failed_files:
-        if failed.get("kind") != "item" or failed.get("position") not in items:
+        body = _fresh_file_body(job, failed)
+        if body is None:
             continue
-        order_items = list(job.order.items.order_by("pk"))
-        position = failed["position"]
-        order_item = order_items[position - 1] if 0 < position <= len(order_items) else None
-        files = order_item.print_files if order_item else []
-        fresh = file_object(files[0]) if len(files) == 1 else {}
-        if not fresh:
-            continue
-        body = {"kind": "item", "position": failed["position"], "file": fresh}
+        what = "etykiety" if body["kind"] == "label" else f"pozycji {body['position']}"
         try:
             state = provider.resend_file(job.shop_order_number, body)
         except (ProviderRejected, ProviderError) as exc:
-            log.warning("resend %s poz. %s: %s", job, failed["position"], exc)
+            log.warning("resend %s, link do %s: %s", job, what, exc)
             PrintJobEvent.objects.create(
                 print_job=job, status="file_resend", applied=False, note=str(exc)[:300]
             )
@@ -349,7 +382,7 @@ def resend_failed_files(job: PrintJob, provider) -> int:
             print_job=job,
             status="file_resend",
             payload=body,
-            note=f"dosłano świeży link do pozycji {failed['position']} ({failed.get('error')})",
+            note=f"dosłano świeży link do {what} ({failed.get('error')})",
         )
         sent += 1
     return sent
@@ -388,7 +421,7 @@ def poll_changes(provider=None) -> dict:
         job.shop_order_number: job
         for job in PrintJob.objects.filter(
             shop_order_number__in=[o.shop_order_number for o in result.orders]
-        ).select_related("order", "reprint_of")
+        ).select_related("order", "reprint_of", "shipment")
     }
     for state in result.orders:
         job = jobs.get(state.shop_order_number)

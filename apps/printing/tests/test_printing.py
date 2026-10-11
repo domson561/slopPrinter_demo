@@ -11,12 +11,14 @@ from apps.catalog.models import DeliveryMethod
 from apps.gh_mock import services as gh_services
 from apps.gh_mock.models import GhOrder, GhOrderFile
 from apps.orders import services as order_services
-from apps.orders.models import Actor, OrderItem
+from apps.orders import shipping
+from apps.orders.models import Actor, OrderItem, Shipment
 from apps.orders.models import OrderStatus as S
 from apps.orders.payments import MockPaymentProvider
 from apps.poster.models import Format, PaperOption
 from apps.poster.options import poster_options
 from apps.poster.services import save_poster_draft
+from apps.printing import links
 from apps.printing import services as print_services
 from apps.printing.models import PollCursor, PrintJob
 from apps.printing.providers import GhApiProvider
@@ -109,7 +111,10 @@ def test_request_matches_contract(approved_order):
     assert body["shop_order_number"] == approved_order.number == job.shop_order_number
     assert body["title"] == f"Zamówienie {approved_order.number}"
     assert body["currency"] == "PLN" and body["total_value"] == str(approved_order.subtotal)
-    assert "label" not in body and "note_for_production" not in body
+    assert "note_for_production" not in body
+    assert set(body["label"]) == {"url", "sha256", "size", "expires_at"}
+    assert body["label"]["url"].endswith(".pdf") and "/media/" not in body["label"]["url"]
+    assert body["label"]["size"] == job.shipment.label.size
     assert len(body["items"]) == 1
     item = body["items"][0]
     assert item["position"] == 1 and item["product_code"] == "poster-a2-matte"
@@ -130,6 +135,99 @@ def test_request_has_no_customer_data(approved_order):
 
 
 # ---------------------------------------------------------------------------
+# Etykieta
+# ---------------------------------------------------------------------------
+
+
+class BrokenCarrier:
+    name = "BrokenCarrier"
+
+    def create_label(self, order):
+        raise shipping.CarrierError("API kuriera nie odpowiada")
+
+    def cancel_label(self, shipment):
+        raise shipping.CarrierError("API kuriera nie odpowiada")
+
+
+@pytest.mark.django_db
+def test_gh_downloads_label_through_signed_link(approved_order, operator):
+    order_services.approve_order(approved_order, actor_user=operator)
+    job = PrintJob.objects.get(order=approved_order)
+    label_url = job.spec["label"]["url"]
+    with job.shipment.label.open("rb") as fh:
+        assert gh_services.fetch_url(label_url) == fh.read()
+
+    gh_services.download_pending_files()
+    poll_changes()
+    job.refresh_from_db()
+    assert {"kind": "label", "state": "downloaded"} in job.files_state
+    assert job.status == PrintJob.Status.ACCEPTED
+
+    shipping.cancel_shipment(job.shipment)  # anulowana etykieta nie wychodzi już do GH
+    with pytest.raises(links.LinkError):
+        gh_services.fetch_url(label_url)
+
+
+@pytest.mark.django_db
+def test_failed_submit_reuses_label_and_cancel_releases_it(approved_order, operator):
+    GhApiProvider.fail_next_requests = 5
+    order_services.approve_order(approved_order, actor_user=operator)
+    approved_order.refresh_from_db()
+    assert approved_order.status == S.ON_HOLD
+    shipment = Shipment.objects.get(order=approved_order)
+
+    order_services.approve_order(approved_order, actor_user=operator)  # drugie podejście
+    approved_order.refresh_from_db()
+    assert approved_order.status == S.SENT_TO_PRINTER
+    assert Shipment.objects.filter(order=approved_order).count() == 1
+    assert [j.shipment for j in PrintJob.objects.filter(order=approved_order)] == [shipment] * 2
+
+    order_services.cancel_order(approved_order, Actor.OPERATOR, "klient rezygnuje", operator)
+    shipment.refresh_from_db()
+    assert shipment.status == Shipment.Status.CANCELLED
+
+
+@pytest.mark.django_db
+def test_carrier_failure_puts_order_on_hold_without_gh_order(approved_order, operator, settings):
+    settings.CARRIER_PROVIDER = "apps.printing.tests.test_printing.BrokenCarrier"
+    order_services.approve_order(approved_order, actor_user=operator)
+    approved_order.refresh_from_db()
+    assert approved_order.status == S.ON_HOLD
+    assert approved_order.hold_reason.startswith("Przewoźnik nie wystawił etykiety")
+    assert not PrintJob.objects.exists() and not GhOrder.objects.exists()
+
+
+@pytest.mark.django_db
+def test_failed_label_download_triggers_fresh_link(approved_order, operator):
+    order_services.approve_order(approved_order, actor_user=operator)
+    job = PrintJob.objects.get(order=approved_order)
+    gh_services.expire_file(_gh(job).files.get(kind="label"))
+
+    assert poll_changes()["resent"] == 1
+    job.refresh_from_db()
+    assert {"kind": "label", "state": "pending"} in job.files_state
+    assert "etykiety" in job.events.get(status="file_resend").note
+    gh_services.download_pending_files()
+    poll_changes()
+    job.refresh_from_db()
+    assert job.status == PrintJob.Status.ACCEPTED
+
+
+@pytest.mark.django_db
+def test_operator_downloads_label_from_panel(client, approved_order, operator):
+    order_services.approve_order(approved_order, actor_user=operator)
+    shipment = Shipment.objects.get(order=approved_order)
+    url = reverse("ops:shipment_label", args=[approved_order.number, shipment.pk])
+    assert client.get(url).status_code == 302  # bez logowania na stronę logowania
+
+    client.force_login(operator)
+    resp = client.get(url)
+    assert resp.status_code == 200 and b"".join(resp.streaming_content).startswith(b"%PDF")
+    html = client.get(reverse("ops:order_detail", args=[approved_order.number])).content.decode()
+    assert shipment.tracking_number in html and "etykieta PDF" in html
+
+
+# ---------------------------------------------------------------------------
 # Wysyłka
 # ---------------------------------------------------------------------------
 
@@ -145,7 +243,11 @@ def test_cart_is_one_order_in_gh(approved_cart, operator):
     assert GhOrder.objects.count() == 1 and gh_order.items.count() == 2
     assert job.external_id == gh_order.gh_number and job.provider_status == "new"
     assert job.status == PrintJob.Status.SENT  # pliki jeszcze nie pobrane
-    assert [f["state"] for f in job.files_state] == ["pending", "pending"]
+    assert [(f["kind"], f["state"]) for f in job.files_state] == [
+        ("item", "pending"),
+        ("item", "pending"),
+        ("label", "pending"),
+    ]
     assert [i.quantity for i in gh_order.items.all()] == [1, 2]
     assert gh_order.items.last().product_code == "poster-a3-matte"
 
@@ -247,7 +349,8 @@ def test_polling_maps_gh_statuses_to_order(approved_order, operator):
     job.refresh_from_db()
     approved_order.refresh_from_db()
     assert job.status == PrintJob.Status.SHIPPED and approved_order.status == S.SHIPPED
-    assert approved_order.latest_shipment.carrier == "Graphic House"
+    assert approved_order.latest_shipment == job.shipment
+    assert job.shipment.status == Shipment.Status.SHIPPED and job.shipment.shipped_at
 
     before = job.events.count()
     summary = poll_changes()
@@ -272,7 +375,7 @@ def test_shipped_without_ready_implies_printed(approved_order, operator):
 def test_failed_file_triggers_fresh_link(approved_order, operator):
     order_services.approve_order(approved_order, actor_user=operator)
     job = PrintJob.objects.get(order=approved_order)
-    gh_file = _gh(job).files.get()
+    gh_file = _gh(job).files.get(kind="item")
     gh_services.expire_file(gh_file)
     old_expiry = gh_file.expires_at
 
@@ -282,7 +385,10 @@ def test_failed_file_triggers_fresh_link(approved_order, operator):
     assert gh_file.state == GhOrderFile.State.PENDING and gh_file.expires_at >= old_expiry
     job.refresh_from_db()
     assert job.status == PrintJob.Status.SENT
-    assert job.files_state == [{"kind": "item", "position": 1, "state": "pending"}]
+    assert job.files_state == [
+        {"kind": "item", "position": 1, "state": "pending"},
+        {"kind": "label", "state": "pending"},
+    ]
     assert job.events.filter(status="file_resend", applied=True).count() == 1
 
     gh_services.download_pending_files()
@@ -305,6 +411,7 @@ def test_reprint_gets_new_shop_order_number(approved_order, operator):
     jobs = list(PrintJob.objects.filter(order=approved_order).order_by("created_at"))
     assert len(jobs) == 2 and jobs[1].reprint_of == jobs[0]
     assert jobs[1].shop_order_number == f"{approved_order.number}-D1"
+    assert jobs[1].shipment != jobs[0].shipment  # dodruk to nowa paczka z nową etykietą
     assert GhOrder.objects.count() == 2
     assert "Dodruk" in _gh(jobs[1]).note_for_production
     assert approved_order.status == S.SENT_TO_PRINTER
@@ -320,6 +427,7 @@ def test_cancel_after_send_is_local_only(approved_order, operator):
     assert approved_order.status == S.CANCELLED and job.status == PrintJob.Status.CANCELLED
     assert "biurem" in job.events.last().note
     assert _gh(job).status == "new"  # GH nie zna anulowania
+    assert job.shipment.status == Shipment.Status.CANCELLED  # etykieta zwolniona u kuriera
 
 
 @pytest.mark.django_db

@@ -194,11 +194,7 @@ def validate_order_body(body) -> dict:
             }
         )
 
-    # Etykieta jest w kontrakcie wymagana. Do czasu taska „Etykieta i wysyłka” sklep jej
-    # nie ma, więc atrapa przyjmuje zlecenie bez niej. Po tamtym tasku: wymagana.
-    label = None
-    if body.get("label") is not None:
-        label = validate_file(body.get("label"), "label", errors)
+    label = validate_file(body.get("label"), "label", errors)
 
     if total_value is not None and raw_items and total_value != items_total:
         errors.setdefault("total_value", []).append(
@@ -265,8 +261,7 @@ def accept_order(shop: GhShop, body: dict) -> tuple[GhOrder, bool]:
         GhOrderFile.objects.create(
             order=order, kind=GhOrderFile.Kind.ITEM, position=item["position"], **item["file"]
         )
-    if clean["label"] is not None:
-        GhOrderFile.objects.create(order=order, kind=GhOrderFile.Kind.LABEL, **clean["label"])
+    GhOrderFile.objects.create(order=order, kind=GhOrderFile.Kind.LABEL, **clean["label"])
     log.info("GH: przyjęto %s jako %s", order.shop_order_number, order.gh_number)
     return order, True
 
@@ -308,11 +303,10 @@ def replace_file_link(order: GhOrder, body: dict) -> GhOrderFile:
         lookup["position"] = position
     target = order.files.filter(**lookup).first()
     if target is None:
-        if kind == GhOrderFile.Kind.LABEL:
-            target = GhOrderFile(order=order, kind=kind)
-        else:
+        if kind == GhOrderFile.Kind.ITEM:
             raise ValidationFailed({"position": ["brak takiej pozycji"]})
-    elif target.state == GhOrderFile.State.DOWNLOADED:
+        raise ValidationFailed({"kind": ["zlecenie nie ma etykiety"]})
+    if target.state == GhOrderFile.State.DOWNLOADED:
         raise NotAllowed("plik już pobrany, zmiana wymaga nowego zamówienia")
 
     for key, value in file.items():
@@ -335,8 +329,7 @@ def fetch_url(url: str) -> bytes:
     signed_prefix = settings.SITE_URL + "/files/signed/"
     if url.startswith(signed_prefix):
         token = url[len(signed_prefix) :].split("?", 1)[0].removesuffix(".pdf")
-        version = file_links.resolve(token)
-        with version.file.open("rb") as fh:
+        with file_links.resolve(token).open("rb") as fh:
             return fh.read()
     resp = requests.get(url, timeout=60)
     resp.raise_for_status()

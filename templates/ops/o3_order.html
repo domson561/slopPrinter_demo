@@ -133,7 +133,7 @@
     <h2>Płatności</h2>
     <ul>{% for p in payments %}<li>{{ p.provider }} {{ p.external_id }}: {{ p.amount }} {{ p.currency }}, {{ p.get_status_display }} {% if p.is_mock %}<span class="tag tag--mock">symulacja</span>{% endif %}</li>{% empty %}<li>Brak.</li>{% endfor %}</ul>
     <h2>Wysyłka</h2>
-    <ul>{% for s in shipments %}<li>{{ s.shipped_at|date:"Y-m-d H:i" }} {{ s.carrier }} {{ s.tracking_number }}</li>{% empty %}<li>Brak.</li>{% endfor %}</ul>
+    <ul>{% for s in shipments %}<li>{{ s.carrier }} {{ s.tracking_number }}: {{ s.get_status_display }}{% if s.shipped_at %} {{ s.shipped_at|date:"Y-m-d H:i" }}{% endif %}{% if s.label %} <a href="{% url 'ops:shipment_label' order.number s.pk %}">etykieta PDF</a>{% endif %} {% if s.is_mock %}<span class="tag tag--mock">symulacja</span>{% endif %}</li>{% empty %}<li>Brak.</li>{% endfor %}</ul>
     <h2>Reklamacje</h2>
     {% for c in complaints %}
       <article class="complaint">
