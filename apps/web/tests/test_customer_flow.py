@@ -204,6 +204,29 @@ def test_upload_errors_are_shown(client, catalog_data):
 
 
 @pytest.mark.django_db
+def test_format_from_home_page_is_preselected(client, catalog_data, image_upload):
+    html = client.get(reverse("web:upload")).content.decode()
+    assert "29,7 × 42 cm" in html and "od 59 zł" in html and 'data-format="B2"' in html
+
+    resp = client.post(
+        reverse("web:upload"), {"file": image_upload(size=(1448, 2048)), "format": "A2"}
+    )
+    asset = Asset.objects.get()
+    assert resp.url == reverse("web:configure", args=[asset.pk]) + "?format=A2"
+    resp = client.get(resp.url)
+    assert resp.context["form"].initial["format"] == Format.objects.get(code="A2").pk
+
+    # Nieznany format nie trafia do adresu, zablokowany nie jest podstawiany
+    resp = client.post(
+        reverse("web:upload"), {"file": image_upload(size=(362, 512)), "format": "XXL"}
+    )
+    small = Asset.objects.exclude(pk=asset.pk).get()
+    assert resp.url == reverse("web:configure", args=[small.pk])
+    resp = client.get(reverse("web:configure", args=[small.pk]), {"format": "B2"})
+    assert resp.context["form"].initial["format"] != Format.objects.get(code="B2").pk
+
+
+@pytest.mark.django_db
 def test_blocked_format_cannot_be_ordered(client, catalog_data, image_upload):
     client.post(reverse("web:upload"), {"file": image_upload(size=(362, 512))})
     asset = Asset.objects.get()

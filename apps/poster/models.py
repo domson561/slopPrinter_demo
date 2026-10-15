@@ -34,6 +34,14 @@ class Format(models.Model):
         return float(self.height_mm) / float(MM_PER_INCH)
 
     @property
+    def width_cm(self):
+        return Decimal(self.width_mm) / 10
+
+    @property
+    def height_cm(self):
+        return Decimal(self.height_mm) / 10
+
+    @property
     def ratio(self):
         """Szerokość / wysokość w orientacji pionowej."""
         return self.width_mm / self.height_mm

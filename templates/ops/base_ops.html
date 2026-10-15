@@ -9,4 +9,5 @@
   <a href="{% url 'admin:index' %}">Admin (awaryjnie)</a>
   <form method="post" action="{% url 'ops:logout' %}" class="site-header__logout">{% csrf_token %}<button type="submit" class="button button--link">Wyloguj ({{ user.username }})</button></form>
 {% endblock %}
+{% block header_tools %}{% endblock %}
 {% block footer %}<span class="site-footer__demo">Panel operatora. Demo.</span>{% endblock %}

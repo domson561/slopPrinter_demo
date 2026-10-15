@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ site_name }}{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
   <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   {% block head %}{% endblock %}
@@ -13,11 +16,27 @@
     <a class="site-header__brand" href="{% url 'web:upload' %}">{{ site_name }}</a>
     <nav class="site-header__nav">
       {% block nav %}
-        <a href="{% url 'web:upload' %}">Wgraj plik</a>
-        {% if cart_count %}<a href="{% url 'web:cart' cart.status_token %}">Koszyk ({{ cart_count }})</a>{% endif %}
+        <a href="{% url 'web:upload' %}#jak-to-dziala">Jak to działa</a>
+        <a href="{% url 'web:upload' %}#formaty">Formaty i ceny</a>
         <a href="{% url 'web:static_page' 'faq' %}">FAQ</a>
       {% endblock %}
     </nav>
+    {% block header_tools %}
+      <div class="site-header__tools">
+        {% if cart_count %}
+          <a class="site-header__cart" href="{% url 'web:cart' cart.status_token %}">
+            {% include "components/icon_cart.html" %}
+            <span class="site-header__badge" aria-hidden="true">{{ cart_count }}</span>
+            <span class="visually-hidden">Koszyk ({{ cart_count }})</span>
+          </a>
+        {% else %}
+          <span class="site-header__cart site-header__cart--empty" title="Koszyk jest pusty">
+            {% include "components/icon_cart.html" %}
+            <span class="visually-hidden">Koszyk jest pusty</span>
+          </span>
+        {% endif %}
+      </div>
+    {% endblock %}
   </header>
 
   <main class="site-main">

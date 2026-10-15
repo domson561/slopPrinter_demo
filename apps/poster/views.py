@@ -5,9 +5,11 @@ makieta, wycinek). Koszyk, checkout, płatność i status są w rdzeniu (`apps.w
 
 import io
 import json
+from urllib.parse import urlencode
 
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods
 
 from apps.assets.gate import UploadError
@@ -40,7 +42,12 @@ def upload(request):
         except UploadError as exc:
             form.add_error("file", str(exc))
         else:
-            return redirect("web:configure", asset_id=asset.pk)
+            # Format kliknięty na stronie głównej ("Zamów") przechodzi do konfiguratora
+            url = reverse("web:configure", args=[asset.pk])
+            wanted = request.POST.get("format", "")
+            if wanted and active_formats().filter(code=wanted).exists():
+                url += "?" + urlencode({"format": wanted})
+            return redirect(url)
     return render(
         request,
         "poster/s1_upload.html",
@@ -92,7 +99,7 @@ def configure(request, asset_id):
     cards = _format_cards(asset, poster_settings)
 
     initial = {
-        "format": format_of(opts).pk if item else _default_format(cards),
+        "format": format_of(opts).pk if item else _default_format(cards, request.GET.get("format")),
         "paper": paper_of(opts) if item else active_papers().first(),
         "white_margin": opts.get("white_margin", False),
         "quantity": item.quantity if item else 1,
@@ -148,7 +155,11 @@ def configure(request, asset_id):
     )
 
 
-def _default_format(cards):
+def _default_format(cards, wanted=None):
+    """Format wybrany na stronie głównej, jeśli plik się do niego nadaje, inaczej pierwszy dostępny."""
+    for c in cards:
+        if wanted and c["format"].code == wanted and not c["quality"]["blocked"]:
+            return c["format"].pk
     for c in cards:
         if not c["quality"]["blocked"]:
             return c["format"].pk

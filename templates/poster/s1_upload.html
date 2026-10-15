@@ -1,38 +1,114 @@
 {% extends "base.html" %}
-{% block title %}Wgraj obrazek - {{ site_name }}{% endblock %}
+{% load static %}
+{% block title %}Twój obrazek z AI jako plakat - {{ site_name }}{% endblock %}
+{% block body_class %}page-home{% endblock %}
 {% block content %}
-<section class="upload">
-  <h1>Wydrukuj swój obrazek z AI jako plakat</h1>
-  <p>Wgraj plik, a my sprawdzimy, czy nadaje się do druku, poprawimy jakość i wyślemy gotowy plakat.</p>
+<section class="home-hero">
+  <div class="home-hero__copy">
+    <h1 class="home-hero__title">Twój obrazek z AI<br>jako plakat</h1>
+    <p class="home-hero__lead">Wgraj swój obrazek, wybierz format, a my wydrukujemy go w najwyższej jakości. Jeden egzemplarz, bez kompromisów.</p>
 
-  <form method="post" enctype="multipart/form-data" class="upload-form" id="upload-form">
-    {% csrf_token %}
-    <div class="upload-dropzone" id="dropzone">
-      <label for="{{ form.file.id_for_label }}">Przeciągnij plik tutaj albo wybierz z dysku</label>
-      {{ form.file }}
-      <p class="upload-dropzone__hint">JPG, PNG lub WebP, maksymalnie {{ max_mb }} MB.</p>
-      {{ form.file.errors }}
-    </div>
-    <progress class="upload-progress" id="upload-progress" value="0" max="100" hidden></progress>
-    <button type="submit" class="button button--primary">Wgraj i sprawdź</button>
-  </form>
+    <form method="post" enctype="multipart/form-data" class="upload-form" id="upload-form">
+      {% csrf_token %}
+      <input type="hidden" name="format" id="upload-format" value="">
+      <div class="upload-dropzone" id="dropzone">
+        {{ form.file }}
+        <svg class="upload-dropzone__icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 34h-2a9 9 0 0 1-1-17.9A12 12 0 0 1 34.3 13 8.5 8.5 0 0 1 36 34h-2"/><path d="M24 40V22m-6 6 6-6 6 6"/></svg>
+        <p class="upload-dropzone__title">Przeciągnij i upuść swój plik tutaj</p>
+        <p class="upload-dropzone__sub">lub kliknij, aby wybrać z dysku</p>
+        <p class="upload-dropzone__hint">Obsługiwane formaty: JPG, PNG, WebP <span aria-hidden="true">•</span> Maks. rozmiar pliku: {{ max_mb }} MB</p>
+        {{ form.file.errors }}
+      </div>
+      <progress class="upload-progress" id="upload-progress" value="0" max="100" hidden></progress>
+      <noscript><button type="submit" class="button button--primary">Wgraj i sprawdź</button></noscript>
+    </form>
 
-  <section class="upload__formats">
-    <h2>Dostępne formaty</h2>
-    <ul>
-      {% for f in formats %}<li>{{ f.name }} ({{ f.width_mm }} x {{ f.height_mm }} mm) od {{ f.base_price }} zł</li>{% endfor %}
+    <ul class="format-tiles" id="formaty">
+      {% for f in formats %}
+        <li class="format-tile">
+          <span class="format-tile__name">{{ f.code }}</span>
+          <span class="format-tile__dims">{{ f.width_cm }} × {{ f.height_cm }} cm</span>
+          <span class="format-tile__price">od {{ f.base_price|floatformat:"-2" }} zł</span>
+          <label class="format-tile__order" for="{{ form.file.id_for_label }}" data-format="{{ f.code }}">Zamów</label>
+        </li>
+      {% endfor %}
     </ul>
-  </section>
-  <p><a href="{% url 'web:static_page' 'regulamin' %}">Regulamin</a></p>
+  </div>
+
+  <div class="carousel" data-carousel aria-roledescription="karuzela" aria-label="Przykładowe plakaty">
+    <div class="carousel__track" data-carousel-track>
+      <figure class="carousel__slide">
+        <img src="{% static 'img/carousel_1.webp' %}"
+             srcset="{% static 'img/carousel_1-720.webp' %} 720w, {% static 'img/carousel_1.webp' %} 1254w"
+             sizes="(max-width: 980px) 100vw, 50vw" width="1254" height="1254" fetchpriority="high"
+             alt="Trzy plakaty w drewnianych ramach oparte o ścianę: górski pejzaż z księżycem, portret w kwiatach i astronauta przed planetą.">
+      </figure>
+      <figure class="carousel__slide">
+        <img src="{% static 'img/carousel_2.webp' %}"
+             srcset="{% static 'img/carousel_2-720.webp' %} 720w, {% static 'img/carousel_2.webp' %} 1254w"
+             sizes="(max-width: 980px) 100vw, 50vw" width="1254" height="1254" loading="lazy"
+             alt="Duży kwadratowy plakat na jasnej ścianie: kobieta wśród czarno-białych fal na tle złotej tarczy.">
+      </figure>
+      <figure class="carousel__slide">
+        <img src="{% static 'img/carousel_3.webp' %}"
+             srcset="{% static 'img/carousel_3-720.webp' %} 720w, {% static 'img/carousel_3.webp' %} 1254w"
+             sizes="(max-width: 980px) 100vw, 50vw" width="1254" height="1254" loading="lazy"
+             alt="Galeria pięciu plakatów nad drewnianą komodą w salonie: pejzaże z księżycami i słońcem oraz motyw roślinny.">
+      </figure>
+      <figure class="carousel__slide">
+        <img src="{% static 'img/carousel_4.webp' %}"
+             srcset="{% static 'img/carousel_4-720.webp' %} 720w, {% static 'img/carousel_4.webp' %} 1254w"
+             sizes="(max-width: 980px) 100vw, 50vw" width="1254" height="1254" loading="lazy"
+             alt="Plakat w ramie na ścianie: surrealistyczny krajobraz z pomarańczową planetą, łukami i wodospadem w chmurach.">
+      </figure>
+    </div>
+    <button type="button" class="carousel__nav carousel__nav--prev" data-carousel-prev aria-label="Poprzedni slajd" hidden>&#8249;</button>
+    <button type="button" class="carousel__nav carousel__nav--next" data-carousel-next aria-label="Następny slajd" hidden>&#8250;</button>
+    <div class="carousel__dots" data-carousel-dots hidden></div>
+  </div>
+</section>
+
+<section class="home-steps" id="jak-to-dziala">
+  <h2>Jak to działa</h2>
+  <ol>
+    <li>
+      <span class="home-steps__n" aria-hidden="true">1</span>
+      <h3>Wgraj obrazek</h3>
+      <p>Sprawdzimy rozdzielczość i podpowiemy, do jakiego formatu się nadaje.</p>
+    </li>
+    <li>
+      <span class="home-steps__n" aria-hidden="true">2</span>
+      <h3>Wybierz format i papier</h3>
+      <p>Ustawisz kadr na podglądzie, a cenę zobaczysz od razu.</p>
+    </li>
+    <li>
+      <span class="home-steps__n" aria-hidden="true">3</span>
+      <h3>Odbierz plakat</h3>
+      <p>Drukujemy pojedynczy egzemplarz i wysyłamy. Status zamówienia sprawdzisz w każdej chwili.</p>
+    </li>
+  </ol>
 </section>
 {% endblock %}
 {% block scripts %}
+<script src="{% static 'js/carousel.js' %}" defer></script>
 <script>
 (function () {
   var form = document.getElementById('upload-form');
   var input = form.querySelector('input[type=file]');
   var zone = document.getElementById('dropzone');
   var progress = document.getElementById('upload-progress');
+  var formatInput = document.getElementById('upload-format');
+
+  // "Zamów" przy formacie otwiera wybór pliku i zapamiętuje format dla konfiguratora
+  document.querySelectorAll('[data-format]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      formatInput.value = el.dataset.format;
+      document.querySelectorAll('.format-tile').forEach(function (tile) {
+        tile.classList.toggle('format-tile--selected', tile === el.closest('.format-tile'));
+      });
+    });
+  });
+
   ['dragenter', 'dragover'].forEach(function (ev) {
     zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add('upload-dropzone--active'); });
   });
@@ -52,7 +128,7 @@
     progress.hidden = false;
     xhr.upload.onprogress = function (ev) { if (ev.lengthComputable) progress.value = Math.round(ev.loaded / ev.total * 100); };
     xhr.onload = function () {
-      if (xhr.responseURL && xhr.responseURL !== window.location.href) { window.location.href = xhr.responseURL; return; }
+      if (xhr.responseURL && xhr.responseURL !== window.location.href.split('#')[0]) { window.location.href = xhr.responseURL; return; }
       document.open(); document.write(xhr.response.documentElement.outerHTML); document.close();
     };
     xhr.onerror = function () { progress.hidden = true; form.submit(); };
