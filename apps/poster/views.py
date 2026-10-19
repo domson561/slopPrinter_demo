@@ -5,8 +5,11 @@ makieta, wycinek). Koszyk, checkout, płatność i status są w rdzeniu (`apps.w
 
 import io
 import json
+import logging
+from urllib.parse import quote as url_quote
 from urllib.parse import urlencode
 
+from django.conf import settings
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -32,6 +35,141 @@ from .services import save_poster_draft, upload_poster_asset
 # S1 - upload
 # ---------------------------------------------------------------------------
 
+# Tła strony głównej do wyboru (palety w tokens.css, klasy .tlo-N). 0 = karuzela zdjęć.
+HOME_BACKGROUNDS = {
+    1: "Słoneczna galeria",
+    2: "Pastelowa poświata",
+    3: "Ciepły salon",
+    4: "Kosmiczny wieczór",
+}
+HOME_BACKGROUND_DEFAULT = 0
+# Klikalna rama na tle: obrazy i czworokąt ramy składa `scripts/ramy.py` do manifestu.
+HOME_FRAMES_MANIFEST = settings.BASE_DIR / "static" / "img" / "tla" / "ramy" / "manifest.json"
+# Końcówka doklejana do każdego promptu z kartki przy ramie: to, co służy drukowi.
+PROMPT_SUFFIX = (
+    "Pionowy format 2:3, bez napisów i znaków wodnych, pełny kadr bez marginesów, "
+    "jak największa rozdzielczość."
+)
+log = logging.getLogger("slop.poster")
+
+
+def _home_background(request):
+    """Przy DEBUG tło można przełączać `?tlo=N`; wybór zostaje w sesji."""
+    if not settings.DEBUG:
+        return HOME_BACKGROUND_DEFAULT
+    raw = request.GET.get("tlo")
+    if raw is not None:
+        request.session["tlo"] = int(raw) if raw.isdigit() and int(raw) in HOME_BACKGROUNDS else 0
+    return request.session.get("tlo", HOME_BACKGROUND_DEFAULT)
+
+
+def _frames_manifest():
+    try:
+        return json.loads(HOME_FRAMES_MANIFEST.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _fonts_url(ramy):
+    """Czcionki podpisów z Google Fonts, przycięte do liter użytych w podpisach (`text=`)."""
+    families = sorted({r["font_spec"] for r in ramy if r.get("font_spec")})
+    letters = "".join(sorted({ch for r in ramy for ch in r.get("caption", "")}))
+    if not families or not letters:
+        return ""
+    query = [("family", family) for family in families] + [("text", letters), ("display", "swap")]
+    return "https://fonts.googleapis.com/css2?" + urlencode(query, quote_via=url_quote)
+
+
+def _home_frames(tlo):
+    """Warianty plakatu w ramie dla wybranego tła albo None, gdy tło ich nie ma."""
+    manifest = _frames_manifest()
+    if not manifest or manifest.get("tlo") != tlo or not manifest.get("ramy"):
+        return None
+    ramy = manifest["ramy"]
+    return {
+        "ramy": ramy,
+        "size": manifest["size"],
+        "frame": json.dumps(manifest["frame"], separators=(",", ":")),
+        "fonts_url": _fonts_url(ramy),
+        "prompt_suffix": PROMPT_SUFFIX,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Inspiracje: galeria plakatów z promptami (prototyp na manifeście ram, bez bazy)
+# ---------------------------------------------------------------------------
+
+
+def _inspirations():
+    manifest = _frames_manifest() or {}
+    return [r for r in manifest.get("ramy", []) if r.get("prompt") and not r.get("empty")]
+
+
+# Filtry galerii: klucz w manifeście (kolumna w podpisy.txt) i etykieta na stronie
+INSPIRATION_FILTERS = [("pasja", "Pasja"), ("styl", "Styl"), ("okazja", "Okazja")]
+
+
+@require_GET
+def inspirations(request):
+    wpisy = _inspirations()
+    active = {}
+    filters = []
+    for key, label in INSPIRATION_FILTERS:
+        values = sorted({t for w in wpisy for t in w.get(key, [])}, key=str.lower)
+        chosen = request.GET.get(key, "").strip()
+        if chosen in values:
+            active[key] = chosen
+        filters.append((key, label, values))
+    for key, chosen in active.items():
+        wpisy = [w for w in wpisy if chosen in w.get(key, [])]
+
+    def link(key, value):
+        params = {k: v for k, v in active.items() if k != key}
+        if value:
+            params[key] = value
+        return "?" + urlencode(params) if params else reverse("web:inspirations")
+
+    return render(
+        request,
+        "poster/inspiracje.html",
+        {
+            "wpisy": wpisy,
+            "filtry": [
+                {
+                    "label": label,
+                    "all_url": link(key, ""),
+                    "all_current": key not in active,
+                    "options": [(v, link(key, v), active.get(key) == v) for v in values],
+                }
+                for key, label, values in filters
+            ],
+            "fonts_url": _fonts_url(wpisy),
+        },
+    )
+
+
+@require_GET
+def inspiration(request, slug):
+    wpis = next((w for w in _inspirations() if w["file"] == slug), None)
+    if wpis is None:
+        raise Http404
+    return render(
+        request,
+        "poster/inspiracja.html",
+        {
+            "wpis": wpis,
+            "prompt": f"{wpis['prompt']} {PROMPT_SUFFIX}".strip(),
+            "fonts_url": _fonts_url([wpis]),
+        },
+    )
+
+
+@require_http_methods(["POST"])
+def prompt_copied(request):
+    """Klient skopiował prompt z kartki przy ramie: na razie tylko wpis w logu, licznik na później."""
+    log.info("prompt skopiowany: %s", request.POST.get("rama", "")[:60])
+    return HttpResponse(status=204)
+
 
 @require_http_methods(["GET", "POST"])
 def upload(request):
@@ -48,10 +186,18 @@ def upload(request):
             if wanted and active_formats().filter(code=wanted).exists():
                 url += "?" + urlencode({"format": wanted})
             return redirect(url)
+    tlo = _home_background(request)
     return render(
         request,
         "poster/s1_upload.html",
-        {"form": form, "max_mb": 30, "formats": active_formats()},
+        {
+            "form": form,
+            "max_mb": 30,
+            "formats": active_formats(),
+            "tlo": tlo,
+            "ramy": _home_frames(tlo),
+            "tlo_switch": HOME_BACKGROUNDS.items() if settings.DEBUG else None,
+        },
     )
 
 

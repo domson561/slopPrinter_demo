@@ -21,7 +21,7 @@ services:
     command: sh -c "python manage.py migrate && python manage.py seed_demo && python manage.py runserver 0.0.0.0:8000"
     environment:
       DJANGO_DEBUG: "1"
-      SITE_NAME: ${SITE_NAME:-NAZWA_ROBOCZA}
+      SITE_NAME: ${SITE_NAME:-drukuj-to.me}
       SITE_URL: http://localhost:8000
       POSTGRES_HOST: db
       POSTGRES_DB: slop
@@ -48,7 +48,7 @@ services:
     command: python manage.py run_huey
     environment:
       DJANGO_DEBUG: "1"
-      SITE_NAME: ${SITE_NAME:-NAZWA_ROBOCZA}
+      SITE_NAME: ${SITE_NAME:-drukuj-to.me}
       SITE_URL: http://web:8000
       POSTGRES_HOST: db
       POSTGRES_DB: slop

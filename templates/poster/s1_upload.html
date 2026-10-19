@@ -1,12 +1,81 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Twój obrazek z AI jako plakat - {{ site_name }}{% endblock %}
-{% block body_class %}page-home{% endblock %}
+{% block body_class %}page-home{% if tlo %} page-home--tlo tlo-{{ tlo }}{% endif %}{% if ramy %} page-home--scena{% endif %}{% endblock %}
+{% block head %}{% if ramy.fonts_url %}<link rel="stylesheet" href="{{ ramy.fonts_url }}">{% endif %}{% endblock %}
 {% block content %}
 <section class="home-hero">
+  {% if ramy %}
+  {# Scena z klikalną ramą: obrazy złożone przez scripts/ramy.py, pierwszy widoczny od razu #}
+  <div class="scena" data-scena data-frame="{{ ramy.frame }}" data-width="{{ ramy.size.0 }}" data-height="{{ ramy.size.1 }}"
+       data-prompt-suffix="{{ ramy.prompt_suffix }}" data-copied-url="{% url 'web:prompt_copied' %}">
+    <div class="scena__stos">
+      {% for r in ramy.ramy %}
+        <img class="scena__obraz{% if forloop.first %} scena__obraz--biezacy{% endif %}"
+             src="{% static 'img/tla/ramy/'|add:r.file|add:'.webp' %}"
+             srcset="{% static 'img/tla/ramy/'|add:r.file|add:'-720.webp' %} 720w, {% static 'img/tla/ramy/'|add:r.file|add:'.webp' %} {{ ramy.size.0 }}w"
+             sizes="(max-width: 900px) 100vw, 100vw" width="{{ ramy.size.0 }}" height="{{ ramy.size.1 }}"
+             {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}
+             data-empty="{{ r.empty|yesno:'1,0' }}" data-caption="{{ r.caption }}" data-font="{{ r.font }}"
+             data-file="{{ r.file }}" data-prompt="{{ r.prompt }}"
+             alt="{% if r.empty %}Pusta złota rama oparta o ścianę w nastrojowym salonie{% else %}Plakat w złotej ramie oparty o ścianę w nastrojowym salonie{% endif %}">
+      {% endfor %}
+    </div>
+    <span class="scena__blysk" aria-hidden="true"></span>
+    <button type="button" class="scena__rama" data-scena-rama aria-label="Pokaż następny plakat w ramie"></button>
+    <button type="button" class="scena__gwiazda" data-scena-gwiazda aria-label="Zmień plakat w ramie">
+      {# gwiazda z logo marki: czteroramienny błysk #}
+      <svg viewBox="0 0 52 52" aria-hidden="true"><path fill="currentColor" d="M26 2c1.6 12.4 5.1 20.4 24 24-18.9 3.6-22.4 11.6-24 24-1.6-12.4-5.1-20.4-24-24 18.9-3.6 22.4-11.6 24-24z"/><path fill="currentColor" opacity="0.85" d="M26 16c.8 5.6 2.3 8.6 10 10-7.7 1.4-9.2 4.4-10 10-.8-5.6-2.3-8.6-10-10 7.7-1.4 9.2-4.4 10-10z"/></svg>
+    </button>
+    <div class="scena__pod">
+      <span class="scena__licznik" data-scena-licznik></span>
+      <span class="scena__podpis" data-scena-podpis aria-live="polite"></span>
+      {# po paru kliknięciach: zaproszenie do galerii z promptami #}
+      <span class="scena__wiecej-wiersz" data-scena-wiecej hidden>
+        <a class="scena__wiecej" href="{% url 'web:inspirations' %}">
+          <svg class="scena__wiecej-gwiazda" viewBox="0 0 52 52" aria-hidden="true"><path fill="currentColor" d="M26 2c1.6 12.4 5.1 20.4 24 24-18.9 3.6-22.4 11.6-24 24-1.6-12.4-5.1-20.4-24-24 18.9-3.6 22.4-11.6 24-24z"/></svg>
+          <span class="scena__wiecej-tekst">
+            <strong>Odkryj więcej inspiracji</strong>
+            <small>plakaty z gotowymi promptami</small>
+          </span>
+          <span class="scena__wiecej-strzalka" aria-hidden="true">&rarr;</span>
+        </a>
+      </span>
+    </div>
+    <label class="scena__pusta" data-scena-pusta for="{{ form.file.id_for_label }}" hidden>
+      <span class="scena__pusta-tytul">Tu Twój obraz</span>
+      <span class="scena__pusta-pod">kliknij, żeby wgrać</span>
+    </label>
+    {# metka na ramie: otwiera kartkę z promptem #}
+    <button type="button" class="scena__metka" data-scena-metka aria-expanded="false" aria-controls="scena-kartka" hidden>
+      <span class="scena__metka-sznurek" aria-hidden="true"></span>
+      <span class="scena__metka-papier">jak to zrobić?</span>
+    </button>
+  </div>
+  {# kartka przypięta do ściany obok ramy (poza .scena, żeby leżeć nad treścią strony) #}
+  <div class="scena-kartka" id="scena-kartka" data-scena-kartka role="dialog" aria-label="Tak powstał ten obraz" hidden>
+    <span class="scena-kartka__pinezka" aria-hidden="true"></span>
+    <button type="button" class="scena-kartka__zamknij" data-scena-zamknij aria-label="Zamknij">&times;</button>
+    <h2 class="scena-kartka__tytul">Zrób taki sam, ze swoim bohaterem</h2>
+    <ol class="scena-kartka__kroki">
+      <li><strong>Skopiuj prompt</strong> przyciskiem poniżej.</li>
+      <li><strong>Wklej go w ChatGPT</strong> albo innym generatorze i <strong>dodaj swoje zdjęcie</strong>, jeśli na obrazie ma być ktoś bliski albo Twój kot. Dopisz: „zachowaj podobieństwo”. Słowa w nawiasach podmień na swoje.</li>
+      <li><strong>Zapisz obrazek i wróć</strong> go tutaj wgrać.</li>
+    </ol>
+    <button type="button" class="scena-kartka__kopiuj" data-scena-kopiuj>Kopiuj prompt</button>
+    <p class="scena-kartka__prompt" data-scena-prompt></p>
+    <p class="scena-kartka__wiecej"><a href="{% url 'web:inspirations' %}">Więcej plakatów z promptami, dla każdej pasji <span aria-hidden="true">&rarr;</span></a></p>
+  </div>
+  {% elif tlo %}<div class="home-hero__band" aria-hidden="true"></div>{% endif %}
   <div class="home-hero__copy">
     <h1 class="home-hero__title">Twój obrazek z AI<br>jako plakat</h1>
     <p class="home-hero__lead">Wgraj swój obrazek, wybierz format, a my wydrukujemy go w najwyższej jakości. Jeden egzemplarz, bez kompromisów.</p>
+    <p class="home-badge">
+      <img src="{% static 'img/brand/plakietka-1200.webp' %}"
+           srcset="{% static 'img/brand/plakietka-720.webp' %} 720w, {% static 'img/brand/plakietka-1200.webp' %} 1200w"
+           sizes="(max-width: 980px) 100vw, 520px" width="1200" height="184" fetchpriority="high"
+           alt="Drukowane w Polsce, wysyłka w 2 dni robocze.">
+    </p>
 
     <form method="post" enctype="multipart/form-data" class="upload-form" id="upload-form">
       {% csrf_token %}
@@ -15,7 +84,12 @@
         {{ form.file }}
         <svg class="upload-dropzone__icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 34h-2a9 9 0 0 1-1-17.9A12 12 0 0 1 34.3 13 8.5 8.5 0 0 1 36 34h-2"/><path d="M24 40V22m-6 6 6-6 6 6"/></svg>
         <p class="upload-dropzone__title">Przeciągnij i upuść swój plik tutaj</p>
-        <p class="upload-dropzone__sub">lub kliknij, aby wybrać z dysku</p>
+        {% if tlo %}
+          <p class="upload-dropzone__sub">albo</p>
+          <span class="upload-dropzone__button" aria-hidden="true">Wybierz plik z dysku</span>
+        {% else %}
+          <p class="upload-dropzone__sub">lub kliknij, aby wybrać z dysku</p>
+        {% endif %}
         <p class="upload-dropzone__hint">Obsługiwane formaty: JPG, PNG, WebP <span aria-hidden="true">•</span> Maks. rozmiar pliku: {{ max_mb }} MB</p>
         {{ form.file.errors }}
       </div>
@@ -35,6 +109,7 @@
     </ul>
   </div>
 
+  {% if not tlo %}
   <div class="carousel" data-carousel aria-roledescription="karuzela" aria-label="Przykładowe plakaty">
     <div class="carousel__track" data-carousel-track>
       <figure class="carousel__slide">
@@ -66,6 +141,7 @@
     <button type="button" class="carousel__nav carousel__nav--next" data-carousel-next aria-label="Następny slajd" hidden>&#8250;</button>
     <div class="carousel__dots" data-carousel-dots hidden></div>
   </div>
+  {% endif %}
 </section>
 
 <section class="home-steps" id="jak-to-dziala">
@@ -88,9 +164,20 @@
     </li>
   </ol>
 </section>
+
+{% if tlo_switch %}
+<nav class="tlo-switch" aria-label="Tło strony głównej (tylko w trybie DEBUG)">
+  <span class="tlo-switch__label">Tło:</span>
+  <a href="?tlo=0"{% if not tlo %} aria-current="true"{% endif %}>Karuzela</a>
+  {% for number, name in tlo_switch %}
+    <a href="?tlo={{ number }}"{% if number == tlo %} aria-current="true"{% endif %}>{{ number }} {{ name }}</a>
+  {% endfor %}
+</nav>
+{% endif %}
 {% endblock %}
 {% block scripts %}
-<script src="{% static 'js/carousel.js' %}" defer></script>
+{% if not tlo %}<script src="{% static 'js/carousel.js' %}" defer></script>{% endif %}
+{% if ramy %}<script src="{% static 'js/rama.js' %}" defer></script>{% endif %}
 <script>
 (function () {
   var form = document.getElementById('upload-form');

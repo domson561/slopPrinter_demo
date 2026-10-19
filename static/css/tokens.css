@@ -19,6 +19,7 @@
   --color-danger: #b3261e;
   --color-info: #0b5d8a;
   --color-mock: #7a4dd6;
+  --color-brand-accent: #f39a2e; /* pomarańcz z logo, stały niezależnie od tła */
 
   --space-1: 4px;
   --space-2: 8px;
@@ -44,4 +45,38 @@
 
   --content-max-width: 1100px;
   --wide-max-width: 1320px;
+}
+
+/*
+  Tła strony głównej (do wyboru, 2026-10-15). Klasa .tlo-N na <body> ustawia grafikę i paletę,
+  z której biorą kolory litery, przyciski i kafelki. --tlo-focus-x: gdzie na grafice jest plakat
+  (kadr pasa na telefonie).
+*/
+.tlo-1 { /* Słoneczna galeria */
+  --tlo-img: url("../img/tla/tlo1.webp"); --tlo-focus-x: 84%; --tlo-scheme: light;
+  --tlo-page: #efe7de; --tlo-ink: #2b221b; --tlo-text: #4a3e34; --tlo-muted: #7b6c5e; --tlo-accent: #b0612f;
+  --tlo-btn: #2b221b; --tlo-btn-hover: #4a3a2e; --tlo-btn-text: #fbf6ef;
+  --tlo-glass: rgba(252, 248, 242, 0.62); --tlo-line: rgba(70, 50, 30, 0.16); --tlo-line-strong: rgba(70, 50, 30, 0.32);
+  --tlo-veil: linear-gradient(90deg, rgba(240, 232, 222, 0.78) 0%, rgba(240, 232, 222, 0.5) 34%, rgba(240, 232, 222, 0) 60%);
+}
+.tlo-2 { /* Pastelowa poświata */
+  --tlo-img: url("../img/tla/tlo2.webp"); --tlo-focus-x: 70%; --tlo-scheme: light;
+  --tlo-page: #f2f0fb; --tlo-ink: #221a3d; --tlo-text: #3d3560; --tlo-muted: #6b6390; --tlo-accent: #8a4fe0;
+  --tlo-btn: linear-gradient(100deg, #e2589f 0%, #8b5cf6 100%); --tlo-btn-hover: linear-gradient(100deg, #cf3f8a 0%, #7646ee 100%); --tlo-btn-text: #ffffff;
+  --tlo-glass: rgba(255, 255, 255, 0.55); --tlo-line: rgba(70, 50, 140, 0.16); --tlo-line-strong: rgba(70, 50, 140, 0.32);
+  --tlo-veil: linear-gradient(90deg, rgba(247, 245, 255, 0.7) 0%, rgba(247, 245, 255, 0.4) 34%, rgba(247, 245, 255, 0) 58%);
+}
+.tlo-3 { /* Ciepły salon */
+  --tlo-img: url("../img/tla/tlo3.webp"); --tlo-focus-x: 72%; --tlo-scheme: light;
+  --tlo-page: #f3e7d8; --tlo-ink: #2f2016; --tlo-text: #4f3b2b; --tlo-muted: #846c56; --tlo-accent: #c4612a;
+  --tlo-btn: #6e4528; --tlo-btn-hover: #5a3820; --tlo-btn-text: #fff6ec;
+  --tlo-glass: rgba(255, 247, 236, 0.62); --tlo-line: rgba(90, 60, 30, 0.18); --tlo-line-strong: rgba(90, 60, 30, 0.34);
+  --tlo-veil: linear-gradient(90deg, rgba(243, 226, 205, 0.78) 0%, rgba(243, 226, 205, 0.5) 34%, rgba(243, 226, 205, 0) 58%);
+}
+.tlo-4 { /* Kosmiczny wieczór (ciemny) */
+  --tlo-img: url("../img/tla/tlo4.webp"); --tlo-focus-x: 80%; --tlo-scheme: dark;
+  --tlo-page: #0c0d12; --tlo-ink: #f5e9da; --tlo-text: #d8c9b6; --tlo-muted: #a3937f; --tlo-accent: #f0954a;
+  --tlo-btn: #f0954a; --tlo-btn-hover: #f6ab6a; --tlo-btn-text: #1b120b;
+  --tlo-glass: rgba(18, 17, 22, 0.55); --tlo-line: rgba(255, 214, 170, 0.16); --tlo-line-strong: rgba(255, 214, 170, 0.34);
+  --tlo-veil: linear-gradient(90deg, rgba(6, 7, 11, 0.72) 0%, rgba(6, 7, 11, 0.4) 36%, rgba(6, 7, 11, 0) 60%);
 }

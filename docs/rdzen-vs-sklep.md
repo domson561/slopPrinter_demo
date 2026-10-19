@@ -32,7 +32,7 @@ w `orders`, `printing`, `ops` albo `assets`, to brakuje czegoś w interfejsie, n
 |---|---|
 | Produkt | Klasa `Product`: kod, opcje i ich walidacja, cena detaliczna, dozwolone typy plików, produkcja PDF-ów do druku, powody weryfikacji, opis pozycji dla GH (kod, nazwa, stawka za druk), podsumowanie i szczegóły, fragmenty panelu i formularze ustawień (np. cennik). Własne modele konfiguracji (dla plakatu: formaty, papiery, progi DPI). |
 | Proces zakupu do konfiguracji | S1-S3 w aplikacji produktu (`apps/poster/views.py`): upload, konfigurator, podgląd pozycji. Formularz opcji, kadrowanie, makieta, cena na żywo, JS. Po podglądzie odsyła do koszyka rdzenia. |
-| Wygląd | `templates/web`, `static/css/tokens.css`, `base.css`, treści S8 (FAQ, regulamin, prywatność). Szablony maili w `templates/emails` może nadpisać. |
+| Wygląd | `templates/web`, `static/css/tokens.css`, `base.css`, treści S8 (FAQ, regulamin, prywatność, o nas). Szablony maili w `templates/emails` może nadpisać. |
 | Konfiguracja wdrożenia | domena i `SITE_URL`, token GH, prefiks numeru, metody dostawy, cennik, `SHOP_PRODUCTS`. |
 
 ## Reguły na granicy

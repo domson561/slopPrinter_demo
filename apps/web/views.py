@@ -156,6 +156,7 @@ def static_page(request, slug):
         "regulamin": ("Regulamin", "web/s8_terms.html"),
         "prywatnosc": ("Polityka prywatności", "web/s8_privacy.html"),
         "faq": ("Najczęstsze pytania", "web/s8_faq.html"),
+        "o-nas": ("O nas", "web/s8_about.html"),
     }
     if slug not in pages:
         raise Http404

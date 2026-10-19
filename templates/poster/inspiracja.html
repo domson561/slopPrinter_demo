@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ wpis.caption }}: prompt i plakat - {{ site_name }}{% endblock %}
+{% block head %}{% if fonts_url %}<link rel="stylesheet" href="{{ fonts_url }}">{% endif %}{% endblock %}
+{% block content %}
+<article class="inspiracja">
+  <p class="inspiracja__powrot"><a href="{% url 'web:inspirations' %}">&larr; Wszystkie inspiracje</a></p>
+  <div class="inspiracja__uklad">
+    <figure class="inspiracja__obraz">
+      <img src="{% static 'img/galeria/'|add:wpis.file|add:'.webp' %}" width="600" height="900" fetchpriority="high" alt="{{ wpis.caption }}">
+    </figure>
+    <div class="inspiracja__tresc">
+      <h1 class="inspiracja__tytul" style="font-family: '{{ wpis.font|default:'Newsreader' }}', var(--font-serif)">{{ wpis.caption }}</h1>
+      <p class="galeria__tagi">{% for t in wpis.pasja %}<span>{{ t }}</span>{% endfor %}{% for t in wpis.styl %}<span class="galeria__tag--styl">{{ t }}</span>{% endfor %}{% for t in wpis.okazja %}<span class="galeria__tag--okazja">{{ t }}</span>{% endfor %}</p>
+
+      <ol class="inspiracja__kroki">
+        <li><strong>Skopiuj prompt</strong> przyciskiem poniżej.</li>
+        <li><strong>Wklej go w ChatGPT</strong> albo innym generatorze i <strong>dodaj swoje zdjęcie</strong>, jeśli na obrazie ma być ktoś bliski albo Twój zwierzak. Dopisz „zachowaj podobieństwo”. Słowa w nawiasach podmień na swoje.</li>
+        <li><strong>Zapisz obrazek i wgraj go</strong> na stronie głównej. Resztą zajmiemy się my.</li>
+      </ol>
+
+      <button type="button" class="inspiracja__kopiuj" data-kopiuj data-rama="{{ wpis.file }}">Kopiuj prompt</button>
+      <p class="inspiracja__prompt" data-prompt>{{ prompt }}</p>
+
+      <a class="button button--primary inspiracja__cta" href="{% url 'web:upload' %}">Mam obrazek, drukuję</a>
+    </div>
+  </div>
+</article>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var btn = document.querySelector('[data-kopiuj]');
+  var box = document.querySelector('[data-prompt]');
+  if (!btn || !box) return;
+  function done() {
+    btn.textContent = 'Skopiowane, do zobaczenia z plakatem';
+    btn.classList.add('inspiracja__kopiuj--ok');
+    if (window.fetch) {
+      var body = new FormData();
+      body.append('rama', btn.getAttribute('data-rama'));
+      body.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+      fetch('{% url "web:prompt_copied" %}', { method: 'POST', body: body, credentials: 'same-origin', keepalive: true }).catch(function () {});
+    }
+  }
+  btn.addEventListener('click', function () {
+    var text = box.textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done); return; }
+    var range = document.createRange(); range.selectNodeContents(box);
+    var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    try { document.execCommand('copy'); done(); } catch (err) { btn.textContent = 'Zaznacz tekst i skopiuj ręcznie'; }
+  });
+})();
+</script>
+{% endblock %}

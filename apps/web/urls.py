@@ -9,6 +9,9 @@ app_name = "web"
 # S1-S3 i obrazy dostarcza produkt (plakat); nazwy tras zostają wspólne dla szablonów.
 urlpatterns = [
     path("", poster.upload, name="upload"),
+    path("rama/prompt-skopiowany/", poster.prompt_copied, name="prompt_copied"),
+    path("inspiracje/", poster.inspirations, name="inspirations"),
+    path("inspiracje/<slug:slug>/", poster.inspiration, name="inspiration"),
     path("configure/<uuid:asset_id>/", poster.configure, name="configure"),
     path("configure/<uuid:asset_id>/price/", poster.price_partial, name="price_partial"),
     path("assets/<uuid:asset_id>/preview.jpg", poster.asset_preview, name="asset_preview"),

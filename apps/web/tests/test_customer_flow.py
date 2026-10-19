@@ -22,7 +22,7 @@ from apps.printing.services import poll_changes
 def test_full_customer_path(client, catalog_data, image_upload):
     # S1
     resp = client.get(reverse("web:upload"))
-    assert resp.status_code == 200 and "NAZWA_ROBOCZA" in resp.content.decode()
+    assert resp.status_code == 200 and "drukuj-to.me" in resp.content.decode()
     resp = client.post(reverse("web:upload"), {"file": image_upload(size=(1448, 2048))})
     assert resp.status_code == 302
     asset = Asset.objects.get()
@@ -227,6 +227,59 @@ def test_format_from_home_page_is_preselected(client, catalog_data, image_upload
 
 
 @pytest.mark.django_db
+def test_home_background_switch_only_in_debug(client, catalog_data, settings):
+    settings.DEBUG = False
+    html = client.get(reverse("web:upload"), {"tlo": "3"}).content.decode()
+    assert "tlo-3" not in html and "data-carousel" in html and "tlo-switch" not in html
+
+    settings.DEBUG = True
+    html = client.get(reverse("web:upload"), {"tlo": "3"}).content.decode()
+    assert "page-home--tlo tlo-3" in html and "data-carousel" not in html and "tlo-switch" in html
+    # Wybór zostaje w sesji, nieznany numer wraca do karuzeli
+    assert "tlo-3" in client.get(reverse("web:upload")).content.decode()
+    html = client.get(reverse("web:upload"), {"tlo": "9"}).content.decode()
+    assert "page-home--tlo" not in html and "data-carousel" in html
+
+
+@pytest.mark.django_db
+def test_home_frame_scene_only_on_its_background(client, catalog_data, settings):
+    """Tło 4 ma stos obrazów z klikalną ramą (manifest ze scripts/ramy.py), inne tła zwykły pasek."""
+    settings.DEBUG = True
+    html = client.get(reverse("web:upload"), {"tlo": "4"}).content.decode()
+    assert "data-scena" in html and "img/tla/ramy/pusta.webp" in html and "js/rama.js" in html
+    assert "fonts.googleapis.com/css2?family=" in html and 'data-caption="Dla ' in html
+    assert 'data-prompt="' in html and "data-scena-kartka" in html
+    assert "home-hero__band" not in html
+    html = client.get(reverse("web:upload"), {"tlo": "3"}).content.decode()
+    assert "data-scena" not in html and "home-hero__band" in html
+
+
+@pytest.mark.django_db
+def test_inspirations_gallery(client, catalog_data):
+    """Galeria z manifestu ram: siatka z filtrami i podstrona z promptem; pusta rama i nieznane slugi poza."""
+    html = client.get(reverse("web:inspirations")).content.decode()
+    assert "img/galeria/rama-1.webp" in html and "pusta" not in html
+    filtered = client.get(reverse("web:inspirations"), {"pasja": "koty"}).content.decode()
+    assert "rama-1.webp" in filtered and "rama-3.webp" not in filtered
+    both = client.get(reverse("web:inspirations"), {"pasja": "kosmos", "okazja": "Dzień Dziecka"})
+    html = both.content.decode()
+    assert "rama-4.webp" in html and "rama-0.webp" not in html and "?pasja=kosmos" in html
+    assert client.get(reverse("web:inspirations"), {"pasja": "nic"}).status_code == 200
+    detail = client.get(reverse("web:inspiration", args=["rama-1"])).content.decode()
+    assert "Kopiuj prompt" in detail and "Pionowy format 2:3" in detail
+    assert client.get(reverse("web:inspiration", args=["pusta"])).status_code == 404
+
+
+@pytest.mark.django_db
+def test_prompt_copied_is_logged(client, caplog):
+    """Kopiowanie promptu z kartki przy ramie zostawia ślad w logu; tylko POST."""
+    assert client.get(reverse("web:prompt_copied")).status_code == 405
+    with caplog.at_level("INFO", logger="slop.poster"):
+        resp = client.post(reverse("web:prompt_copied"), {"rama": "rama-1"})
+    assert resp.status_code == 204 and "prompt skopiowany: rama-1" in caplog.text
+
+
+@pytest.mark.django_db
 def test_blocked_format_cannot_be_ordered(client, catalog_data, image_upload):
     client.post(reverse("web:upload"), {"file": image_upload(size=(362, 512))})
     asset = Asset.objects.get()
@@ -250,6 +303,6 @@ def test_ops_settings_and_static_pages(client, catalog_data):
     get_user_model().objects.create_user("op", password="pw", is_staff=True)
     client.login(username="op", password="pw")
     assert client.get(reverse("ops:settings")).status_code == 200
-    for slug in ("regulamin", "prywatnosc", "faq"):
+    for slug in ("regulamin", "prywatnosc", "faq", "o-nas"):
         assert client.get(reverse("web:static_page", args=[slug])).status_code == 200
     assert client.get(reverse("web:static_page", args=["nope"])).status_code == 404

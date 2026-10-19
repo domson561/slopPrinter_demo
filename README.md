@@ -1,4 +1,4 @@
-# NAZWA_ROBOCZA - sklep z drukiem od 1 sztuki, produkcja w Graphic House
+# drukuj-to.me - sklep z drukiem od 1 sztuki, produkcja w Graphic House
 
 Sklep obsługuje kupującego: katalog, plik, koszyk, płatność, etykietę, maile, status. Produkcję
 robi drukarnia Graphic House (GH), do której sklep wysyła zlecenia i którą odpytuje o statusy przez

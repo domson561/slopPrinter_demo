@@ -7,18 +7,27 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+  <link rel="icon" href="{% static 'img/brand/favicon.ico' %}" sizes="16x16 32x32 48x48">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/brand/favicon-32.png' %}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'img/brand/icon-192.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'img/brand/apple-touch-icon.png' %}">
   <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   {% block head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
   <header class="site-header">
-    <a class="site-header__brand" href="{% url 'web:upload' %}">{{ site_name }}</a>
+    <a class="site-header__brand" href="{% url 'web:upload' %}">
+      <img class="site-header__logo" src="{% static 'img/brand/logo-mark-128.webp' %}" width="36" height="36" alt="">
+      <span class="site-header__name">drukuj-<em class="site-header__accent">to</em>.me</span>
+    </a>
     <nav class="site-header__nav">
       {% block nav %}
         <a href="{% url 'web:upload' %}#jak-to-dziala">Jak to działa</a>
         <a href="{% url 'web:upload' %}#formaty">Formaty i ceny</a>
+        <a href="{% url 'web:inspirations' %}">Inspiracje</a>
         <a href="{% url 'web:static_page' 'faq' %}">FAQ</a>
+        <a href="{% url 'web:static_page' 'o-nas' %}">O nas</a>
       {% endblock %}
     </nav>
     {% block header_tools %}
@@ -49,6 +58,7 @@
       <a href="{% url 'web:static_page' 'regulamin' %}">Regulamin</a>
       <a href="{% url 'web:static_page' 'prywatnosc' %}">Polityka prywatności</a>
       <a href="{% url 'web:static_page' 'faq' %}">FAQ</a>
+      <a href="{% url 'web:static_page' 'o-nas' %}">O nas</a>
       <span class="site-footer__demo">Wersja demo. Płatności, poprawa jakości i drukarnia są symulowane.</span>
     {% endblock %}
   </footer>

@@ -1,0 +1,151 @@
+{
+  "tlo": 4,
+  "size": [
+    1672,
+    941
+  ],
+  "frame": [
+    [
+      1151,
+      103
+    ],
+    [
+      1507,
+      68
+    ],
+    [
+      1494,
+      645
+    ],
+    [
+      1136,
+      662
+    ]
+  ],
+  "ramy": [
+    {
+      "file": "rama-0",
+      "empty": false,
+      "caption": "Dla brata, który ciągle patrzy w gwiazdy",
+      "font": "Orbitron",
+      "font_spec": "Orbitron:wght@500",
+      "prompt": "Astronauta stoi na skalistym szczycie obcej planety i patrzy na ogromną pomarańczową planetę z pasami chmur, która wypełnia niebo. Gwiazdy i mgławica, zachód słońca w odcieniach pomarańczu i granatu. Malarski realizm, kinowe światło. [Zamiast astronauty może stać Twój bohater, np. postać w kurtce brata.]",
+      "pasja": [
+        "kosmos"
+      ],
+      "styl": [
+        "sci-fi"
+      ],
+      "okazja": [
+        "urodziny",
+        "Boże Narodzenie"
+      ]
+    },
+    {
+      "file": "rama-1",
+      "empty": false,
+      "caption": "Dla kota, który i tak rządzi w domu",
+      "font": "Cinzel",
+      "font_spec": "Cinzel:wght@500",
+      "prompt": "Portret [opisz swojego kota: rudy, puszysty, zielone oczy] jako króla: złota korona z rubinami, czerwony aksamitny płaszcz z gronostajem, złoty naszyjnik, jedna łapa na oparciu złotego tronu. W tle ciemnoczerwona kotara. Olej na płótnie w stylu dawnych portretów królewskich, ciepłe światło, dumna mina.",
+      "pasja": [
+        "koty",
+        "zwierzaki"
+      ],
+      "styl": [
+        "portret olejny"
+      ],
+      "okazja": [
+        "urodziny",
+        "parapetówka"
+      ]
+    },
+    {
+      "file": "rama-1-1",
+      "empty": false,
+      "caption": "Dla syna, który śni o smokach",
+      "font": "MedievalSharp",
+      "font_spec": "MedievalSharp",
+      "prompt": "Smok o [miedzianych] łuskach leci nad gotyckim zamkiem na skale. Zamek świeci tysiącem okien, w dole kamienny most i wodospad, burzowe chmury rozświetlone złotem. Epicka ilustracja fantasy, malarska faktura, dramatyczne światło. [Dopisz imię dziecka jako nazwę zamku na chorągwi.]",
+      "pasja": [
+        "fantasy",
+        "smoki"
+      ],
+      "styl": [
+        "fantasy"
+      ],
+      "okazja": [
+        "urodziny",
+        "Dzień Dziecka"
+      ]
+    },
+    {
+      "file": "rama-3",
+      "empty": false,
+      "caption": "Dla taty, który najlepiej odpoczywa nad wodą",
+      "font": "Kaushan Script",
+      "font_spec": "Kaushan Script",
+      "prompt": "Japoński drzeworyt w stylu ukiyo-e: samotny rybak w drewnianej łodzi na spokojnym jeziorze, wędka w dłoni, mgła nad wodą, sosny na skałach, góry we mgle, wschód słońca w kolorze brzoskwini. Papier z fakturą, delikatne linie, czerwona pieczęć w rogu. [Rybak może mieć rysy Twojego taty, np. czapkę, którą zawsze nosi.]",
+      "pasja": [
+        "wędkowanie",
+        "natura"
+      ],
+      "styl": [
+        "drzeworyt"
+      ],
+      "okazja": [
+        "Dzień Ojca",
+        "urodziny"
+      ]
+    },
+    {
+      "file": "rama-4",
+      "empty": false,
+      "caption": "Dla córki, która kiedyś poleci dalej niż wszyscy",
+      "font": "Caveat",
+      "font_spec": "Caveat:wght@500",
+      "prompt": "Mała dziewczynka [opisz dziecko: ciemne włosy w kucyk, rumiane policzki] w białym skafandrze astronauty stoi na Księżycu i przytula pluszowego misia, patrzy w górę z uśmiechem. Nad nią ogromna niebieska Ziemia i gwiazdy. Miękka ilustracja jak z książki dla dzieci, ciepłe światło, delikatne kolory.",
+      "pasja": [
+        "kosmos",
+        "dla dzieci"
+      ],
+      "styl": [
+        "ilustracja dziecięca"
+      ],
+      "okazja": [
+        "Dzień Dziecka",
+        "urodziny"
+      ]
+    },
+    {
+      "file": "rama-5",
+      "empty": false,
+      "caption": "Dla niej, żeby pamiętała tamten wieczór we Wrocławiu",
+      "font": "Great Vibes",
+      "font_spec": "Great Vibes",
+      "prompt": "Wklej swoje wspólne zdjęcie i poproś: zamień to zdjęcie w obraz olejny. Para tańczy przytulona na balkonie nocą, w tle [Wrocław: ratusz i wieże kościołów nad dachami], granatowe niebo z gwiazdami i księżycem, ciepłe światła miasta. Grube pociągnięcia pędzla, złote refleksy, zachowaj podobieństwo twarzy.",
+      "pasja": [
+        "miasta i podróże",
+        "taniec"
+      ],
+      "styl": [
+        "portret olejny"
+      ],
+      "okazja": [
+        "rocznica",
+        "Walentynki"
+      ]
+    },
+    {
+      "file": "pusta",
+      "empty": true,
+      "caption": "Dla kogo tylko chcesz",
+      "font": "",
+      "font_spec": "",
+      "prompt": "",
+      "pasja": [],
+      "styl": [],
+      "okazja": []
+    }
+  ]
+}

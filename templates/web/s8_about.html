@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ title }} - {{ site_name }}{% endblock %}
+{% block content %}
+<article class="static-page static-page--about">
+  <img class="about__logo" src="{% static 'img/brand/logo-full-320.webp' %}"
+       srcset="{% static 'img/brand/logo-full-320.webp' %} 320w, {% static 'img/brand/logo-full.webp' %} 640w"
+       sizes="220px" width="640" height="640" alt="Logo {{ site_name }}: złota rama z kosmicznym plakatem i gwiazdą.">
+  <h1>{{ title }}</h1>
+  <p class="notice notice--info">Placeholder. Treść do uzupełnienia przed uruchomieniem.</p>
+  <h2>Kim jesteśmy</h2>
+  <h2>Drukujemy od jednej sztuki</h2>
+  <p>Każde zamówienie to osobny wydruk z Twojego pliku. Nie trzeba zamawiać nakładu, jeden plakat to pełnoprawne zlecenie.</p>
+  <h2>Jak powstaje Twój wydruk</h2>
+  <p>Sprawdzamy plik, przygotowujemy go do druku i przekazujemy do drukarni partnerskiej. O każdej zmianie statusu dajemy znać mailem.</p>
+  <h2>Dane firmy i kontakt</h2>
+</article>
+{% endblock %}

@@ -29,7 +29,7 @@ def env_list(name, default=""):
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
 # Nazwa robocza serwisu - jedno miejsce, w szablonach {{ site_name }}.
-SITE_NAME = env("SITE_NAME", "NAZWA_ROBOCZA")
+SITE_NAME = env("SITE_NAME", "drukuj-to.me")
 # Bazowy URL do linków w e-mailach (poza requestem).
 SITE_URL = env("SITE_URL", "http://localhost:8000").rstrip("/")
 # Prefiks numeru zamówienia (`PA-2026-000123`). Numer jest kluczem idempotencji w GH, więc każdy
