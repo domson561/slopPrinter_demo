@@ -182,11 +182,17 @@ textarea { width: 100%; }
 .scena__obraz--nowy { opacity: 1; z-index: 2; }
 .scena::after { content: ""; position: absolute; inset: 0; z-index: 3; background: var(--tlo-veil); pointer-events: none; }
 .scena__rama, .scena__blysk, .scena__pusta { position: absolute; left: var(--rama-x); top: var(--rama-y); width: var(--rama-w); height: var(--rama-h); }
-.scena__rama { z-index: 4; padding: 0; border: 0; background: radial-gradient(ellipse at 50% 40%, rgba(255, 228, 190, 0) 0%, rgba(255, 210, 150, 0) 100%); cursor: pointer; transition: background 0.25s, box-shadow 0.25s; }
-.scena__rama:hover, .scena__rama:focus-visible { outline: 0; background: radial-gradient(ellipse at 50% 40%, rgba(255, 236, 205, 0.5) 0%, rgba(255, 220, 170, 0.22) 75%); box-shadow: inset 0 0 0 4px rgba(255, 238, 205, 0.95), inset 0 0 48px rgba(255, 200, 120, 0.55); mix-blend-mode: screen; }
+.scena__rama { z-index: 4; padding: 0; border: 0; background: radial-gradient(ellipse at 50% 40%, rgba(255, 228, 190, 0) 0%, rgba(255, 210, 150, 0) 100%); cursor: pointer; transition: background 0.25s; }
+.scena__rama:hover, .scena__rama:focus-visible { outline: 0; background: radial-gradient(ellipse at 50% 40%, rgba(255, 236, 205, 0.5) 0%, rgba(255, 220, 170, 0.22) 75%); mix-blend-mode: screen; }
+/* obrys po krawędzi czworokąta: kreska na krawędzi, clip-path rodzica ucina jej zewnętrzną połowę */
+.scena__obrys { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; opacity: 0; transition: opacity 0.25s; }
+.scena__obrys-linia { fill: none; stroke: rgba(255, 238, 205, 0.95); stroke-width: 8; stroke-linejoin: round; }
+.scena__obrys-poswiata { fill: none; stroke: rgba(255, 200, 120, 0.55); stroke-width: 56; filter: url(#scena-poswiata); }
+.scena__rama:hover .scena__obrys, .scena__rama:focus-visible .scena__obrys, .scena__pusta:hover .scena__obrys { opacity: 1; }
 .scena:has(.scena__rama:hover) .scena__gwiazda, .scena:has(.scena__rama:focus-visible) .scena__gwiazda { color: #ffffff; }
 /* zachęta po starcie: rama świeci jak pod kursorem (klasa nadawana z rama.js), nad nią podpowiedź */
-.scena__rama--blysk { background: radial-gradient(ellipse at 50% 40%, rgba(255, 236, 205, 0.5) 0%, rgba(255, 220, 170, 0.22) 75%); box-shadow: inset 0 0 0 4px rgba(255, 238, 205, 0.95), inset 0 0 48px rgba(255, 200, 120, 0.55); mix-blend-mode: screen; transition: background 0.9s, box-shadow 0.9s; }
+.scena__rama--blysk { background: radial-gradient(ellipse at 50% 40%, rgba(255, 236, 205, 0.5) 0%, rgba(255, 220, 170, 0.22) 75%); mix-blend-mode: screen; transition: background 0.9s; }
+.scena__rama--blysk .scena__obrys { opacity: 1; transition: opacity 0.9s; }
 .scena:has(.scena__rama--blysk) .scena__gwiazda { color: #ffffff; }
 .scena__zacheta { position: absolute; z-index: 6; left: calc(var(--rama-x) + var(--rama-w) / 2); top: calc(var(--rama-y) + var(--rama-h) - 88px); transform: translate(-50%, -50%); display: inline-flex; align-items: center; gap: 10px; padding: 12px 26px 12px 20px; border-radius: 999px; background: rgba(8, 8, 12, 0.72); color: #fff3dc; font-family: var(--font-serif); font-size: 1.5rem; letter-spacing: 0.02em; white-space: nowrap; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 220, 170, 0.45); pointer-events: none; animation: scena-zacheta 1.8s ease-in-out infinite; }
 .scena__zacheta[hidden] { display: none; }
@@ -217,8 +223,9 @@ textarea { width: 100%; }
 .scena__podpis { font-family: var(--font-serif); font-size: clamp(1.6rem, 2.6vw, 2.5rem); line-height: 1.15; color: var(--tlo-ink); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 0 18px rgba(0, 0, 0, 0.6); }
 .scena__pusta { z-index: 5; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; text-align: center; color: #5b4532; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5); cursor: pointer; }
 .scena__pusta[hidden] { display: none; }
-.scena__pusta { transition: background 0.25s, box-shadow 0.25s; }
-.scena__pusta:hover { background: rgba(120, 80, 40, 0.1); box-shadow: inset 0 0 0 3px rgba(243, 154, 46, 0.55); }
+.scena__pusta { transition: background 0.25s; }
+.scena__pusta:hover { background: rgba(120, 80, 40, 0.1); }
+.scena__pusta .scena__obrys-linia { stroke: rgba(243, 154, 46, 0.55); stroke-width: 6; }
 .scena__pusta-tytul { font-family: var(--font-serif); font-size: clamp(1.5rem, 2.8vw, 2.5rem); line-height: 1.1; }
 .scena__pusta-pod { font-size: var(--font-size-1); opacity: 0.8; }
 .scena--pusta .scena__gwiazda { animation: none; }

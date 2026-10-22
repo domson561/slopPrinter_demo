@@ -2,7 +2,7 @@
   Klikalna rama na stronie głównej (tło 4). Obrazy w stosie to ta sama scena z innym plakatem
   (składa je scripts/ramy.py). Kliknięcie ramy albo gwiazdy odsłania następny obraz kołem od
   miejsca kliknięcia, z iskrami i błyskiem na szybie. Ostatni obraz to pusta rama: wtedy
-  rama prowadzi do wgrania pliku. Położenie ramy na ekranie liczymy z czworokąta w pikselach
+  rama prowadzi do wgrania pliku. Położenie ramy na ekranie liczymy z wielokąta w pikselach
   obrazu (data-frame) i dopasowania object-fit: cover.
 */
 (function () {
@@ -23,6 +23,7 @@
   var switches = 0; // po drugiej zmianie obrazu pokazujemy link do galerii inspiracji
   var emptyLabel = scene.querySelector('[data-scena-pusta]');
   var flash = scene.querySelector('.scena__blysk');
+  var outlines = Array.prototype.slice.call(scene.querySelectorAll('[data-scena-obrys]'));
   var fileInput = document.querySelector('#upload-form input[type=file]');
   var tag = scene.querySelector('[data-scena-metka]');
   var card = document.querySelector('[data-scena-kartka]');
@@ -61,6 +62,8 @@
     hotspot.style.clipPath = poly;
     flash.style.clipPath = poly;
     emptyLabel.style.clipPath = poly;
+    var points = pts.map(function (p) { return (p[0] - box.x) + ',' + (p[1] - box.y); }).join(' ');
+    outlines.forEach(function (el) { el.setAttribute('points', points); });
   }
 
   function isEmpty(i) { return images[i].getAttribute('data-empty') === '1'; }

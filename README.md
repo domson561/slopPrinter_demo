@@ -37,6 +37,7 @@ docker compose up --build
 Sam `Dockerfile` (bez compose) to obraz pod serwer publiczny, np. Railway: gunicorn na `$PORT`
 (lokalnie 8000), pliki statyczne zebrane przy buildzie i wydawane przez whitenoise, czcionka DejaVu
 do etykiet. Ustawienia wybiera `DJANGO_SETTINGS_MODULE` (dla demo `config.settings.demo`).
+Krok po kroku (Postgres, wolumen, zmienne, seed): `docs/deploy-railway.md`.
 
 ## Testy
 

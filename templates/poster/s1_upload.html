@@ -22,7 +22,14 @@
       {% endfor %}
     </div>
     <span class="scena__blysk" aria-hidden="true"></span>
-    <button type="button" class="scena__rama" data-scena-rama aria-label="Pokaż następny plakat w ramie"></button>
+    <button type="button" class="scena__rama" data-scena-rama aria-label="Pokaż następny plakat w ramie">
+      {# obrys po widocznej krawędzi ramy (punkty ustawia rama.js), box-shadow szedłby po prostokącie #}
+      <svg class="scena__obrys" aria-hidden="true">
+        <defs><filter id="scena-poswiata" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="14"/></filter></defs>
+        <polygon class="scena__obrys-poswiata" data-scena-obrys/>
+        <polygon class="scena__obrys-linia" data-scena-obrys/>
+      </svg>
+    </button>
     {# zachęta po starcie: rama sama błyska, potem pojawia się podpowiedź, znika przy pierwszym kliknięciu #}
     <span class="scena__zacheta" data-scena-zacheta aria-hidden="true" hidden>
       <svg class="scena__zacheta-gwiazda" viewBox="0 0 52 52"><path fill="currentColor" d="M26 2c1.6 12.4 5.1 20.4 24 24-18.9 3.6-22.4 11.6-24 24-1.6-12.4-5.1-20.4-24-24 18.9-3.6 22.4-11.6 24-24z"/></svg>
@@ -48,6 +55,7 @@
       </a>
     </div>
     <label class="scena__pusta" data-scena-pusta for="{{ form.file.id_for_label }}" hidden>
+      <svg class="scena__obrys" aria-hidden="true"><polygon class="scena__obrys-linia" data-scena-obrys/></svg>
       <span class="scena__pusta-tytul">Tu Twój obraz</span>
       <span class="scena__pusta-pod">kliknij, żeby wgrać</span>
     </label>

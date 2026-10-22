@@ -43,6 +43,9 @@ TLO = 4
 
 # Zewnętrzna krawędź ramy na oryginale (px), od lewego górnego rogu zgodnie z ruchem wskazówek.
 FRAME = [(1151, 103), (1507, 68), (1494, 645), (1136, 662)]
+# Widoczny obrys ramy dla podświetlenia na stronie (manifest): dokładne rogi, a prawy dolny
+# róg zasłania poduszka kanapy, więc obrys idzie tam po jej krawędzi.
+OUTLINE = [(1151, 101), (1507, 64), (1493, 652), (1446, 664), (1136, 650)]
 MARGIN = 8  # o tyle px poszerzamy czworokąt poza krawędź ramy
 FEATHER = 10  # promień rozmycia krawędzi maski
 MAX_ROOM_DIFF = 12.0  # średnia różnica pikseli poza ramą, powyżej której render jest pomijany
@@ -178,7 +181,7 @@ def main():
     manifest = {
         "tlo": TLO,
         "size": list(base.size),
-        "frame": [list(point) for point in FRAME],
+        "frame": [list(point) for point in OUTLINE],
         "ramy": entries,
     }
     (OUT / "manifest.json").write_text(
