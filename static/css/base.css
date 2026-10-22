@@ -179,21 +179,33 @@ textarea { width: 100%; }
 .scena__rama { z-index: 4; padding: 0; border: 0; background: radial-gradient(ellipse at 50% 40%, rgba(255, 228, 190, 0) 0%, rgba(255, 210, 150, 0) 100%); cursor: pointer; transition: background 0.25s, box-shadow 0.25s; }
 .scena__rama:hover, .scena__rama:focus-visible { outline: 0; background: radial-gradient(ellipse at 50% 40%, rgba(255, 236, 205, 0.5) 0%, rgba(255, 220, 170, 0.22) 75%); box-shadow: inset 0 0 0 4px rgba(255, 238, 205, 0.95), inset 0 0 48px rgba(255, 200, 120, 0.55); mix-blend-mode: screen; }
 .scena:has(.scena__rama:hover) .scena__gwiazda, .scena:has(.scena__rama:focus-visible) .scena__gwiazda { color: #ffffff; }
+/* zachęta po starcie: rama świeci jak pod kursorem (klasa nadawana z rama.js), nad nią podpowiedź */
+.scena__rama--blysk { background: radial-gradient(ellipse at 50% 40%, rgba(255, 236, 205, 0.5) 0%, rgba(255, 220, 170, 0.22) 75%); box-shadow: inset 0 0 0 4px rgba(255, 238, 205, 0.95), inset 0 0 48px rgba(255, 200, 120, 0.55); mix-blend-mode: screen; transition: background 0.9s, box-shadow 0.9s; }
+.scena:has(.scena__rama--blysk) .scena__gwiazda { color: #ffffff; }
+.scena__zacheta { position: absolute; z-index: 6; left: calc(var(--rama-x) + var(--rama-w) / 2); top: calc(var(--rama-y) + var(--rama-h) - 88px); transform: translate(-50%, -50%); display: inline-flex; align-items: center; gap: 10px; padding: 12px 26px 12px 20px; border-radius: 999px; background: rgba(8, 8, 12, 0.72); color: #fff3dc; font-family: var(--font-serif); font-size: 1.5rem; letter-spacing: 0.02em; white-space: nowrap; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 220, 170, 0.45); pointer-events: none; animation: scena-zacheta 1.8s ease-in-out infinite; }
+.scena__zacheta[hidden] { display: none; }
+.scena__zacheta-gwiazda { width: 22px; height: 22px; color: #ffd98a; filter: drop-shadow(0 0 5px rgba(255, 214, 150, 0.95)); }
+@keyframes scena-zacheta { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 5px)); } }
 .scena__blysk { z-index: 5; opacity: 0; pointer-events: none; background: linear-gradient(105deg, rgba(255, 240, 210, 0) 32%, rgba(255, 240, 210, 0.9) 50%, rgba(255, 240, 210, 0) 68%); mix-blend-mode: screen; }
 .scena__gwiazda { position: absolute; z-index: 6; left: calc(var(--rama-x) - 26px); top: calc(var(--rama-y) - 4px); width: 52px; height: 52px; padding: 0; border: 0; background: transparent; color: #fff3dc; cursor: pointer; filter: drop-shadow(0 0 6px rgba(255, 214, 150, 0.95)) drop-shadow(0 0 18px rgba(243, 154, 46, 0.8)); animation: scena-puls 2.6s ease-in-out infinite; }
 .scena__gwiazda svg { display: block; width: 100%; height: 100%; }
 .scena__gwiazda:hover, .scena__gwiazda:focus-visible { animation-play-state: paused; color: #ffffff; filter: drop-shadow(0 0 8px rgba(255, 230, 180, 1)) drop-shadow(0 0 26px rgba(243, 154, 46, 1)); outline: 0; }
 .scena__pod { position: absolute; z-index: 6; left: var(--rama-x); top: calc(var(--rama-y) + var(--rama-h) + 14px); width: max(var(--rama-w), 420px); display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px; pointer-events: none; }
-.scena__wiecej-wiersz { flex-basis: 100%; display: flex; justify-content: center; margin-top: 6px; pointer-events: none; }
+/* wyśrodkowany w części sceny na prawo od kolumny tekstu (520px + 52px odstępu) */
+.scena__wiecej-wiersz { position: absolute; z-index: 6; left: 0; right: 0; bottom: 16px; display: flex; justify-content: center; pointer-events: none; }
 .scena__wiecej-wiersz[hidden] { display: none; }
-.scena__wiecej { display: inline-flex; align-items: center; gap: 12px; padding: 10px 22px 10px 16px; border-radius: 999px; background: linear-gradient(100deg, #ffc46b 0%, #f0954a 55%, #e5772c 100%); color: #1b120b; text-decoration: none; pointer-events: auto; box-shadow: 0 10px 28px rgba(240, 149, 74, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.45); transition: transform 0.2s, box-shadow 0.2s; }
-.scena__wiecej:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(240, 149, 74, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
-.scena__wiecej:hover .scena__wiecej-strzalka { transform: translateX(4px); }
-.scena__wiecej-gwiazda { width: 22px; height: 22px; color: #fff6e6; filter: drop-shadow(0 0 6px rgba(255, 240, 200, 0.9)); animation: scena-puls 2.6s ease-in-out infinite; }
-.scena__wiecej-tekst { display: flex; flex-direction: column; line-height: 1.15; text-align: left; }
-.scena__wiecej-tekst strong { font-family: var(--font-serif); font-weight: 500; font-size: 1.15rem; letter-spacing: 0.01em; }
-.scena__wiecej-tekst small { font-size: 0.72rem; opacity: 0.8; }
-.scena__wiecej-strzalka { font-size: 1.2rem; line-height: 1; transition: transform 0.2s; }
+/* napis na całą szerokość: miejsce pod lewą kolumną, żeby nie wjechał na karty formatów */
+@media (min-width: 901px) {
+  .page-home--scena .home-hero:has(.scena__wiecej-wiersz:not([hidden])) { padding-bottom: 140px; }
+}
+.scena__wiecej { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 20px; color: var(--tlo-ink); text-decoration: none; text-align: center; pointer-events: auto; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 0 22px rgba(0, 0, 0, 0.7); }
+.scena__wiecej-tytul { display: inline-flex; align-items: center; gap: 14px; font-family: var(--font-serif); font-weight: 400; font-size: clamp(1.7rem, 2.9vw, 2.8rem); line-height: 1.1; letter-spacing: 0.01em; }
+.scena__wiecej-gwiazda { width: 0.8em; height: 0.8em; color: #ffd98a; filter: drop-shadow(0 0 6px rgba(255, 214, 150, 0.95)) drop-shadow(0 0 16px rgba(243, 154, 46, 0.7)); animation: scena-puls 2.6s ease-in-out infinite; }
+.scena__wiecej-strzalka { color: #ffd98a; transition: transform 0.2s; }
+.scena__wiecej-pod { font-size: clamp(0.85rem, 1.1vw, 1.05rem); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
+.scena__wiecej:hover .scena__wiecej-tytul, .scena__wiecej:focus-visible .scena__wiecej-tytul { color: #ffffff; text-decoration: underline; text-decoration-color: #ffd98a; text-underline-offset: 6px; text-decoration-thickness: 2px; }
+.scena__wiecej:hover .scena__wiecej-strzalka { transform: translateX(6px); }
+.scena__wiecej:focus-visible { outline: 0; }
 .scena__licznik { flex: none; padding: 5px 11px; border-radius: 999px; background: rgba(8, 8, 12, 0.62); color: var(--tlo-ink); font-size: 0.72rem; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
 .scena__licznik[hidden], .scena__podpis[hidden] { display: none; }
 .scena__podpis { font-family: var(--font-serif); font-size: clamp(1.6rem, 2.6vw, 2.5rem); line-height: 1.15; color: var(--tlo-ink); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 0 18px rgba(0, 0, 0, 0.6); }
@@ -236,7 +248,7 @@ textarea { width: 100%; }
 .scena-kartka__wiecej a:hover { text-decoration: underline; }
 .scena__iskra { position: absolute; z-index: 7; width: 6px; height: 6px; border-radius: 50%; background: #fff0c8; box-shadow: 0 0 8px 2px rgba(255, 200, 120, 0.9); pointer-events: none; }
 @keyframes scena-puls { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
-@media (prefers-reduced-motion: reduce) { .scena__gwiazda { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .scena__gwiazda, .scena__zacheta { animation: none; } }
 
 /* Inspiracje: galeria plakatów z promptami i podstrona jednej inspiracji */
 .galeria { padding: 40px 52px 64px; }
@@ -377,10 +389,14 @@ textarea { width: 100%; }
   .scena::after { background: linear-gradient(180deg, rgba(0, 0, 0, 0) 70%, var(--tlo-page) 100%); }
   .scena__gwiazda { width: 40px; height: 40px; left: calc(var(--rama-x) - 20px); }
   .scena__pod { left: 16px; right: 16px; top: auto; bottom: 10px; width: auto; align-items: center; }
-  .scena__wiecej { padding: 8px 16px 8px 12px; gap: 10px; }
-  .scena__wiecej-tekst strong { font-size: 1rem; }
+  /* na mobile napis schodzi pod scenę, a nagłówek robi mu miejsce */
+  .scena__wiecej-wiersz { top: calc(100% + 8px); bottom: auto; left: 16px; right: 16px; }
+  .scena__wiecej-tytul { font-size: 1.45rem; gap: 10px; }
+  .scena__wiecej-pod { font-size: 0.72rem; }
+  .page-home--scena .home-hero:has(.scena__wiecej-wiersz:not([hidden])) .home-hero__copy { padding-top: 96px; }
   .scena__metka { left: min(calc(var(--rama-x) + var(--rama-w) - 48px), calc(100% - 112px)); top: calc(var(--rama-y) + var(--rama-h) - 52px); }
   .scena__metka-sznurek { height: 16px; }
+  .scena__zacheta { font-size: 1.15rem; padding: 9px 18px 9px 14px; top: calc(var(--rama-y) + var(--rama-h) - 76px); }
   .scena__metka-papier { font-size: 0.8rem; padding: 6px 9px; }
   .scena-kartka { position: fixed; z-index: 20; left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 80vh; overflow: auto; padding: 22px 20px calc(18px + env(safe-area-inset-bottom)); border-radius: 16px 16px 0 0; transform: none; }
   .scena-kartka__pinezka { display: none; }

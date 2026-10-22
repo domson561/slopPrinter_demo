@@ -8,3 +8,6 @@ huey==3.4.0
 requests==2.34.2
 # Postgres tylko w Dockerze (docker-compose), lokalnie sqlite.
 psycopg[binary]==3.3.6
+# Serwer publiczny: gunicorn jako serwer WSGI, whitenoise wydaje pliki statyczne (demo.py).
+gunicorn==26.2.0
+whitenoise==6.12.0

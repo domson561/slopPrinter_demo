@@ -1,0 +1,33 @@
+# Kontekst obrazu: tylko kod i pliki statyczne. Dane lokalne, sekrety i materiały zostają poza nim.
+.git
+.venv/
+venv/
+**/__pycache__/
+**/*.pyc
+db.sqlite3
+huey.db*
+media/
+private_media/
+staticfiles/
+.env
+.env.*
+
+# Obrazki demo generuje `seed_demo`; assets/ to prywatne materiały, nie kod aplikacji.
+apps/demo/images/*.png
+apps/demo/images/*.jpg
+assets/
+
+# testy i narzędzia
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# IDE, system, Claude Code
+.claude/
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini
+*.log

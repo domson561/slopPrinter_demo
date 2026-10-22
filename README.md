@@ -34,6 +34,10 @@ docker compose up --build
 
 `web` robi `migrate`, `seed_demo` i startuje serwer na :8000. `worker` przetwarza zadania w tle.
 
+Sam `Dockerfile` (bez compose) to obraz pod serwer publiczny, np. Railway: gunicorn na `$PORT`
+(lokalnie 8000), pliki statyczne zebrane przy buildzie i wydawane przez whitenoise, czcionka DejaVu
+do etykiet. Ustawienia wybiera `DJANGO_SETTINGS_MODULE` (dla demo `config.settings.demo`).
+
 ## Testy
 
 ```bash
@@ -73,10 +77,12 @@ Logika biznesowa jest w `services.py` każdej aplikacji; widoki są cienkie. Wyg
 ## Konfiguracja
 
 Ustawienia w `config/settings/`: `base.py` (wspólne), `development.py` (domyślne dla `manage.py`,
-testów i Dockera) i `production.py` (domyślne dla `wsgi`/`asgi`). Produkcja nie startuje bez
-`DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `SITE_URL` (https), `GH_API_BASE_URL` (https) i `GH_API_TOKEN`, `DEBUG` jest w niej zawsze
-wyłączony, a atrapa GH nigdy nie jest zainstalowana. Inne środowisko
-wybierasz zmienną `DJANGO_SETTINGS_MODULE`.
+testów i Dockera), `public.py` (wspólne dla serwerów publicznych), `production.py` (domyślne dla
+`wsgi`/`asgi`) i `demo.py`. Serwer publiczny nie startuje bez `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`
+i `SITE_URL` (https), `DEBUG` jest w nim zawsze wyłączony, a HTTPS wymuszony. Produkcja wymaga
+dodatkowo `GH_API_BASE_URL` (https) i `GH_API_TOKEN`, a atrapa GH nigdy nie jest w niej zainstalowana.
+Demo (`demo.py`) ma atrapę GH w procesie, pliki statyczne z whitenoise, `/media/` przez widok Django
+i `/healthz/` dla healthchecku. Inne środowisko wybierasz zmienną `DJANGO_SETTINGS_MODULE`.
 
 Zmienne środowiskowe: patrz `.env.example`. Najważniejsze: `SITE_NAME`, `SITE_URL` (linki w e-mailach
 i linki do plików dla GH), `PRIVATE_MEDIA_ROOT` (pliki od kupujących poza `/media/`, wydawane tylko

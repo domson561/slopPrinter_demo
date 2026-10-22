@@ -128,6 +128,17 @@ def test_gh_downloads_label_through_signed_link(approved_order, operator):
 
 
 @pytest.mark.django_db
+def test_gh_mock_in_process_passes_public_server_security(approved_order, operator, settings):
+    """Demo (`demo.py`): ALLOWED_HOSTS i przekierowanie na https nie blokują atrapy w procesie."""
+    settings.SITE_URL = "https://sklep.example.pl"
+    settings.ALLOWED_HOSTS = ["sklep.example.pl"]
+    settings.SECURE_SSL_REDIRECT = True
+    order_services.approve_order(approved_order, actor_user=operator)
+    job = PrintJob.objects.get(order=approved_order)
+    assert _gh(job).items.count() == 1
+
+
+@pytest.mark.django_db
 def test_failed_submit_reuses_label_and_cancel_releases_it(approved_order, operator):
     GhApiProvider.fail_next_requests = 5
     order_services.approve_order(approved_order, actor_user=operator)

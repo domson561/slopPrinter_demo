@@ -63,10 +63,10 @@
     {
       "file": "rama-1-1",
       "empty": false,
-      "caption": "Dla syna, który śni o smokach",
+      "caption": "A może po prostu coś szalonego",
       "font": "MedievalSharp",
       "font_spec": "MedievalSharp",
-      "prompt": "Smok o [miedzianych] łuskach leci nad gotyckim zamkiem na skale. Zamek świeci tysiącem okien, w dole kamienny most i wodospad, burzowe chmury rozświetlone złotem. Epicka ilustracja fantasy, malarska faktura, dramatyczne światło. [Dopisz imię dziecka jako nazwę zamku na chorągwi.]",
+      "prompt": "Smok o [miedzianych] łuskach leci nad gotyckim zamkiem na skale. Zamek świeci tysiącem okien, w dole kamienny most i wodospad, burzowe chmury rozświetlone złotem. Epicka ilustracja fantasy, malarska faktura, dramatyczne światło. [Dopisz imię obdarowanego jako nazwę zamku na chorągwi.]",
       "pasja": [
         "fantasy",
         "smoki"
@@ -80,7 +80,26 @@
       ]
     },
     {
-      "file": "rama-3",
+      "file": "rama-3-2",
+      "empty": false,
+      "caption": "Dla taty, który najlepiej odpoczywa nad wodą",
+      "font": "Kaushan Script",
+      "font_spec": "Kaushan Script",
+      "prompt": "Szczęśliwy wędkarz [opisz tatę: krótkie ciemne włosy, zarost, kamizelka wędkarska z kieszeniami, kalosze] stoi na drewnianym pomoście i trzyma nad głową ogromnego suma, większego od siebie. Za nim spokojne jezioro, trzciny, zacumowana łódka i wędka oparta o pal, zachód słońca w odcieniach brzoskwini i różu. Malarski realizm z nutą humoru, ciepłe światło, delikatna faktura płótna.",
+      "pasja": [
+        "wędkowanie",
+        "natura"
+      ],
+      "styl": [
+        "malarstwo"
+      ],
+      "okazja": [
+        "Dzień Ojca",
+        "urodziny"
+      ]
+    },
+    {
+      "file": "rama-3-3",
       "empty": false,
       "caption": "Dla taty, który najlepiej odpoczywa nad wodą",
       "font": "Kaushan Script",

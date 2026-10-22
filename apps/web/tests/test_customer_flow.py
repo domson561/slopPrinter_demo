@@ -260,7 +260,7 @@ def test_inspirations_gallery(client, catalog_data):
     html = client.get(reverse("web:inspirations")).content.decode()
     assert "img/galeria/rama-1.webp" in html and "pusta" not in html
     filtered = client.get(reverse("web:inspirations"), {"pasja": "koty"}).content.decode()
-    assert "rama-1.webp" in filtered and "rama-3.webp" not in filtered
+    assert "rama-1.webp" in filtered and "rama-3-2.webp" not in filtered
     both = client.get(reverse("web:inspirations"), {"pasja": "kosmos", "okazja": "Dzień Dziecka"})
     html = both.content.decode()
     assert "rama-4.webp" in html and "rama-0.webp" not in html and "?pasja=kosmos" in html

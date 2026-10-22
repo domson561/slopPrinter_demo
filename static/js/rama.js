@@ -31,8 +31,10 @@
   var closeBtn = card.querySelector('[data-scena-zamknij]');
   var promptSuffix = scene.getAttribute('data-prompt-suffix') || '';
   var copiedUrl = scene.getAttribute('data-copied-url');
+  var hint = scene.querySelector('[data-scena-zacheta]');
   var current = 0;
   var busy = false;
+  var touched = false; // pierwsza interakcja z ramą kończy zachętę startową
   var box = { x: 0, y: 0, w: 0, h: 0 };
 
   // Rama w pikselach ekranu: ten sam skalowanie i przesunięcie, jakie object-fit: cover
@@ -148,7 +150,9 @@
       caption.style.fontFamily = font ? '"' + font + '", var(--font-serif)' : '';
       caption.hidden = !text;
     };
-    if (!canAnimate) { swap(); return; }
+    // ten sam podpis pod kolejnym obrazem (warianty jednego pomysłu) zostaje w miejscu
+    var same = text === caption.textContent && (font ? '"' + font + '", var(--font-serif)' : '') === caption.style.fontFamily;
+    if (!canAnimate || same) { swap(); return; }
     var out = caption.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-6px)' }],
       { duration: 350, easing: 'ease-in', fill: 'forwards' });
     out.onfinish = function () {
@@ -233,8 +237,48 @@
       .forEach(function (prop) { img.style[prop] = ''; });
   }
 
+  // Zachęta po starcie: po pół sekundy podpowiedź „kliknij ramę”, zaraz potem rama błyska
+  // i iskrzy (jakby ktoś ją tknął). Po kilku sekundach bez reakcji jeszcze jeden błysk. Hover albo klik kończą.
+  var attractTimers = [];
+  function later(fn, ms) { attractTimers.push(setTimeout(fn, ms)); }
+  function shine() {
+    if (touched || isEmpty(current)) return;
+    hotspot.classList.add('scena__rama--blysk');
+    later(function () { hotspot.classList.remove('scena__rama--blysk'); }, 1400);
+    if (!canAnimate) return;
+    glassFlash();
+    sparks(box.x + box.w * (0.3 + Math.random() * 0.4), box.y + box.h * (0.25 + Math.random() * 0.4));
+  }
+  function showHint() {
+    if (touched || isEmpty(current)) return;
+    hint.hidden = false;
+    if (canAnimate) {
+      hint.animate([{ opacity: 0, transform: 'translate(-50%, -30%) scale(0.85)' }, { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' }],
+        { duration: 600, easing: 'cubic-bezier(0.2, 0.8, 0.3, 1.3)', fill: 'backwards' });
+    }
+  }
+  function endAttract() {
+    if (touched) return;
+    touched = true;
+    attractTimers.forEach(clearTimeout);
+    hotspot.classList.remove('scena__rama--blysk');
+    if (hint.hidden) return;
+    if (!canAnimate) { hint.hidden = true; return; }
+    var out = hint.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: 'forwards' });
+    out.onfinish = function () { hint.hidden = true; out.cancel(); };
+  }
+  function attract() {
+    later(showHint, 500);
+    later(shine, 1100);
+    later(shine, 6500);
+    later(shine, 13000);
+  }
+  hotspot.addEventListener('pointerenter', endAttract);
+  star.addEventListener('pointerenter', endAttract);
+
   function show(next, x, y) {
     if (busy || next === current) return;
+    endAttract();
     busy = true;
     switches += 1;
     closeCard();
@@ -289,4 +333,14 @@
   caption.style.fontFamily = firstFont ? '"' + firstFont + '", var(--font-serif)' : '';
   caption.hidden = !caption.textContent;
   update();
+  // Start zachęty dopiero, gdy pierwszy obraz jest wczytany (żeby błysk nie leciał po pustym tle).
+  // Nie przez decode(): w Chromium potrafi nigdy nie wrócić, stąd load + limit czasu.
+  (function whenFirstReady() {
+    var started = false;
+    var go = function () { if (started) return; started = true; layout(); attract(); };
+    if (images[0].complete) { go(); return; }
+    images[0].addEventListener('load', go);
+    images[0].addEventListener('error', go);
+    setTimeout(go, 3000);
+  })();
 })();

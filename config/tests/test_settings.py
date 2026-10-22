@@ -19,7 +19,8 @@ def load_settings(monkeypatch, module, env):
         monkeypatch.delenv(name, raising=False)
     for name, value in env.items():
         monkeypatch.setenv(name, value)
-    for name in ("base", module):  # base czyta zmienne przy imporcie, więc też od nowa
+    # base i public czytają zmienne przy imporcie, więc też od nowa
+    for name in ("base", "public", module):
         monkeypatch.delitem(sys.modules, f"config.settings.{name}", raising=False)
     return importlib.import_module(f"config.settings.{module}")
 
@@ -86,3 +87,47 @@ def test_production_forces_https_and_secure_cookies(monkeypatch):
     assert prod.CSRF_COOKIE_SECURE is True
     assert prod.SECURE_PROXY_SSL_HEADER == ("HTTP_X_FORWARDED_PROTO", "https")
     assert prod.SECURE_HSTS_SECONDS == 3600
+
+
+DEMO_REQUIRED = {
+    name: REQUIRED[name] for name in ("DJANGO_SECRET_KEY", "DJANGO_ALLOWED_HOSTS", "SITE_URL")
+}
+
+
+@pytest.mark.parametrize("missing", list(DEMO_REQUIRED))
+def test_demo_refuses_to_start_without_required_env(monkeypatch, missing):
+    env = {name: value for name, value in DEMO_REQUIRED.items() if name != missing}
+    with pytest.raises(ImproperlyConfigured, match=missing):
+        load_settings(monkeypatch, "demo", env)
+
+
+def test_demo_runs_gh_mock_in_process_with_production_security(monkeypatch):
+    env = {**DEMO_REQUIRED, "GH_API_BASE_URL": "https://gh.example.pl/shop-api/v1"}
+    demo = load_settings(monkeypatch, "demo", env)
+    assert demo.DEBUG is False
+    assert demo.GH_MOCK_ENABLED is True
+    assert "apps.gh_mock" in demo.INSTALLED_APPS
+    assert demo.GH_API_BASE_URL == "/shop-api/v1"
+    assert demo.SECURE_SSL_REDIRECT is True
+    assert demo.SESSION_COOKIE_SECURE is True
+    assert demo.CSRF_COOKIE_SECURE is True
+
+
+def test_demo_serves_static_and_media_without_web_server(monkeypatch):
+    demo = load_settings(monkeypatch, "demo", DEMO_REQUIRED)
+    security = demo.MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
+    assert demo.MIDDLEWARE[security + 1] == "whitenoise.middleware.WhiteNoiseMiddleware"
+    assert "whitenoise" in demo.STORAGES["staticfiles"]["BACKEND"]
+    assert demo.SERVE_MEDIA is True
+
+
+def test_demo_lets_railway_healthcheck_through_over_http(monkeypatch):
+    demo = load_settings(monkeypatch, "demo", DEMO_REQUIRED)
+    assert demo.ALLOWED_HOSTS == ["sklep.pl", "www.sklep.pl", "healthcheck.railway.app"]
+    assert demo.SECURE_REDIRECT_EXEMPT == [r"^healthz/$"]
+
+
+def test_production_does_not_serve_media_itself(monkeypatch):
+    prod = load_settings(monkeypatch, "production", REQUIRED)
+    assert prod.SERVE_MEDIA is False
+    assert "whitenoise.middleware.WhiteNoiseMiddleware" not in prod.MIDDLEWARE

@@ -12,6 +12,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from typing import Protocol
+from urllib.parse import urlsplit
 
 import requests
 from django.conf import settings
@@ -104,11 +105,14 @@ class InProcessTransport:
         from django.test import Client
 
         self.base_path = base_path.rstrip("/")
-        self.client = Client(raise_request_exception=True)
+        # Jak żądanie z zewnątrz: host sklepu i https, żeby na serwerze publicznym (`demo.py`)
+        # przeszło ALLOWED_HOSTS i nie dostało przekierowania SECURE_SSL_REDIRECT.
+        host = urlsplit(settings.SITE_URL).netloc
+        self.client = Client(raise_request_exception=True, headers={"host": host})
 
     def request(self, method, path, token, body=None, params=None):
         url = f"{self.base_path}/{path.lstrip('/')}"
-        kwargs = {"HTTP_AUTHORIZATION": f"Token {token}"}
+        kwargs = {"HTTP_AUTHORIZATION": f"Token {token}", "secure": True}
         if method == "GET":
             response = self.client.get(url, data=params or {}, **kwargs)
         else:

@@ -1,7 +1,7 @@
 """
 Ustawienia wspólne dla wszystkich środowisk. Wszystko, co zależy od środowiska, czytane
 jest ze zmiennych środowiskowych. SECRET_KEY, DEBUG i ALLOWED_HOSTS ustawiają
-`development.py` i `production.py`.
+`development.py` i `public.py` (serwery publiczne: `production.py`, `demo.py`).
 """
 
 import os
@@ -126,6 +126,8 @@ MEDIA_ROOT = Path(env("MEDIA_ROOT", BASE_DIR / "media"))
 # Pliki od kupujących (oryginały, zdjęcia do reklamacji) poza publicznym /media/. Wydaje je
 # tylko widok z kontrolą dostępu. Nie może leżeć wewnątrz MEDIA_ROOT.
 PRIVATE_MEDIA_ROOT = Path(env("PRIVATE_MEDIA_ROOT", BASE_DIR / "private_media"))
+# `/media/` przez widok Django także bez DEBUG (`demo.py`). Produkcja wystawia go serwerem www.
+SERVE_MEDIA = False
 
 LOGIN_URL = "/ops/login/"
 LOGIN_REDIRECT_URL = "/ops/"

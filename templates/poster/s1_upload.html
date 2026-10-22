@@ -23,6 +23,11 @@
     </div>
     <span class="scena__blysk" aria-hidden="true"></span>
     <button type="button" class="scena__rama" data-scena-rama aria-label="Pokaż następny plakat w ramie"></button>
+    {# zachęta po starcie: rama sama błyska, potem pojawia się podpowiedź, znika przy pierwszym kliknięciu #}
+    <span class="scena__zacheta" data-scena-zacheta aria-hidden="true" hidden>
+      <svg class="scena__zacheta-gwiazda" viewBox="0 0 52 52"><path fill="currentColor" d="M26 2c1.6 12.4 5.1 20.4 24 24-18.9 3.6-22.4 11.6-24 24-1.6-12.4-5.1-20.4-24-24 18.9-3.6 22.4-11.6 24-24z"/></svg>
+      kliknij ramę
+    </span>
     <button type="button" class="scena__gwiazda" data-scena-gwiazda aria-label="Zmień plakat w ramie">
       {# gwiazda z logo marki: czteroramienny błysk #}
       <svg viewBox="0 0 52 52" aria-hidden="true"><path fill="currentColor" d="M26 2c1.6 12.4 5.1 20.4 24 24-18.9 3.6-22.4 11.6-24 24-1.6-12.4-5.1-20.4-24-24 18.9-3.6 22.4-11.6 24-24z"/><path fill="currentColor" opacity="0.85" d="M26 16c.8 5.6 2.3 8.6 10 10-7.7 1.4-9.2 4.4-10 10-.8-5.6-2.3-8.6-10-10 7.7-1.4 9.2-4.4 10-10z"/></svg>
@@ -30,17 +35,17 @@
     <div class="scena__pod">
       <span class="scena__licznik" data-scena-licznik></span>
       <span class="scena__podpis" data-scena-podpis aria-live="polite"></span>
-      {# po paru kliknięciach: zaproszenie do galerii z promptami #}
-      <span class="scena__wiecej-wiersz" data-scena-wiecej hidden>
-        <a class="scena__wiecej" href="{% url 'web:inspirations' %}">
+    </div>
+    {# po paru kliknięciach: duży napis na środku sceny, zaproszenie do galerii z promptami #}
+    <div class="scena__wiecej-wiersz" data-scena-wiecej hidden>
+      <a class="scena__wiecej" href="{% url 'web:inspirations' %}">
+        <strong class="scena__wiecej-tytul">
           <svg class="scena__wiecej-gwiazda" viewBox="0 0 52 52" aria-hidden="true"><path fill="currentColor" d="M26 2c1.6 12.4 5.1 20.4 24 24-18.9 3.6-22.4 11.6-24 24-1.6-12.4-5.1-20.4-24-24 18.9-3.6 22.4-11.6 24-24z"/></svg>
-          <span class="scena__wiecej-tekst">
-            <strong>Odkryj więcej inspiracji</strong>
-            <small>plakaty z gotowymi promptami</small>
-          </span>
+          Odkryj więcej inspiracji
           <span class="scena__wiecej-strzalka" aria-hidden="true">&rarr;</span>
-        </a>
-      </span>
+        </strong>
+        <small class="scena__wiecej-pod">plakaty z gotowymi promptami</small>
+      </a>
     </div>
     <label class="scena__pusta" data-scena-pusta for="{{ form.file.id_for_label }}" hidden>
       <span class="scena__pusta-tytul">Tu Twój obraz</span>

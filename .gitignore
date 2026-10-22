@@ -9,6 +9,9 @@ private_media/
 staticfiles/
 .pytest_cache/
 .env
+.env.*
+!.env.example
+# Obrazki demo: generuje je `seed_demo` / `make_demo_images` (apps/demo/images_gen.py)
 apps/demo/images/*.png
 apps/demo/images/*.jpg
 
@@ -18,6 +21,7 @@ assets/*.jpg
 assets/*.pdf
 assets/*.zip
 assets/wetransfer_*/
+assets/ramy/*.png
 
 # Claude Code: lokalne ustawienia (launch.json zostaje w repo)
 .claude/settings.local.json
@@ -34,5 +38,3 @@ htmlcov/
 Thumbs.db
 desktop.ini
 *.log
-
-assets/ramy/*.png
