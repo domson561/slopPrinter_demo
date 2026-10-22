@@ -28,6 +28,10 @@ textarea { width: 100%; }
 .site-header__nav { display: flex; gap: 28px; align-items: center; flex-wrap: wrap; font-size: var(--font-size-1); }
 .site-header__nav > a { color: var(--color-text); text-decoration: none; }
 .site-header__nav > a:hover { color: var(--color-ink); text-decoration: underline; text-underline-offset: 4px; }
+/* Inspiracje wyróżnione w menu: gwiazdka i obwódka w pomarańczu z logo, na każdym tle */
+.site-header__nav > a.site-header__inspiracje { display: inline-flex; align-items: center; gap: 6px; margin: -5px 0; padding: 4px 12px 4px 10px; border: 1px solid color-mix(in srgb, var(--color-brand-accent) 75%, transparent); border-radius: 999px; font-weight: 500; }
+.site-header__nav > a.site-header__inspiracje:hover, .site-header__nav > a.site-header__inspiracje[aria-current="page"] { text-decoration: none; background: color-mix(in srgb, var(--color-brand-accent) 16%, transparent); }
+.site-header__gwiazda { width: 11px; height: 11px; flex: none; color: var(--color-brand-accent); }
 .site-header__tools { margin-left: auto; display: flex; align-items: center; gap: var(--space-5); }
 .site-header__cart { position: relative; display: grid; place-items: center; padding: var(--space-1); color: var(--color-ink); }
 .site-header__cart--empty { color: var(--color-faint); }
@@ -77,7 +81,8 @@ textarea { width: 100%; }
 .page-home .site-main > .messages { margin: 0 52px var(--space-4); }
 .home-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 36px; align-items: start; padding: 52px 0 56px 52px; }
 .home-hero__copy { max-width: 500px; }
-.home-hero__title { font-size: var(--font-size-display); line-height: 1.04; letter-spacing: -0.015em; margin: 0 0 22px; }
+.home-hero__eyebrow { margin: 0 0 14px; font-size: var(--font-size-1); font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-muted); text-wrap: balance; }
+.home-hero__title { font-size: var(--font-size-display); line-height: 1.04; letter-spacing: -0.015em; margin: 0 0 22px; text-wrap: balance; }
 .home-hero__lead { max-width: 440px; margin: 0 0 22px; font-size: var(--font-size-2); color: var(--color-text); }
 
 .upload-dropzone { position: relative; border: 1.5px dashed var(--color-border); border-radius: var(--radius-2); padding: 30px 20px 22px; text-align: center; transition: background 0.15s, border-color 0.15s; }
@@ -137,6 +142,7 @@ textarea { width: 100%; }
 .page-home--tlo .site-main > .messages { margin-top: 80px; }
 .page-home--tlo .home-hero { grid-template-columns: minmax(0, 520px); align-content: center; min-height: max(680px, min(100svh, 56.25vw)); padding: 96px 52px 48px; background: var(--tlo-veil), var(--tlo-img) right center / cover no-repeat; }
 .page-home--tlo .home-hero__copy { max-width: none; }
+.page-home--tlo .home-hero__eyebrow { color: var(--tlo-accent); }
 .page-home--tlo .home-hero__title { color: var(--tlo-ink); }
 .page-home--tlo .home-hero__lead { color: var(--tlo-text); }
 .page-home--tlo .upload-dropzone, .page-home--tlo .format-tile { background: var(--tlo-glass); -webkit-backdrop-filter: blur(14px) saturate(1.1); backdrop-filter: blur(14px) saturate(1.1); }

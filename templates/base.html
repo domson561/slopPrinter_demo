@@ -25,7 +25,10 @@
       {% block nav %}
         <a href="{% url 'web:upload' %}#jak-to-dziala">Jak to działa</a>
         <a href="{% url 'web:upload' %}#formaty">Formaty i ceny</a>
-        <a href="{% url 'web:inspirations' %}">Inspiracje</a>
+        <a class="site-header__inspiracje" href="{% url 'web:inspirations' %}"{% if request.resolver_match.url_name == "inspirations" or request.resolver_match.url_name == "inspiration" %} aria-current="page"{% endif %}>
+          <svg class="site-header__gwiazda" viewBox="0 0 52 52" aria-hidden="true"><path fill="currentColor" d="M26 2c1.6 12.4 5.1 20.4 24 24-18.9 3.6-22.4 11.6-24 24-1.6-12.4-5.1-20.4-24-24 18.9-3.6 22.4-11.6 24-24z"/></svg>
+          Inspiracje
+        </a>
         <a href="{% url 'web:static_page' 'faq' %}">FAQ</a>
         <a href="{% url 'web:static_page' 'o-nas' %}">O nas</a>
       {% endblock %}

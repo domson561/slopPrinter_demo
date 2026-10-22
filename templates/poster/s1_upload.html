@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Twój obrazek z AI jako plakat - {{ site_name }}{% endblock %}
+{% block title %}Plakat z AI i nie tylko - {{ site_name }}{% endblock %}
 {% block body_class %}page-home{% if tlo %} page-home--tlo tlo-{{ tlo }}{% endif %}{% if ramy %} page-home--scena{% endif %}{% endblock %}
 {% block head %}{% if ramy.fonts_url %}<link rel="stylesheet" href="{{ ramy.fonts_url }}">{% endif %}{% endblock %}
 {% block content %}
@@ -73,8 +73,9 @@
   </div>
   {% elif tlo %}<div class="home-hero__band" aria-hidden="true"></div>{% endif %}
   <div class="home-hero__copy">
-    <h1 class="home-hero__title">Twój obrazek z AI<br>jako plakat</h1>
-    <p class="home-hero__lead">Wgraj swój obrazek, wybierz format, a my wydrukujemy go w najwyższej jakości. Jeden egzemplarz, bez kompromisów.</p>
+    <p class="home-hero__eyebrow">Grafika z AI, zdjęcie albo własny projekt</p>
+    <h1 class="home-hero__title">Twoja grafika.<br>Na ścianę albo na&nbsp;prezent.</h1>
+    <p class="home-hero__lead">Od razu sprawdzimy, czy wyjdzie ostro.<br>Drukujemy od&nbsp;1&nbsp;sztuki.</p>
     <p class="home-badge">
       <img src="{% static 'img/brand/plakietka-1200.webp' %}"
            srcset="{% static 'img/brand/plakietka-720.webp' %} 720w, {% static 'img/brand/plakietka-1200.webp' %} 1200w"
@@ -95,7 +96,7 @@
         {% else %}
           <p class="upload-dropzone__sub">lub kliknij, aby wybrać z dysku</p>
         {% endif %}
-        <p class="upload-dropzone__hint">Obsługiwane formaty: JPG, PNG, WebP <span aria-hidden="true">•</span> Maks. rozmiar pliku: {{ max_mb }} MB</p>
+        <p class="upload-dropzone__hint">Pliki z Midjourney, ChatGPT, Stable Diffusion albo aparatu <span aria-hidden="true">•</span> JPG, PNG, WebP do&nbsp;{{ max_mb }}&nbsp;MB</p>
         {{ form.file.errors }}
       </div>
       <progress class="upload-progress" id="upload-progress" value="0" max="100" hidden></progress>
