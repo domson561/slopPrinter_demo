@@ -4,8 +4,12 @@ prawdziwego GH atrapa w tym procesie. Przed Django nie stoi serwer www: pliki st
 whitenoise, `/media/` widok Django.
 """
 
+from .base import env_bool
 from .public import *  # noqa: F403
 from .public import ALLOWED_HOSTS, INSTALLED_APPS, MIDDLEWARE
+
+# Klient demo porównuje tła strony głównej (pasek w rogu), domyślne jest pierwsze.
+HOME_BACKGROUND_SWITCH = env_bool("HOME_BACKGROUND_SWITCH", True)
 
 # Atrapa GH jak w `development.py`: API /shop-api/v1/ i pulpit /gh-mock/ w tym procesie. Token
 # z GH_API_TOKEN (domyślnie demo, ten sam ustawia atrapie `seed_demo`).

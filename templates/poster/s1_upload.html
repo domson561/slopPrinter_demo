@@ -180,11 +180,10 @@
 </section>
 
 {% if tlo_switch %}
-<nav class="tlo-switch" aria-label="Tło strony głównej (tylko w trybie DEBUG)">
+<nav class="tlo-switch" aria-label="Tło strony głównej (podgląd wariantów)">
   <span class="tlo-switch__label">Tło:</span>
-  <a href="?tlo=0"{% if not tlo %} aria-current="true"{% endif %}>Karuzela</a>
   {% for number, name in tlo_switch %}
-    <a href="?tlo={{ number }}"{% if number == tlo %} aria-current="true"{% endif %}>{{ number }} {{ name }}</a>
+    <a href="?tlo={{ number }}"{% if number == tlo %} aria-current="true"{% endif %}>{{ name }}</a>
   {% endfor %}
 </nav>
 {% endif %}

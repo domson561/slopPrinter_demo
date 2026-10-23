@@ -62,7 +62,8 @@ hasło `demo` jest w README.
 
 ## Co klient zobaczy
 
-- Sklep: `https://<domena>/`
+- Sklep: `https://<domena>/`, domyślnie ciemne tło „Kosmiczny wieczór”, w rogu przełącznik pozostałych
+  (`HOME_BACKGROUND_SWITCH=0` go chowa)
 - Panel operatora: `/ops/` (login `demo`, nowe hasło)
 - Atrapa drukarni: `/gh-mock/` (zmiana statusów zleceń ręcznie)
 - Maile: tylko w logach serwisu (backend konsolowy), płatność i przewoźnik to atrapy.

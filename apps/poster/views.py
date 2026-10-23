@@ -36,13 +36,15 @@ from .services import save_poster_draft, upload_poster_asset
 # ---------------------------------------------------------------------------
 
 # Tła strony głównej do wyboru (palety w tokens.css, klasy .tlo-N). 0 = karuzela zdjęć.
+# Kolejność = kolejność w przełączniku, domyślne pierwsze.
 HOME_BACKGROUNDS = {
+    4: "Kosmiczny wieczór",
     1: "Słoneczna galeria",
     2: "Pastelowa poświata",
     3: "Ciepły salon",
-    4: "Kosmiczny wieczór",
+    0: "Karuzela",
 }
-HOME_BACKGROUND_DEFAULT = 0
+HOME_BACKGROUND_DEFAULT = 4
 # Klikalna rama na tle: obrazy i czworokąt ramy składa `scripts/ramy.py` do manifestu.
 HOME_FRAMES_MANIFEST = settings.BASE_DIR / "static" / "img" / "tla" / "ramy" / "manifest.json"
 # Końcówka doklejana do każdego promptu z kartki przy ramie: to, co służy drukowi.
@@ -54,12 +56,13 @@ log = logging.getLogger("slop.poster")
 
 
 def _home_background(request):
-    """Przy DEBUG tło można przełączać `?tlo=N`; wybór zostaje w sesji."""
-    if not settings.DEBUG:
+    """Przy HOME_BACKGROUND_SWITCH tło można przełączać `?tlo=N`; wybór zostaje w sesji."""
+    if not settings.HOME_BACKGROUND_SWITCH:
         return HOME_BACKGROUND_DEFAULT
     raw = request.GET.get("tlo")
     if raw is not None:
-        request.session["tlo"] = int(raw) if raw.isdigit() and int(raw) in HOME_BACKGROUNDS else 0
+        known = raw.isdigit() and int(raw) in HOME_BACKGROUNDS
+        request.session["tlo"] = int(raw) if known else HOME_BACKGROUND_DEFAULT
     return request.session.get("tlo", HOME_BACKGROUND_DEFAULT)
 
 
@@ -196,7 +199,7 @@ def upload(request):
             "formats": active_formats(),
             "tlo": tlo,
             "ramy": _home_frames(tlo),
-            "tlo_switch": HOME_BACKGROUNDS.items() if settings.DEBUG else None,
+            "tlo_switch": HOME_BACKGROUNDS.items() if settings.HOME_BACKGROUND_SWITCH else None,
         },
     )
 

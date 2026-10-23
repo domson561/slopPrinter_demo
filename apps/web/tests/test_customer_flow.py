@@ -227,24 +227,27 @@ def test_format_from_home_page_is_preselected(client, catalog_data, image_upload
 
 
 @pytest.mark.django_db
-def test_home_background_switch_only_in_debug(client, catalog_data, settings):
-    settings.DEBUG = False
+def test_home_background_switch_only_when_enabled(client, catalog_data, settings):
+    """Domyślne jest ciemne tło 4; bez przełącznika `?tlo=` nic nie zmienia."""
+    settings.HOME_BACKGROUND_SWITCH = False
     html = client.get(reverse("web:upload"), {"tlo": "3"}).content.decode()
-    assert "tlo-3" not in html and "data-carousel" in html and "tlo-switch" not in html
+    assert "page-home--tlo tlo-4" in html and "tlo-3" not in html and "tlo-switch" not in html
 
-    settings.DEBUG = True
+    settings.HOME_BACKGROUND_SWITCH = True
     html = client.get(reverse("web:upload"), {"tlo": "3"}).content.decode()
     assert "page-home--tlo tlo-3" in html and "data-carousel" not in html and "tlo-switch" in html
-    # Wybór zostaje w sesji, nieznany numer wraca do karuzeli
+    # Wybór zostaje w sesji, nieznany numer wraca do domyślnego, 0 to karuzela
     assert "tlo-3" in client.get(reverse("web:upload")).content.decode()
     html = client.get(reverse("web:upload"), {"tlo": "9"}).content.decode()
+    assert "page-home--tlo tlo-4" in html
+    html = client.get(reverse("web:upload"), {"tlo": "0"}).content.decode()
     assert "page-home--tlo" not in html and "data-carousel" in html
 
 
 @pytest.mark.django_db
 def test_home_frame_scene_only_on_its_background(client, catalog_data, settings):
     """Tło 4 ma stos obrazów z klikalną ramą (manifest ze scripts/ramy.py), inne tła zwykły pasek."""
-    settings.DEBUG = True
+    settings.HOME_BACKGROUND_SWITCH = True
     html = client.get(reverse("web:upload"), {"tlo": "4"}).content.decode()
     assert "data-scena" in html and "img/tla/ramy/pusta.webp" in html and "js/rama.js" in html
     assert "fonts.googleapis.com/css2?family=" in html and 'data-caption="Dla ' in html

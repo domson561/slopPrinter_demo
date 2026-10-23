@@ -6,6 +6,7 @@ from .base import INSTALLED_APPS, env, env_bool, env_list
 SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-insecure-secret-key-tylko-lokalnie")
 DEBUG = env_bool("DJANGO_DEBUG", True)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "*")
+HOME_BACKGROUND_SWITCH = env_bool("HOME_BACKGROUND_SWITCH", DEBUG)
 
 # Atrapa GH w tym procesie: API /shop-api/v1/ i pulpit /gh-mock/. Wyłączenie (GH_MOCK_ENABLED=0)
 # ma sens tylko z prawdziwym GH w GH_API_BASE_URL.
