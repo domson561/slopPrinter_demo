@@ -72,13 +72,15 @@ def draw_demo_image(width, height, seed=0, label=""):
     return img
 
 
-def ensure_demo_images(force=False):
+def ensure_demo_images(force=False, log=None):
     IMAGES_DIR.mkdir(parents=True, exist_ok=True)
     created = []
     for i, (name, (w, h, fmt)) in enumerate(DEMO_IMAGES.items()):
         path = IMAGES_DIR / name
         if path.exists() and not force:
             continue
+        if log:
+            log(f"{name} ({w}x{h})")
         label = "LOGO ACME (r)" if "logo" in name else name.rsplit(".", 1)[0]
         img = draw_demo_image(w, h, seed=i + 1, label=label)
         if fmt == "JPEG":

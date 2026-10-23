@@ -5,6 +5,7 @@ dwa w kolejce moderacji. Zamówienia przechodzą przez te same serwisy, co w apl
 """
 
 import random
+import time
 from datetime import timedelta
 
 from django.conf import settings
@@ -78,13 +79,17 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # Postęp z czasem od startu: na wolnym serwerze seed trwa minuty, a bez logów wygląda na zawieszony.
+        self.started = time.monotonic()
         if options["flush"]:
             self._flush()
 
+        self._log("Katalog, operator demo, sklep w atrapie GH")
         call_command("loaddata", "catalog.json", "poster.json", verbosity=0)
         self._operator()
         _gh_mock()[0].ensure_demo_shop()
-        ensure_demo_images()
+        self._log("Obrazki demo: generuję brakujące (pierwsze uruchomienie trwa najdłużej)")
+        ensure_demo_images(log=lambda name: self._log(f"  {name}"))
 
         # Deterministycznie i szybko: zadania synchronicznie, mock upscale bez opóźnień.
         HUEY.immediate = True
@@ -93,19 +98,23 @@ class Command(BaseCommand):
 
         for i, (image, fmt_code, target, days_ago, opts) in enumerate(SCENARIOS):
             customer = CUSTOMERS[i % len(CUSTOMERS)]
+            self._log(f"[{i + 1}/{len(SCENARIOS)}] {image} {fmt_code} -> {target}")
             try:
                 order = self._make_order(image, fmt_code, target, customer, opts)
             except Exception as exc:  # noqa: BLE001
-                self.stderr.write(f"[{i}] {image} {fmt_code} -> {target}: BŁĄD {exc}")
+                self.stderr.write(f"[{i + 1}] {image} {fmt_code} -> {target}: BŁĄD {exc}")
                 raise
             self._backdate(order, days_ago)
-            self.stdout.write(f"{order.number}: {image} {fmt_code} -> {order.status}")
+            self._log(f"  {order.number}: {order.status}")
 
-        self.stdout.write(
+        self._log(
             self.style.SUCCESS("Gotowe. Operator: demo / demo. Panel: /ops/, atrapa GH: /gh-mock/")
         )
 
     # ------------------------------------------------------------------
+
+    def _log(self, message):
+        self.stdout.write(f"seed_demo {time.monotonic() - self.started:5.0f} s  {message}")
 
     def _flush(self):
         _gh_mock()[1].objects.all().delete()
