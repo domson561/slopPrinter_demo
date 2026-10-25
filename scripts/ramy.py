@@ -12,6 +12,8 @@ kolejność wierszy to kolejność obrazów, pliki spoza listy idą na koniec al
 
 Wyjście: `static/img/tla/ramy/<nazwa>.webp` (pełny rozmiar) i `<nazwa>-720.webp` (telefon)
 oraz `manifest.json` z kolejnością, podpisami, czworokątem ramy i rozmiarem tła.
+Wersja (`v`, skrót pliku źródłowego) idzie do adresów obrazów, żeby podmieniony render pod tą samą
+nazwą nie wisiał w pamięci przeglądarki.
 Do galerii inspiracji: sam plakat wycięty z ramy i wyprostowany (`static/img/galeria/<nazwa>.webp`).
 
 Gdy render dokłada coś do pokoju poza ramą (kot na dywanie, zdjęcie na ścianie), bierzemy
@@ -22,6 +24,7 @@ z ostrzeżeniem: wklejona rama nie trafiłaby w ramę na oryginale.
 Uruchomienie z katalogu projektu: `.venv\\Scripts\\python scripts\\ramy.py`
 """
 
+import hashlib
 import json
 import re
 import sys
@@ -48,7 +51,9 @@ FRAME = [(1151, 103), (1507, 68), (1494, 645), (1136, 662)]
 OUTLINE = [(1151, 101), (1507, 64), (1493, 652), (1446, 664), (1136, 650)]
 MARGIN = 8  # o tyle px poszerzamy czworokąt poza krawędź ramy
 FEATHER = 10  # promień rozmycia krawędzi maski
-MAX_ROOM_DIFF = 12.0  # średnia różnica pikseli poza ramą, powyżej której render jest pomijany
+# Średnia różnica pikseli poza ramą, powyżej której render jest pomijany. Duży dodatek (twarz
+# wyświetlona na ścianie, rama_1.3) daje ok. 15, render z inną ramą (rama_2) ponad 20.
+MAX_ROOM_DIFF = 18.0
 MIN_EXTRA = 0.5  # % obrazu poza ramą z wyraźną zmianą, od którego bierzemy cały render
 WEBP = {"quality": 82, "method": 6}
 SMALL_WIDTH = 720
@@ -165,6 +170,7 @@ def main():
         entries.append(
             {
                 "file": stem,
+                "v": hashlib.md5(path.read_bytes()).hexdigest()[:8],
                 "empty": path.name == EMPTY,
                 "caption": caption,
                 "font": font.split(":")[0],  # nazwa rodziny do CSS

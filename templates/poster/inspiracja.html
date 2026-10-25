@@ -7,7 +7,7 @@
   <p class="inspiracja__powrot"><a href="{% url 'web:inspirations' %}">&larr; Wszystkie inspiracje</a></p>
   <div class="inspiracja__uklad">
     <figure class="inspiracja__obraz">
-      <img src="{% static 'img/galeria/'|add:wpis.file|add:'.webp' %}" width="600" height="900" fetchpriority="high" alt="{{ wpis.caption }}">
+      <img src="{% static 'img/galeria/'|add:wpis.file|add:'.webp' %}?v={{ wpis.v }}" width="600" height="900" fetchpriority="high" alt="{{ wpis.caption }}">
     </figure>
     <div class="inspiracja__tresc">
       <h1 class="inspiracja__tytul" style="font-family: '{{ wpis.font|default:'Newsreader' }}', var(--font-serif)">{{ wpis.caption }}</h1>

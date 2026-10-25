@@ -20,7 +20,8 @@
   var counter = scene.querySelector('[data-scena-licznik]');
   var caption = scene.querySelector('[data-scena-podpis]');
   var more = scene.querySelector('[data-scena-wiecej]');
-  var switches = 0; // po drugiej zmianie obrazu pokazujemy link do galerii inspiracji
+  var copy = document.querySelector('.home-hero__copy');
+  var switches = 0; // po pierwszej zmianie obrazu pokazujemy link do galerii inspiracji
   var emptyLabel = scene.querySelector('[data-scena-pusta]');
   var flash = scene.querySelector('.scena__blysk');
   var outlines = Array.prototype.slice.call(scene.querySelectorAll('[data-scena-obrys]'));
@@ -64,6 +65,17 @@
     emptyLabel.style.clipPath = poly;
     var points = pts.map(function (p) { return (p[0] - box.x) + ',' + (p[1] - box.y); }).join(' ');
     outlines.forEach(function (el) { el.setAttribute('points', points); });
+    placeMore();
+  }
+
+  // Napis do galerii: obok ramy, jeśli zmieści się między kolumną tekstu a ramą (szeroki ekran),
+  // inaczej na dole ramy. Na mobile CSS i tak stawia go pod sceną, a kolumna tekstu jest pod spodem.
+  function placeMore() {
+    if (more.hidden) return;
+    more.classList.add('scena__wiecej-wiersz--obok');
+    var textRight = copy ? copy.getBoundingClientRect().right - scene.getBoundingClientRect().left : 0;
+    var room = box.x - 32 - textRight - 24;
+    more.classList.toggle('scena__wiecej-wiersz--obok', textRight < box.x && more.offsetWidth <= room);
   }
 
   function isEmpty(i) { return images[i].getAttribute('data-empty') === '1'; }
@@ -74,12 +86,13 @@
     counter.hidden = empty;
     emptyLabel.hidden = !empty;
     tag.hidden = empty || !promptOf(current);
-    var showMore = empty || switches >= 2;
+    var showMore = empty || switches >= 1;
     if (showMore && more.hidden) {
       more.hidden = false;
+      placeMore();
       if (canAnimate) {
-        more.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }],
-          { duration: 700, delay: 900, easing: 'ease-out', fill: 'backwards' });
+        more.animate([{ opacity: 0, transform: 'translateY(10px) scale(0.9)' }, { opacity: 1, transform: 'none' }],
+          { duration: 600, delay: 200, easing: 'cubic-bezier(0.2, 0.8, 0.3, 1.3)', fill: 'backwards' });
       }
     }
     hotspot.setAttribute('aria-label', empty ? 'Wgraj swój obrazek' : 'Pokaż następny plakat w ramie');

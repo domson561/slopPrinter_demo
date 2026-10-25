@@ -29,6 +29,7 @@
   "ramy": [
     {
       "file": "rama-0",
+      "v": "f483465d",
       "empty": false,
       "caption": "Dla brata, który ciągle patrzy w gwiazdy",
       "font": "Orbitron",
@@ -47,6 +48,7 @@
     },
     {
       "file": "rama-1",
+      "v": "01057b4c",
       "empty": false,
       "caption": "Dla kota, który i tak rządzi w domu",
       "font": "Cinzel",
@@ -66,6 +68,7 @@
     },
     {
       "file": "rama-1-1",
+      "v": "90f5a582",
       "empty": false,
       "caption": "A może po prostu coś szalonego",
       "font": "MedievalSharp",
@@ -84,7 +87,29 @@
       ]
     },
     {
+      "file": "rama-1-3",
+      "v": "50fe70a6",
+      "empty": false,
+      "caption": "Dla niego, bo przy nim wszystko zamienia się w złoto",
+      "font": "Pirata One",
+      "font_spec": "Pirata One",
+      "prompt": "Wklej jego zdjęcie i poproś: zamień to zdjęcie w obraz olejny. Mężczyzna [opisz go: ciemne falowane włosy, kilkudniowy zarost] jako alchemik w swojej pracowni: ciemnozielony aksamitny surdut ze złotymi haftami, koronkowy żabot, w uniesionej dłoni kolba z zielonym, dymiącym eliksirem. Obok mosiężny globus i sfera armilarna, półki z księgami i fiolkami, świece, ciemnoczerwona kotara. U jego stóp na stosie ksiąg siedzi [rudy, puszysty kot]. Olej na płótnie w stylu dawnych portretów, ciepłe światło świec, zachowaj podobieństwo twarzy.",
+      "pasja": [
+        "magia i alchemia",
+        "koty"
+      ],
+      "styl": [
+        "portret olejny"
+      ],
+      "okazja": [
+        "urodziny",
+        "rocznica",
+        "Walentynki"
+      ]
+    },
+    {
       "file": "rama-3-2",
+      "v": "17078d2d",
       "empty": false,
       "caption": "Dla taty, który najlepiej odpoczywa nad wodą",
       "font": "Kaushan Script",
@@ -104,6 +129,7 @@
     },
     {
       "file": "rama-3-3",
+      "v": "df4e66f0",
       "empty": false,
       "caption": "Dla taty, który najlepiej odpoczywa nad wodą",
       "font": "Kaushan Script",
@@ -123,6 +149,7 @@
     },
     {
       "file": "rama-4",
+      "v": "1fb2eaee",
       "empty": false,
       "caption": "Dla córki, która kiedyś poleci dalej niż wszyscy",
       "font": "Caveat",
@@ -142,6 +169,7 @@
     },
     {
       "file": "rama-5",
+      "v": "1be34050",
       "empty": false,
       "caption": "Dla niej, żeby pamiętała tamten wieczór we Wrocławiu",
       "font": "Great Vibes",
@@ -160,7 +188,47 @@
       ]
     },
     {
+      "file": "rama-6",
+      "v": "7e9e43cc",
+      "empty": false,
+      "caption": "Dla miłośników sztuki i pięknych wnętrz",
+      "font": "Poiret One",
+      "font_spec": "Poiret One",
+      "prompt": "Nadmorski krajobraz w stylu geometrycznego kubizmu: wydmy porośnięte trawą, samotna sosna na skraju skarpy, długa piaszczysta plaża i turkusowe morze z falami, w oddali [Twoje ulubione wybrzeże, np. klif w Orłowie]. Niebo z pastelowych trójkątów w odcieniach błękitu, brzoskwini i różu, zachodzące słońce. Płaskie płaszczyzny koloru, miękkie przejścia, faktura płótna.",
+      "pasja": [
+        "sztuka",
+        "morze"
+      ],
+      "styl": [
+        "kubizm"
+      ],
+      "okazja": [
+        "parapetówka",
+        "urodziny"
+      ]
+    },
+    {
+      "file": "rama-7",
+      "v": "f7c0e985",
+      "empty": false,
+      "caption": "Dla miłośników sztuki i pięknych wnętrz",
+      "font": "Poiret One",
+      "font_spec": "Poiret One",
+      "prompt": "Portret kobiety z profilu w stylu art déco i kubizmu: zamknięte oczy, włosy upięte w kok, smukła sylwetka złożona z geometrycznych płaszczyzn. Paleta granatu, grafitu, kremu i złota, złote płatki z metaliczną fakturą. Elegancki, dekoracyjny obraz na płótnie. [Możesz podać kolor włosów albo sukni.]",
+      "pasja": [
+        "sztuka"
+      ],
+      "styl": [
+        "art déco"
+      ],
+      "okazja": [
+        "parapetówka",
+        "rocznica"
+      ]
+    },
+    {
       "file": "pusta",
+      "v": "6a70406b",
       "empty": true,
       "caption": "Dla kogo tylko chcesz",
       "font": "",

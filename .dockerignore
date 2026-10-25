@@ -3,8 +3,9 @@
 .venv/
 venv/
 **/__pycache__/
-**/*.pyc
+**/*.py[cod]
 db.sqlite3
+db.sqlite3-journal
 huey.db*
 media/
 private_media/
@@ -22,7 +23,11 @@ assets/
 .ruff_cache/
 .mypy_cache/
 .coverage
+.coverage.*
 htmlcov/
+
+# Lokalne skróty Windows; w .dockerignore samo `*.bat` łapie tylko katalog główny
+**/*.bat
 
 # IDE, system, Claude Code
 .claude/

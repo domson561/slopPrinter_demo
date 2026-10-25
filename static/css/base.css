@@ -202,22 +202,32 @@ textarea { width: 100%; }
 .scena__gwiazda { position: absolute; z-index: 6; left: calc(var(--rama-x) - 26px); top: calc(var(--rama-y) - 4px); width: 52px; height: 52px; padding: 0; border: 0; background: transparent; color: #fff3dc; cursor: pointer; filter: drop-shadow(0 0 6px rgba(255, 214, 150, 0.95)) drop-shadow(0 0 18px rgba(243, 154, 46, 0.8)); animation: scena-puls 2.6s ease-in-out infinite; }
 .scena__gwiazda svg { display: block; width: 100%; height: 100%; }
 .scena__gwiazda:hover, .scena__gwiazda:focus-visible { animation-play-state: paused; color: #ffffff; filter: drop-shadow(0 0 8px rgba(255, 230, 180, 1)) drop-shadow(0 0 26px rgba(243, 154, 46, 1)); outline: 0; }
-.scena__pod { position: absolute; z-index: 6; left: var(--rama-x); top: calc(var(--rama-y) + var(--rama-h) + 14px); width: max(var(--rama-w), 420px); display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px; pointer-events: none; }
-/* wyśrodkowany w części sceny na prawo od kolumny tekstu (520px + 52px odstępu) */
-.scena__wiecej-wiersz { position: absolute; z-index: 6; left: 0; right: 0; bottom: 16px; display: flex; justify-content: center; pointer-events: none; }
+.scena__pod { position: absolute; z-index: 6; left: calc(var(--rama-x) + var(--rama-w) / 2); top: calc(var(--rama-y) + var(--rama-h) + 14px); translate: -50% 0; width: max(var(--rama-w), 420px); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; pointer-events: none; }
+/* zaproszenie do galerii po pierwszej zmianie obrazu, zawsze na pierwszym ekranie (dół sceny już nie).
+   Z miejscem obok ramy (klasa --obok z rama.js) stoi na podłodze przy świecach, między tekstem a ramą;
+   bez niego na dole ramy, w miejscu zachęty „kliknij ramę”. Miga, dopóki ktoś nie najedzie. */
+.scena__wiecej-wiersz { position: absolute; z-index: 6; left: calc(var(--rama-x) + var(--rama-w) / 2); top: calc(var(--rama-y) + var(--rama-h) - 104px); translate: -50% -50%; width: max-content; max-width: calc(var(--rama-w) - 16px); display: flex; justify-content: center; pointer-events: none; }
+.scena__wiecej-wiersz--obok { left: auto; right: calc(100% - var(--rama-x) + 32px); top: calc(var(--rama-y) + var(--rama-h) - 44px); translate: 0 -50%; max-width: none; }
+.scena__wiecej-wiersz--obok .scena__wiecej-tytul { font-size: clamp(1.35rem, 1.55vw, 1.9rem); }
 .scena__wiecej-wiersz[hidden] { display: none; }
-/* napis na całą szerokość: miejsce pod lewą kolumną, żeby nie wjechał na karty formatów */
-@media (min-width: 901px) {
-  .page-home--scena .home-hero:has(.scena__wiecej-wiersz:not([hidden])) { padding-bottom: 140px; }
+.scena__wiecej { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 12px 22px 11px; border-radius: 20px; background: rgba(8, 8, 12, 0.76); color: var(--tlo-ink); text-decoration: none; text-align: center; pointer-events: auto; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); animation: scena-wiecej-ramka 1.4s ease-in-out infinite; }
+.scena__wiecej-tytul { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-serif); font-weight: 400; font-size: clamp(1.15rem, calc(var(--rama-w) * 0.056), 1.9rem); line-height: 1.1; letter-spacing: 0.01em; white-space: nowrap; animation: scena-wiecej-mig 1.4s ease-in-out infinite; }
+.scena__wiecej-gwiazda { flex: none; width: 0.8em; height: 0.8em; color: #ffd98a; filter: drop-shadow(0 0 6px rgba(255, 214, 150, 0.95)) drop-shadow(0 0 16px rgba(243, 154, 46, 0.7)); animation: scena-wiecej-gwiazda 1.4s ease-in-out infinite; }
+.scena__wiecej-strzalka { color: #ffd98a; transition: transform 0.2s; animation: scena-wiecej-strzalka 1.4s ease-in-out infinite; }
+.scena__wiecej-pod { font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
+.scena__wiecej:hover, .scena__wiecej:focus-visible { animation: none; outline: 0; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 0 0 2px #ffd98a, 0 0 30px 4px rgba(255, 190, 100, 0.6); }
+.scena__wiecej:hover .scena__wiecej-tytul, .scena__wiecej:focus-visible .scena__wiecej-tytul { animation: none; color: #ffffff; text-decoration: underline; text-decoration-color: #ffd98a; text-underline-offset: 6px; text-decoration-thickness: 2px; }
+.scena__wiecej:hover .scena__wiecej-strzalka, .scena__wiecej:focus-visible .scena__wiecej-strzalka { animation: none; transform: translateX(6px); }
+@keyframes scena-wiecej-ramka {
+  0%, 100% { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 220, 170, 0.35), 0 0 0 0 rgba(255, 190, 100, 0); }
+  50% { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 0 0 2px rgba(255, 226, 168, 1), 0 0 32px 6px rgba(255, 190, 100, 0.7); }
 }
-.scena__wiecej { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 20px; color: var(--tlo-ink); text-decoration: none; text-align: center; pointer-events: auto; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 0 22px rgba(0, 0, 0, 0.7); }
-.scena__wiecej-tytul { display: inline-flex; align-items: center; gap: 14px; font-family: var(--font-serif); font-weight: 400; font-size: clamp(1.7rem, 2.9vw, 2.8rem); line-height: 1.1; letter-spacing: 0.01em; }
-.scena__wiecej-gwiazda { width: 0.8em; height: 0.8em; color: #ffd98a; filter: drop-shadow(0 0 6px rgba(255, 214, 150, 0.95)) drop-shadow(0 0 16px rgba(243, 154, 46, 0.7)); animation: scena-puls 2.6s ease-in-out infinite; }
-.scena__wiecej-strzalka { color: #ffd98a; transition: transform 0.2s; }
-.scena__wiecej-pod { font-size: clamp(0.85rem, 1.1vw, 1.05rem); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
-.scena__wiecej:hover .scena__wiecej-tytul, .scena__wiecej:focus-visible .scena__wiecej-tytul { color: #ffffff; text-decoration: underline; text-decoration-color: #ffd98a; text-underline-offset: 6px; text-decoration-thickness: 2px; }
-.scena__wiecej:hover .scena__wiecej-strzalka { transform: translateX(6px); }
-.scena__wiecej:focus-visible { outline: 0; }
+@keyframes scena-wiecej-mig {
+  0%, 100% { color: var(--tlo-ink); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); }
+  50% { color: #ffe6b3; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 0 16px rgba(255, 200, 120, 1); }
+}
+@keyframes scena-wiecej-gwiazda { 0%, 100% { transform: scale(0.85) rotate(0deg); opacity: 0.7; } 50% { transform: scale(1.3) rotate(45deg); opacity: 1; } }
+@keyframes scena-wiecej-strzalka { 0%, 100% { transform: none; } 50% { transform: translateX(5px); } }
 .scena__licznik { flex: none; padding: 5px 11px; border-radius: 999px; background: rgba(8, 8, 12, 0.62); color: var(--tlo-ink); font-size: 0.72rem; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
 .scena__licznik[hidden], .scena__podpis[hidden] { display: none; }
 .scena__podpis { font-family: var(--font-serif); font-size: clamp(1.6rem, 2.6vw, 2.5rem); line-height: 1.15; color: var(--tlo-ink); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 0 18px rgba(0, 0, 0, 0.6); }
@@ -261,7 +271,7 @@ textarea { width: 100%; }
 .scena-kartka__wiecej a:hover { text-decoration: underline; }
 .scena__iskra { position: absolute; z-index: 7; width: 6px; height: 6px; border-radius: 50%; background: #fff0c8; box-shadow: 0 0 8px 2px rgba(255, 200, 120, 0.9); pointer-events: none; }
 @keyframes scena-puls { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
-@media (prefers-reduced-motion: reduce) { .scena__gwiazda, .scena__zacheta { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .scena__gwiazda, .scena__zacheta, .scena__wiecej, .scena__wiecej * { animation: none; } }
 
 /* Inspiracje: galeria plakatów z promptami i podstrona jednej inspiracji */
 .galeria { padding: 40px 52px 64px; }
@@ -397,13 +407,14 @@ textarea { width: 100%; }
   .page-home--tlo .home-hero__band { display: block; height: 64vw; max-height: 460px; background: linear-gradient(180deg, rgba(0, 0, 0, 0) 70%, var(--tlo-page) 100%), var(--tlo-img) var(--tlo-focus-x) center / cover no-repeat; }
   .page-home--tlo .home-hero__copy { padding: 20px 24px 0; }
   .page-home--scena .home-hero { overflow: visible; }
-  .scena { position: relative; inset: auto; height: 64vw; max-height: 460px; }
-  .scena__obraz { object-position: var(--tlo-focus-x) center; }
+  /* prawie kwadratowy pas i kadr przy ramie: lewa część zdjęcia to pusta ściana pod tekst z desktopu */
+  .scena { position: relative; inset: auto; height: min(96vw, 460px); }
+  .scena__obraz { object-position: 92% center; }
   .scena::after { background: linear-gradient(180deg, rgba(0, 0, 0, 0) 70%, var(--tlo-page) 100%); }
   .scena__gwiazda { width: 40px; height: 40px; left: calc(var(--rama-x) - 20px); }
-  .scena__pod { left: 16px; right: 16px; top: auto; bottom: 10px; width: auto; align-items: center; }
+  .scena__pod { left: 16px; right: 16px; top: auto; bottom: 10px; translate: none; width: auto; gap: 6px; }
   /* na mobile napis schodzi pod scenę, a nagłówek robi mu miejsce */
-  .scena__wiecej-wiersz { top: calc(100% + 8px); bottom: auto; left: 16px; right: 16px; }
+  .scena__wiecej-wiersz { top: calc(100% + 8px); left: 16px; right: 16px; translate: none; width: auto; max-width: none; }
   .scena__wiecej-tytul { font-size: 1.45rem; gap: 10px; }
   .scena__wiecej-pod { font-size: 0.72rem; }
   .page-home--scena .home-hero:has(.scena__wiecej-wiersz:not([hidden])) .home-hero__copy { padding-top: 96px; }

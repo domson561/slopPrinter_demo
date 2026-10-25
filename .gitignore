@@ -1,33 +1,41 @@
 .venv/
 venv/
 __pycache__/
-*.pyc
-db.sqlite3
-huey.db*
-media/
-private_media/
-staticfiles/
+*.py[cod]
 .pytest_cache/
 .env
 .env.*
 !.env.example
+
+# Dane lokalne: ścieżki z config/settings/base.py, tylko w katalogu głównym
+/db.sqlite3
+/db.sqlite3-journal
+/huey.db*
+/media/
+/private_media/
+/staticfiles/
+
 # Obrazki demo: generuje je `seed_demo` / `make_demo_images` (apps/demo/images_gen.py)
 apps/demo/images/*.png
 apps/demo/images/*.jpg
 
-# assets/: prywatne materiały (prezentacje, grafiki, paczki), nie kod aplikacji
-assets/*.png
-assets/*.jpg
-assets/*.pdf
-assets/*.zip
-assets/wetransfer_*/
-assets/ramy/*.png
+# assets/: prywatne materiały (prezentacje, grafiki, paczki), nie kod aplikacji.
+# W repo zostają tylko podpisy dla scripts/ramy.py.
+/assets/*
+!/assets/ramy/
+/assets/ramy/*
+!/assets/ramy/podpisy.txt
 
-# Claude Code: lokalne ustawienia (launch.json zostaje w repo)
+# Lokalne skróty Windows (np. activate_venv.bat), nie część aplikacji
+*.bat
+
+# Claude Code: lokalne ustawienia i worktree (launch.json zostaje w repo)
 .claude/settings.local.json
+.claude/worktrees/
 
 # testy i narzędzia
 .coverage
+.coverage.*
 htmlcov/
 .ruff_cache/
 .mypy_cache/

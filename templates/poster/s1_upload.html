@@ -12,8 +12,8 @@
     <div class="scena__stos">
       {% for r in ramy.ramy %}
         <img class="scena__obraz{% if forloop.first %} scena__obraz--biezacy{% endif %}"
-             src="{% static 'img/tla/ramy/'|add:r.file|add:'.webp' %}"
-             srcset="{% static 'img/tla/ramy/'|add:r.file|add:'-720.webp' %} 720w, {% static 'img/tla/ramy/'|add:r.file|add:'.webp' %} {{ ramy.size.0 }}w"
+             src="{% static 'img/tla/ramy/'|add:r.file|add:'.webp' %}?v={{ r.v }}"
+             srcset="{% static 'img/tla/ramy/'|add:r.file|add:'-720.webp' %}?v={{ r.v }} 720w, {% static 'img/tla/ramy/'|add:r.file|add:'.webp' %}?v={{ r.v }} {{ ramy.size.0 }}w"
              sizes="(max-width: 900px) 100vw, 100vw" width="{{ ramy.size.0 }}" height="{{ ramy.size.1 }}"
              {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}
              data-empty="{{ r.empty|yesno:'1,0' }}" data-caption="{{ r.caption }}" data-font="{{ r.font }}"
@@ -43,7 +43,7 @@
       <span class="scena__licznik" data-scena-licznik></span>
       <span class="scena__podpis" data-scena-podpis aria-live="polite"></span>
     </div>
-    {# po paru kliknięciach: duży napis na środku sceny, zaproszenie do galerii z promptami #}
+    {# po pierwszym kliknięciu: migający napis na dole ramy, zaproszenie do galerii z promptami #}
     <div class="scena__wiecej-wiersz" data-scena-wiecej hidden>
       <a class="scena__wiecej" href="{% url 'web:inspirations' %}">
         <strong class="scena__wiecej-tytul">
