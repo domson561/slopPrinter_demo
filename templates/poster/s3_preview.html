@@ -1,40 +1,58 @@
 {% extends "base.html" %}
 {% block title %}Podgląd - {{ site_name }}{% endblock %}
+{% block body_class %}page-preview{% endblock %}
 {% block content %}
 <section class="preview">
-  <h1>Tak będzie wyglądał Twój plakat</h1>
+  {# Lewa kolumna: plakat na ścianie w skali i wycinki 1:1; prawa: podsumowanie pozycji z przyciskami #}
+  <div class="preview__main">
+    <figure class="preview__mockup">
+      <div class="preview__wall">
+        <img src="{% url 'web:mockup_image' order.status_token item.pk %}" alt="Plakat {{ fmt.name }} na ścianie, w skali">
+      </div>
+      <figcaption>{{ fmt.name }} na ścianie, w skali: sofa ma 200 cm szerokości. <span class="tag tag--mock">symulacja</span></figcaption>
+    </figure>
 
-  <figure class="preview__mockup">
-    <img src="{% url 'web:mockup_image' order.status_token item.pk %}" alt="Plakat {{ fmt.name }} na ścianie, w skali">
-    <figcaption>{{ fmt.name }} na ścianie, w skali. Sofa ma 200 cm szerokości. <span class="tag tag--mock">symulacja</span></figcaption>
-  </figure>
+    <section class="preview__fragments">
+      <h2 class="config-group__title">Szczegóły w skali 1:1</h2>
+      <p class="preview__fragments-lead">{% if item.options.enhancer %}Ten sam wycinek ze środka kadru przed poprawą jakości i po niej.{% else %}Tak wydrukują się drobne szczegóły ze środka kadru.{% endif %}</p>
+      <div class="fragments">
+        <figure class="fragment">
+          <img src="{% url 'web:fragment_image' order.status_token item.pk 'before' %}" alt="Wycinek przed poprawą" width="300" height="300">
+          <figcaption class="fragment__label">{% if item.options.enhancer %}Bez poprawy{% else %}Wydruk{% endif %}</figcaption>
+        </figure>
+        {% if item.options.enhancer %}
+        <figure class="fragment">
+          <img src="{% url 'web:fragment_image' order.status_token item.pk 'after' %}" alt="Wycinek po poprawie" width="300" height="300">
+          <figcaption class="fragment__label fragment__label--after">Po poprawie</figcaption>
+        </figure>
+        {% endif %}
+      </div>
+    </section>
+  </div>
 
-  <section class="preview__fragments">
-    <h2>Wycinek 1:1 {% if item.options.enhancer %}przed i po poprawie jakości{% else %}(tak wydrukują się szczegóły){% endif %}</h2>
-    <div class="fragments">
-      <figure>
-        <img src="{% url 'web:fragment_image' order.status_token item.pk 'before' %}" alt="Wycinek przed" width="300" height="300">
-        <figcaption>Bez poprawy</figcaption>
-      </figure>
-      {% if item.options.enhancer %}
-      <figure>
-        <img src="{% url 'web:fragment_image' order.status_token item.pk 'after' %}" alt="Wycinek po" width="300" height="300">
-        <figcaption>Po poprawie <span class="tag tag--mock">symulacja</span></figcaption>
-      </figure>
-      {% endif %}
+  <aside class="preview__panel">
+    <header class="preview__head">
+      <p class="configure__eyebrow">Twój plakat</p>
+      <h1>Tak będzie wyglądał na ścianie</h1>
+      <p class="preview__quality"><span class="quality quality--{{ quality.verdict }}">{{ quality.verdict_label }}</span> {{ quality.customer_text }}</p>
+    </header>
+
+    <div class="preview__summary">
+      <dl class="preview__details">
+        {% for label, value in item.details %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>
+        {% endfor %}
+        <div><dt>Ilość</dt><dd>{{ item.quantity }} szt. × {{ item.unit_price|floatformat:"-2" }} zł</dd></div>
+      </dl>
+      <p class="preview__total"><span>Razem</span> <strong>{{ item.line_total|floatformat:"-2" }} zł</strong></p>
+      <p class="preview__total-note">bez dostawy, którą wybierzesz w koszyku</p>
+      <a class="button button--primary preview__cta" href="{% url 'web:cart' order.status_token %}">Przejdź do koszyka <span aria-hidden="true">&rarr;</span></a>
+      <div class="preview__more">
+        <a href="{% url 'web:configure' item.asset.pk %}?item={{ item.pk }}">Zmień format lub kadr</a>
+        <a href="{% url 'web:upload' %}">Dodaj kolejny plakat</a>
+      </div>
     </div>
-    <p>Ocena ostrości: <span class="quality-badge quality-badge--{{ quality.verdict }}">{{ quality.verdict_label }}</span> {{ quality.customer_text }}</p>
-  </section>
 
-  <p class="notice notice--info">Wydruk będzie nieco ciemniejszy i mniej nasycony niż obraz na ekranie. To normalne dla papieru.</p>
-
-  <h2>Ta pozycja</h2>
-  {% include "components/item_summary.html" %}
-
-  <p class="preview__actions">
-    <a class="button button--secondary" href="{% url 'web:configure' item.asset.pk %}?item={{ item.pk }}">Wróć do konfiguracji</a>
-    <a class="button button--secondary" href="{% url 'web:upload' %}">Dodaj kolejny plik</a>
-    <a class="button button--primary" href="{% url 'web:cart' order.status_token %}">Przejdź do koszyka</a>
-  </p>
+    <p class="preview__note">Wydruk będzie nieco ciemniejszy i mniej nasycony niż obraz na ekranie. To normalne dla papieru.</p>
+  </aside>
 </section>
 {% endblock %}

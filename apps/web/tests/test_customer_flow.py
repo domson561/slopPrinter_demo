@@ -270,6 +270,7 @@ def test_inspirations_gallery(client, catalog_data):
     assert client.get(reverse("web:inspirations"), {"pasja": "nic"}).status_code == 200
     detail = client.get(reverse("web:inspiration", args=["rama-1"])).content.decode()
     assert "Kopiuj prompt" in detail and "Pionowy format 2:3" in detail
+    assert "Inne inspiracje" in detail and 'href="/inspiracje/rama-1/"' not in detail
     assert client.get(reverse("web:inspiration", args=["pusta"])).status_code == 404
 
 

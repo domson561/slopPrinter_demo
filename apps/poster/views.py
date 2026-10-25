@@ -151,18 +151,34 @@ def inspirations(request):
     )
 
 
+INSPIRATIONS_MORE = 4  # „Inne inspiracje” pod promptem
+
+
+def _similar(wpis, wpisy):
+    """Inne wpisy, najpierw te ze wspólnym tagiem (pasja, styl, okazja), dalej w kolejności galerii."""
+    tags = {t for key, _ in INSPIRATION_FILTERS for t in wpis.get(key, [])}
+    others = [w for w in wpisy if w["file"] != wpis["file"]]
+    shared = [
+        w for w in others if tags & {t for key, _ in INSPIRATION_FILTERS for t in w.get(key, [])}
+    ]
+    return (shared + [w for w in others if w not in shared])[:INSPIRATIONS_MORE]
+
+
 @require_GET
 def inspiration(request, slug):
-    wpis = next((w for w in _inspirations() if w["file"] == slug), None)
+    wpisy = _inspirations()
+    wpis = next((w for w in wpisy if w["file"] == slug), None)
     if wpis is None:
         raise Http404
+    inne = _similar(wpis, wpisy)
     return render(
         request,
         "poster/inspiracja.html",
         {
             "wpis": wpis,
             "prompt": f"{wpis['prompt']} {PROMPT_SUFFIX}".strip(),
-            "fonts_url": _fonts_url([wpis]),
+            "inne": inne,
+            "fonts_url": _fonts_url([wpis, *inne]),
         },
     )
 

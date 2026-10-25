@@ -1,0 +1,12 @@
+{% load static %}{# oczekuje: w (wpis z manifestu ram); karta galerii i „Inne inspiracje” #}
+<li class="galeria__karta">
+  <a class="galeria__link" href="{% url 'web:inspiration' w.file %}">
+    <span class="galeria__obraz">
+      <img src="{% static 'img/galeria/'|add:w.file|add:'.webp' %}?v={{ w.v }}" width="600" height="900" loading="lazy" alt="{{ w.caption }}">
+      <span class="galeria__nakladka" aria-hidden="true">Pokaż prompt &rarr;</span>
+    </span>
+    {% if w.styl %}<span class="galeria__styl">{{ w.styl|join:" · " }}</span>{% endif %}
+    <span class="galeria__podpis" style="font-family: '{{ w.font|default:'Newsreader' }}', var(--font-serif)">{{ w.caption }}</span>
+    {% if w.okazja %}<span class="galeria__okazja">{{ w.okazja|join:" · " }}</span>{% endif %}
+  </a>
+</li>

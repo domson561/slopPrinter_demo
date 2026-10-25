@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Konfiguracja - {{ site_name }}{% endblock %}
+{% block body_class %}page-configure{% endblock %}
 {% block content %}
 <section class="configure" id="configure"
          data-asset-id="{{ asset.pk }}"
@@ -8,73 +9,124 @@
          data-image-url="{% url 'web:asset_preview' asset.pk %}"
          data-image-width="{{ asset.width }}"
          data-image-height="{{ asset.height }}">
-  <h1>Wybierz format i jakość</h1>
-
-  <div class="configure__file">
-    <img class="configure__thumb" src="{% url 'web:asset_preview' asset.pk %}" alt="Wgrany obrazek" width="160">
-    <p>{{ asset.original_filename }}, {{ asset.width }} x {{ asset.height }} px. <a href="{% url 'web:upload' %}">Wgraj inny plik</a></p>
-    {% if flags %}<p class="notice notice--warn">Ten plik trafi do ręcznej weryfikacji przed drukiem (symulacja moderacji).</p>{% endif %}
-  </div>
-
-  <form method="post" class="configure-form" id="configure-form">
+  <form method="post" class="configure__layout" id="configure-form">
     {% csrf_token %}
     {% if item %}<input type="hidden" name="item" value="{{ item.pk }}">{% endif %}
-    {{ form.non_field_errors }}
 
-    <fieldset class="configure__formats">
-      <legend>Format</legend>
-      {{ form.format.errors }}
-      {% for card in cards %}
-        <label class="format-card {% if card.quality.blocked %}format-card--blocked{% endif %}">
-          <input type="radio" name="format" value="{{ card.format.pk }}" data-code="{{ card.format.code }}"
-                 {% if form.format.value|stringformat:"s" == card.format.pk|stringformat:"s" %}checked{% endif %}
-                 {% if card.quality.blocked %}disabled{% endif %}>
-          <span class="format-card__name">{{ card.format.name }}</span>
-          <span class="format-card__dims">{{ card.format.width_mm }} x {{ card.format.height_mm }} mm</span>
-          <span class="format-card__price">od {{ card.price }} zł</span>
-          {% include "poster/quality_badge.html" with quality=card.quality %}
-          <span class="format-card__text">{{ card.quality.customer_text }}</span>
-        </label>
-      {% endfor %}
-    </fieldset>
-
-    <fieldset class="configure__crop">
-      <legend>Kadr</legend>
-      <p>Przeciągnij obrazek, żeby ustawić kadr. Suwak przybliża.</p>
-      <div class="crop-frame" id="crop-frame">
-        <img id="crop-image" src="{% url 'web:asset_preview' asset.pk %}" alt="" draggable="false">
+    {# Lewa kolumna: kadr na tle ściany, w proporcji wybranego formatu (rozmiar ustawia configure.js) #}
+    <div class="configure__stage">
+      <div class="crop-stage" id="crop-stage">
+        <div class="crop-frame" id="crop-frame">
+          <img id="crop-image" src="{% url 'web:asset_preview' asset.pk %}" alt="Kadr plakatu" draggable="false">
+          <span class="crop-frame__hint" aria-hidden="true">Przeciągnij, żeby przesunąć</span>
+        </div>
       </div>
-      <label>Przybliżenie <input type="range" id="crop-zoom" min="1" max="3" step="0.01" value="1"></label>
-      <button type="button" class="button button--secondary" id="crop-reset">Wyśrodkuj</button>
+      <div class="crop-tools">
+        <button type="button" class="crop-tools__step" data-zoom-step="-0.25" aria-label="Oddal">&minus;</button>
+        <label class="crop-tools__zoom"><span class="visually-hidden">Przybliżenie</span>
+          <input type="range" id="crop-zoom" min="1" max="3" step="0.01" value="1">
+        </label>
+        <button type="button" class="crop-tools__step" data-zoom-step="0.25" aria-label="Przybliż">+</button>
+        <button type="button" class="crop-tools__reset" id="crop-reset">Wyśrodkuj</button>
+      </div>
       {{ form.crop }}
-    </fieldset>
+    </div>
 
-    <fieldset class="configure__options">
-      <legend>Opcje</legend>
-      <p>{{ form.paper.label_tag }} {{ form.paper }} {{ form.paper.errors }}</p>
-      <p>{{ form.white_margin }} {{ form.white_margin.label_tag }}</p>
-      <p>{{ form.quantity.label_tag }} {{ form.quantity }} (maks. {{ max_quantity }}) {{ form.quantity.errors }}</p>
-      <p class="enhancer">
-        {{ form.enhancer_enabled }} {{ form.enhancer_enabled.label_tag }} <span class="tag tag--mock">symulacja</span>
-        <span class="enhancer__help">Powiększa obrazek x{{ poster_settings.upscale_factor }} i wyostrza detale. Włączamy automatycznie, gdy plik ma za mało szczegółów do wybranego formatu.</span>
-        <span class="enhancer__auto" id="enhancer-auto" hidden>Zalecane dla tego formatu.</span>
-      </p>
-    </fieldset>
+    <div class="configure__panel">
+      <header class="configure__head">
+        <p class="configure__eyebrow">Twój plakat</p>
+        <h1>Wybierz format</h1>
+        <div class="configure__file">
+          <img class="configure__thumb" src="{% url 'web:asset_preview' asset.pk %}" alt="" width="40" height="40">
+          <span class="configure__file-name">{{ asset.original_filename }}</span>
+          <span class="configure__file-size">{{ asset.width }} × {{ asset.height }} px</span>
+          <a class="configure__file-change" href="{% url 'web:upload' %}">Zmień plik</a>
+        </div>
+        {% if flags %}<p class="notice notice--warn">Ten plik trafi do ręcznej weryfikacji przed drukiem (symulacja moderacji).</p>{% endif %}
+        {{ form.non_field_errors }}
+      </header>
 
-    <section class="configure__quality" id="quality-box" aria-live="polite">
-      <p><strong>Ocena dla tego kadru:</strong> <span id="quality-label"></span> <span id="quality-text"></span></p>
-      <p id="quality-suggestion" hidden></p>
-    </section>
+      <fieldset class="config-group">
+        <legend class="config-group__title">Format</legend>
+        {{ form.format.errors }}
+        <div class="format-grid">
+          {% for card in cards %}
+            <label class="format-card{% if card.quality.blocked %} format-card--blocked{% endif %}">
+              <input class="visually-hidden" type="radio" name="format" value="{{ card.format.pk }}" data-code="{{ card.format.code }}"
+                     {% if form.format.value|stringformat:"s" == card.format.pk|stringformat:"s" %}checked{% endif %}
+                     {% if card.quality.blocked %}disabled{% endif %}>
+              <span class="format-card__name">{{ card.format.name }}</span>
+              <span class="format-card__dims">{{ card.format.width_cm }} × {{ card.format.height_cm }} cm</span>
+              <span class="format-card__price">od {{ card.price|floatformat:"-2" }} zł</span>
+              <span class="format-card__quality quality quality--{{ card.quality.verdict }}" title="{{ card.quality.customer_text }}">{{ card.quality.verdict_label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+      </fieldset>
 
-    <section class="configure__price" aria-live="polite">
-      <p>Cena za sztukę: <strong id="price-unit">-</strong> zł</p>
-      <p>Razem: <strong id="price-subtotal">-</strong> zł (bez dostawy)</p>
-    </section>
+      <fieldset class="config-group">
+        <legend class="config-group__title">Papier</legend>
+        {{ form.paper.errors }}
+        <div class="segmented">
+          {% for paper in papers %}
+            <label class="segmented__option">
+              <input class="visually-hidden" type="radio" name="paper" value="{{ paper.pk }}"
+                     {% if form.paper.value|stringformat:"s" == paper.pk|stringformat:"s" %}checked{% endif %}>
+              <span class="segmented__name">{{ paper.name }}</span>
+              <span class="segmented__note">{% if paper.price_delta %}+{{ paper.price_delta|floatformat:"-2" }} zł{% else %}w cenie{% endif %}</span>
+            </label>
+          {% endfor %}
+        </div>
+      </fieldset>
 
-    <p class="configure__actions">
-      <a class="button button--secondary" href="{% url 'web:upload' %}">Wgraj inny plik</a>
-      <button type="submit" class="button button--primary" id="submit-button">Zobacz podgląd</button>
-    </p>
+      <div class="config-group config-options">
+        <label class="option-row">
+          <span class="option-row__text">
+            <span class="option-row__title">Biały margines</span>
+            <span class="option-row__help">Biała ramka 1,5 cm wokół grafiki, bez dopłaty.</span>
+          </span>
+          <span class="switch">{{ form.white_margin }}<span class="switch__track" aria-hidden="true"></span></span>
+        </label>
+
+        <div class="option-row">
+          <span class="option-row__text">
+            <label class="option-row__title" for="{{ form.quantity.id_for_label }}">Ilość</label>
+            <span class="option-row__help">Do {{ max_quantity }} sztuk tego samego plakatu.</span>
+          </span>
+          <span class="stepper">
+            <button type="button" class="stepper__button" data-step="-1" aria-label="Mniej">&minus;</button>
+            {{ form.quantity }}
+            <button type="button" class="stepper__button" data-step="1" aria-label="Więcej">+</button>
+          </span>
+        </div>
+        {{ form.quantity.errors }}
+
+        <label class="option-row">
+          <span class="option-row__text">
+            <span class="option-row__title">Popraw jakość <span class="tag tag--mock">symulacja</span></span>
+            <span class="option-row__help">Powiększa obrazek ×{{ poster_settings.upscale_factor }} i wyostrza detale. Włączamy sami, gdy plik ma za mało szczegółów do formatu.</span>
+            <span class="option-row__auto" id="enhancer-auto" hidden>Zalecane dla tego formatu.</span>
+          </span>
+          <span class="switch">{{ form.enhancer_enabled }}<span class="switch__track" aria-hidden="true"></span></span>
+        </label>
+      </div>
+
+      <section class="config-summary" aria-live="polite">
+        <div class="config-summary__quality" id="quality-box">
+          <span class="quality" id="quality-label"></span>
+          <span class="config-summary__quality-text" id="quality-text"></span>
+          <p class="config-summary__suggestion" id="quality-suggestion" hidden></p>
+        </div>
+        <div class="config-summary__row">
+          <div class="config-summary__price">
+            <span class="config-summary__choice" id="summary-choice"></span>
+            <span class="config-summary__total"><strong id="price-subtotal">-</strong> zł</span>
+            <span class="config-summary__unit"><span id="price-unit">-</span> zł / szt., bez dostawy</span>
+          </div>
+          <button type="submit" class="button button--primary config-summary__cta" id="submit-button">Zobacz podgląd <span aria-hidden="true">&rarr;</span></button>
+        </div>
+      </section>
+    </div>
   </form>
 </section>
 <script id="cards-data" type="application/json">{{ cards_json|safe }}</script>

@@ -1,42 +1,44 @@
 {% extends "base.html" %}
-{% load static %}
 {% block title %}Inspiracje: plakaty z promptami - {{ site_name }}{% endblock %}
+{% block body_class %}page-galeria{% endblock %}
 {% block content %}
 <section class="galeria">
   <header class="galeria__naglowek">
+    <p class="configure__eyebrow">Galeria promptów</p>
     <h1>Inspiracje</h1>
     <p class="galeria__lead">Każdy plakat ma prompt. Skopiuj go, wklej w ChatGPT, podmień na swoje i wróć z obrazkiem do druku.</p>
   </header>
 
+  {# filtry: każdy w jednym wierszu, na wąskim ekranie przewijany w bok #}
   <nav class="galeria__filtry" aria-label="Filtry">
     {% for f in filtry %}
     <div class="galeria__filtr">
       <span class="galeria__filtr-nazwa">{{ f.label }}</span>
-      <a href="{{ f.all_url }}"{% if f.all_current %} aria-current="true"{% endif %}>wszystko</a>
-      {% for value, url, current in f.options %}
-        <a href="{{ url }}"{% if current %} aria-current="true"{% endif %}>{{ value }}</a>
-      {% endfor %}
+      <div class="galeria__filtr-opcje">
+        <a href="{{ f.all_url }}"{% if f.all_current %} aria-current="true"{% endif %}>wszystko</a>
+        {% for value, url, current in f.options %}
+          <a href="{{ url }}"{% if current %} aria-current="true"{% endif %}>{{ value }}</a>
+        {% endfor %}
+      </div>
     </div>
     {% endfor %}
   </nav>
 
   {% if wpisy %}
   <ul class="galeria__siatka">
-    {% for w in wpisy %}
-      <li class="galeria__karta">
-        <a class="galeria__obraz" href="{% url 'web:inspiration' w.file %}">
-          <img src="{% static 'img/galeria/'|add:w.file|add:'.webp' %}?v={{ w.v }}" width="600" height="900" loading="lazy"
-               alt="{{ w.caption }}">
-        </a>
-        <p class="galeria__podpis" style="font-family: '{{ w.font|default:'Newsreader' }}', var(--font-serif)">{{ w.caption }}</p>
-        <p class="galeria__tagi">{% for t in w.pasja %}<span>{{ t }}</span>{% endfor %}{% for t in w.styl %}<span class="galeria__tag--styl">{{ t }}</span>{% endfor %}{% for t in w.okazja %}<span class="galeria__tag--okazja">{{ t }}</span>{% endfor %}</p>
-        <a class="button galeria__przycisk" href="{% url 'web:inspiration' w.file %}">Pokaż prompt</a>
-      </li>
-    {% endfor %}
+    {% for w in wpisy %}{% include "poster/inspiracja_karta.html" %}{% endfor %}
   </ul>
   {% else %}
     <p class="galeria__pusto">Nic nie pasuje do tych filtrów. <a href="{% url 'web:inspirations' %}">Pokaż wszystko</a></p>
   {% endif %}
+
+  <aside class="galeria__baner">
+    <div>
+      <p class="galeria__baner-tytul">Masz już swój obrazek?</p>
+      <p class="galeria__baner-tekst">Wgraj go, a od razu sprawdzimy, w jakim formacie wyjdzie ostro.</p>
+    </div>
+    <a class="button button--primary galeria__baner-cta" href="{% url 'web:upload' %}">Wgraj i wybierz format <span aria-hidden="true">&rarr;</span></a>
+  </aside>
 </section>
 {% endblock %}
 {% block head %}{% if fonts_url %}<link rel="stylesheet" href="{{ fonts_url }}">{% endif %}{% endblock %}

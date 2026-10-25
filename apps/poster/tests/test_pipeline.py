@@ -144,6 +144,6 @@ def test_mockup_and_fragment_render(a2):
     crop = asset.analysis.quality_per_format["A2"]
     crop = {"x": 0, "y": 0, "w": 1, "h": 1, "orientation": crop["orientation"]}
     scene = render_mockup(asset, a2, crop, white_margin=True)
-    assert scene.size == (800, 560)
+    assert scene.size == (1200, 840)
     frag = render_fragment(asset, crop, enhanced=True)
     assert frag.size == (300, 300)

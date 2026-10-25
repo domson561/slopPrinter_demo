@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}{{ wpis.caption }}: prompt i plakat - {{ site_name }}{% endblock %}
+{% block body_class %}page-galeria{% endblock %}
 {% block head %}{% if fonts_url %}<link rel="stylesheet" href="{{ fonts_url }}">{% endif %}{% endblock %}
 {% block content %}
 <article class="inspiracja">
@@ -10,21 +11,40 @@
       <img src="{% static 'img/galeria/'|add:wpis.file|add:'.webp' %}?v={{ wpis.v }}" width="600" height="900" fetchpriority="high" alt="{{ wpis.caption }}">
     </figure>
     <div class="inspiracja__tresc">
+      {% if wpis.styl %}<p class="configure__eyebrow">{{ wpis.styl|join:" · " }}</p>{% endif %}
       <h1 class="inspiracja__tytul" style="font-family: '{{ wpis.font|default:'Newsreader' }}', var(--font-serif)">{{ wpis.caption }}</h1>
-      <p class="galeria__tagi">{% for t in wpis.pasja %}<span>{{ t }}</span>{% endfor %}{% for t in wpis.styl %}<span class="galeria__tag--styl">{{ t }}</span>{% endfor %}{% for t in wpis.okazja %}<span class="galeria__tag--okazja">{{ t }}</span>{% endfor %}</p>
+      <p class="galeria__tagi">{% for t in wpis.pasja %}<span>{{ t }}</span>{% endfor %}{% for t in wpis.okazja %}<span class="galeria__tag--okazja">{{ t }}</span>{% endfor %}</p>
+
+      <section class="inspiracja__karta">
+        <div class="inspiracja__karta-naglowek">
+          <h2 class="config-group__title">Prompt</h2>
+          <span class="inspiracja__legenda"><mark>[w nawiasach]</mark> podmień na swoje</span>
+        </div>
+        <p class="inspiracja__prompt" data-prompt>{{ prompt }}</p>
+        <button type="button" class="inspiracja__kopiuj" data-kopiuj data-rama="{{ wpis.file }}">Kopiuj prompt</button>
+      </section>
 
       <ol class="inspiracja__kroki">
-        <li><strong>Skopiuj prompt</strong> przyciskiem poniżej.</li>
-        <li><strong>Wklej go w ChatGPT</strong> albo innym generatorze i <strong>dodaj swoje zdjęcie</strong>, jeśli na obrazie ma być ktoś bliski albo Twój zwierzak. Dopisz „zachowaj podobieństwo”. Słowa w nawiasach podmień na swoje.</li>
-        <li><strong>Zapisz obrazek i wgraj go</strong> na stronie głównej. Resztą zajmiemy się my.</li>
+        <li><strong>Skopiuj prompt</strong> przyciskiem wyżej.</li>
+        <li><strong>Wklej go w ChatGPT</strong> albo innym generatorze. Dodaj zdjęcie, jeśli na obrazie ma być ktoś bliski albo zwierzak, i dopisz „zachowaj podobieństwo”.</li>
+        <li><strong>Wgraj gotowy obrazek</strong> u nas. Resztą zajmiemy się my.</li>
       </ol>
 
-      <button type="button" class="inspiracja__kopiuj" data-kopiuj data-rama="{{ wpis.file }}">Kopiuj prompt</button>
-      <p class="inspiracja__prompt" data-prompt>{{ prompt }}</p>
-
-      <a class="button button--primary inspiracja__cta" href="{% url 'web:upload' %}">Mam obrazek, drukuję</a>
+      <div class="inspiracja__cta-karta">
+        <p><strong>Masz już obrazek?</strong> Sprawdzimy, w jakim formacie wyjdzie ostro.</p>
+        <a class="button button--primary inspiracja__cta" href="{% url 'web:upload' %}">Mam obrazek, drukuję <span aria-hidden="true">&rarr;</span></a>
+      </div>
     </div>
   </div>
+
+  {% if inne %}
+  <section class="inspiracja__inne">
+    <h2 class="inspiracja__inne-tytul">Inne inspiracje</h2>
+    <ul class="galeria__siatka">
+      {% for w in inne %}{% include "poster/inspiracja_karta.html" %}{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
 </article>
 {% endblock %}
 {% block scripts %}
@@ -33,6 +53,10 @@
   var btn = document.querySelector('[data-kopiuj]');
   var box = document.querySelector('[data-prompt]');
   if (!btn || !box) return;
+  // Miejsca do podmiany [w nawiasach] podświetlone; kopiujemy i tak sam tekst (textContent).
+  var esc = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
+  box.innerHTML = box.textContent.replace(/[&<>]/g, function (c) { return esc[c]; })
+    .replace(/\[[^\]]+\]/g, '<mark>$&</mark>');
   function done() {
     btn.textContent = 'Skopiowane, do zobaczenia z plakatem';
     btn.classList.add('inspiracja__kopiuj--ok');

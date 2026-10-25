@@ -9,6 +9,7 @@ Wgranie, podgląd, analiza treści i zapis wersji są w rdzeniu (`apps.assets.se
 
 import io
 import logging
+import math
 import random
 import time
 from typing import Protocol
@@ -197,70 +198,260 @@ def _font(size):
         return ImageFont.load_default()
 
 
+def _vgradient(w, h, top, bottom):
+    """Pionowy gradient RGB od `top` do `bottom`."""
+    column = Image.new("RGB", (1, h))
+    span = max(h - 1, 1)
+    column.putdata(
+        [
+            tuple(round(a + (b - a) * y / span) for a, b in zip(top, bottom, strict=True))
+            for y in range(h)
+        ]
+    )
+    return column.resize((w, h))
+
+
+def _tint(scene, mask, color, strength):
+    """Nakłada kolor przez maskę (L) z siłą 0-1: cienie i poświaty."""
+    alpha = mask.point(lambda v: int(v * strength))
+    scene.paste(Image.new("RGB", scene.size, color), (0, 0), alpha)
+
+
+def _leaf(x, y, length, width, angle):
+    """Liść jak soczewka, od nasady (x, y) pod kątem w stopniach (0 = w prawo, 90 = w górę)."""
+    a = math.radians(angle)
+    ca, sa = math.cos(a), math.sin(a)
+    n = 14
+    side = [(i / n * length, math.sin(math.pi * i / n) * width / 2) for i in range(n + 1)]
+    outline = side + [(px, -py) for px, py in reversed(side)]
+    return [(x + px * ca - py * sa, y - (px * sa + py * ca)) for px, py in outline]
+
+
 class MockupService:
     """
-    Prosty montaż w skali na rysowanej ścianie (bez zdjęć z sieci):
-    ściana 400 x 280 cm, sofa 200 cm jako odniesienie wielkości, pasek skali 1 m.
-    Tylko do podglądu, nie do druku.
+    Montaż w skali na rysowanej ścianie (bez zdjęć z sieci): ściana 400 x 280 cm, sofa 200 cm,
+    roślina i lampa jako odniesienie wielkości, pasek skali 1 m. Tylko do podglądu, nie do druku.
+    Pokój rysujemy w podwójnej rozdzielczości i zmniejszamy (gładkie krawędzie bez antyaliasingu
+    w ImageDraw), plakat, jego cień i opisy już w docelowej.
     """
 
     name = "MockupService"
-    PX_PER_CM = 2
+    PX_PER_CM = 3
+    SUPERSAMPLE = 2
     WALL_W_CM = 400
     WALL_H_CM = 280
     FLOOR_H_CM = 40
     SOFA_W_CM = 200
     SOFA_H_CM = 85
-    POSTER_BOTTOM_CM = 150  # wysokość dolnej krawędzi plakatu nad podłogą
+    POSTER_BOTTOM_CM = 150  # dolna krawędź plakatu, liczona od dołu obrazu
+
+    WALL = ((238, 232, 223), (226, 218, 206))
+    BASEBOARD = (246, 242, 236)
+    FLOOR = ((200, 172, 140), (176, 145, 112))
+    SOFA = {
+        "back": (132, 143, 125),
+        "base": (124, 135, 117),
+        "cushion": (146, 157, 139),
+        "seat": (160, 170, 152),
+    }
+    PILLOWS = ((197, 136, 99), (236, 227, 212))
+    LEAVES = ((86, 112, 80), (106, 134, 96))
+    POT = ((233, 225, 213), (209, 199, 186))
+    WOOD = (92, 72, 56)
+    INK = (118, 108, 97)
 
     def render(
         self, image: Image.Image, fmt: Format, orientation: str, white_margin: bool
     ) -> Image.Image:
         s = self.PX_PER_CM
         W, H = self.WALL_W_CM * s, self.WALL_H_CM * s
-        scene = Image.new("RGB", (W, H), (235, 232, 226))
-        d = ImageDraw.Draw(scene)
-
-        floor_top = H - self.FLOOR_H_CM * s
-        d.rectangle([0, floor_top, W, H], fill=(196, 176, 150))
-        d.line([0, floor_top, W, floor_top], fill=(150, 135, 115), width=2)
-
-        sofa_x0 = (W - self.SOFA_W_CM * s) // 2
-        sofa_y1 = floor_top + 6 * s
-        sofa_y0 = sofa_y1 - self.SOFA_H_CM * s
-        d.rectangle([sofa_x0, sofa_y0, sofa_x0 + self.SOFA_W_CM * s, sofa_y1], fill=(120, 130, 145))
-        d.rectangle(
-            [sofa_x0, sofa_y0 + 35 * s, sofa_x0 + self.SOFA_W_CM * s, sofa_y1], fill=(105, 115, 130)
-        )
-        d.text((sofa_x0 + 6, sofa_y1 - 16), "sofa 200 cm", fill=(240, 240, 240), font=_font(12))
+        scene = self._background(W, H)
 
         pw_mm, ph_mm = fmt.dims_mm(orientation)
-        pw, ph = int(pw_mm / 10 * s), int(ph_mm / 10 * s)
+        pw, ph = round(pw_mm / 10 * s), round(ph_mm / 10 * s)
         px0 = (W - pw) // 2
         py1 = H - self.POSTER_BOTTOM_CM * s
         py0 = py1 - ph
 
-        d.rectangle([px0 + 4, py0 + 4, px0 + pw + 4, py1 + 4], fill=(200, 196, 190))  # cień
+        # Cień plakatu: miękki, lekko w dół, jak od lampy z góry.
+        shadow = Image.new("L", (W, H), 0)
+        ImageDraw.Draw(shadow).rectangle([px0 + 2, py0 + 6, px0 + pw + 2, py1 + 10], fill=255)
+        _tint(scene, shadow.filter(ImageFilter.GaussianBlur(9)), (60, 45, 30), 0.38)
+
         poster = Image.new("RGB", (pw, ph), (255, 255, 255))
         if white_margin:
-            m = int(WHITE_MARGIN_MM / 10 * s)
+            m = round(WHITE_MARGIN_MM / 10 * s)
             inner = ImageOps.contain(image, (pw - 2 * m, ph - 2 * m), Image.LANCZOS)
             poster.paste(inner, ((pw - inner.width) // 2, (ph - inner.height) // 2))
         else:
             poster = ImageOps.fit(image, (pw, ph), Image.LANCZOS)
         scene.paste(poster, (px0, py0))
-        d.rectangle([px0, py0, px0 + pw, py1], outline=(40, 40, 40), width=1)
 
-        # Pasek skali 1 m.
-        bar_y = 20
-        d.line([20, bar_y, 20 + 100 * s, bar_y], fill=(60, 60, 60), width=2)
-        d.line([20, bar_y - 5, 20, bar_y + 5], fill=(60, 60, 60), width=2)
-        d.line([20 + 100 * s, bar_y - 5, 20 + 100 * s, bar_y + 5], fill=(60, 60, 60), width=2)
-        d.text((24, bar_y + 6), "1 m", fill=(60, 60, 60), font=_font(12))
-        label = f"{fmt.name} ({pw_mm} x {ph_mm} mm)"
-        d.text((px0, py1 + 6), label, fill=(60, 60, 60), font=_font(12))
-        d.text((W - 110, H - 20), "symulacja", fill=(120, 120, 120), font=_font(12))
+        d = ImageDraw.Draw(scene)
+        d.rectangle([px0, py0, px0 + pw - 1, py1 - 1], outline=(206, 198, 188), width=1)
+        # „x”, nie „×”: wbudowana czcionka Pillow nie ma znaku mnożenia
+        label = f"{pw_mm / 10:g} x {ph_mm / 10:g} cm".replace(".", ",")
+        self._annotate(d, s, W, H, (px0, py1, pw), label)
         return scene
+
+    _rooms: dict = {}  # pokój zależy tylko od stałych klasy: rysujemy go raz na proces
+
+    def _background(self, W, H):
+        key = (type(self), W, H)
+        if key not in self._rooms:
+            room = self._room(self.PX_PER_CM * self.SUPERSAMPLE)
+            self._rooms[key] = room.resize((W, H), Image.LANCZOS)
+        return self._rooms[key].copy()
+
+    def _room(self, s):
+        """Ściana, podłoga, sofa, roślina i lampa w skali `s` px/cm."""
+        W, H = self.WALL_W_CM * s, self.WALL_H_CM * s
+        floor_top = H - self.FLOOR_H_CM * s
+        contact = floor_top + 8 * s  # gdzie meble stoją na podłodze (lekka perspektywa)
+        room = Image.new("RGB", (W, H))
+        room.paste(_vgradient(W, floor_top, *self.WALL), (0, 0))
+        room.paste(_vgradient(W, H - floor_top, *self.FLOOR), (0, floor_top))
+        d = ImageDraw.Draw(room)
+
+        # Deski: linie gęstsze przy ścianie, rzadsze bliżej widza.
+        for cm in (5, 11, 19, 29):
+            y = floor_top + cm * s
+            d.line([0, y, W, y], fill=(168, 138, 106), width=max(s // 3, 1))
+        d.rectangle([0, floor_top - 7 * s, W, floor_top], fill=self.BASEBOARD)
+        d.line([0, floor_top - 7 * s, W, floor_top - 7 * s], fill=(222, 214, 203), width=s // 2)
+
+        sofa_x0 = (W - self.SOFA_W_CM * s) // 2
+        sofa_x1 = sofa_x0 + self.SOFA_W_CM * s
+        lamp_x = sofa_x1 + 38 * s
+
+        # Światło: jaśniejsza plama na ścianie i ciepła poświata wokół klosza lampy. Maski
+        # rysujemy w skali 1 px = 2 cm i rozmywamy tam, bo duże rozmycie w pełnym rozmiarze kosztuje.
+        q = 2 * s
+        light = Image.new("L", (W // q, H // q), 0)
+        ImageDraw.Draw(light).ellipse([30, -50, 160, 70], fill=255)  # w jednostkach po 2 cm
+        _tint(
+            room, light.filter(ImageFilter.GaussianBlur(30)).resize((W, H)), (252, 249, 244), 0.55
+        )
+        warm = Image.new("L", (W // q, H // q), 0)
+        lx, ly = lamp_x // q, (contact - 154 * s) // q
+        ImageDraw.Draw(warm).ellipse([lx - 14, ly - 18, lx + 14, ly + 22], fill=255)
+        warm = warm.filter(ImageFilter.GaussianBlur(14)).resize((W, H))
+        _tint(room, warm, (255, 208, 140), 0.5)
+
+        # Cienie na podłodze pod meblami.
+        shadow = Image.new("L", (W, H), 0)
+        sd = ImageDraw.Draw(shadow)
+        sd.ellipse([sofa_x0 - 4 * s, contact - 4 * s, sofa_x1 + 4 * s, contact + 5 * s], fill=255)
+        sd.ellipse([22 * s, contact - 3 * s, 70 * s, contact + 4 * s], fill=255)
+        sd.ellipse([lamp_x - 16 * s, contact - 2 * s, lamp_x + 16 * s, contact + 3 * s], fill=255)
+        _tint(room, shadow.filter(ImageFilter.GaussianBlur(3 * s)), (70, 50, 34), 0.45)
+
+        self._sofa(room, s, sofa_x0, contact)
+        self._plant(d, s, 46 * s, contact)
+        self._lamp(d, s, lamp_x, contact)
+        return room
+
+    def _sofa(self, room, s, x0, contact):
+        """Od tyłu: nóżki, oparcie z poduchami, poduszki, siedzisko, podłokietniki."""
+        d = ImageDraw.Draw(room)
+        c = self.SOFA
+        w = self.SOFA_W_CM * s
+        top = contact - self.SOFA_H_CM * s
+        seat = contact - 40 * s  # wierzch siedziska
+        legs = contact - 10 * s
+        arm = 18 * s
+        half = (w - 2 * arm) // 2  # szerokość jednej poduchy
+        for lx in (x0 + 10 * s, x0 + w - 14 * s):
+            d.rounded_rectangle([lx, legs, lx + 4 * s, contact], s, fill=self.WOOD)
+        d.rounded_rectangle([x0 + 8 * s, top, x0 + w - 8 * s, seat], 10 * s, fill=c["back"])
+        for i in range(2):
+            cx = x0 + arm + i * half
+            box = [cx + 2 * s, top + 6 * s, cx + half - 2 * s, seat]
+            d.rounded_rectangle(box, 8 * s, fill=c["cushion"])
+        pillows = (
+            (self.PILLOWS[0], x0 + arm + 8 * s, 8),
+            (self.PILLOWS[1], x0 + w - arm - 44 * s, -7),
+        )
+        for color, px, angle in pillows:
+            size = 36 * s
+            pad = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+            ImageDraw.Draw(pad).rounded_rectangle([0, 0, size - 1, size - 1], 9 * s, fill=color)
+            pad = pad.rotate(angle, resample=Image.BICUBIC, expand=True)
+            room.paste(pad, (px, seat - pad.height + 3 * s), pad)
+        d.rounded_rectangle([x0 + 4 * s, seat - 2 * s, x0 + w - 4 * s, legs], 6 * s, fill=c["base"])
+        for i in range(2):
+            cx = x0 + arm + i * half
+            d.rounded_rectangle(
+                [cx + s, seat - 6 * s, cx + half - s, seat + 6 * s], 5 * s, fill=c["seat"]
+            )
+        for ax in (x0, x0 + w - arm):
+            d.rounded_rectangle([ax, top + 26 * s, ax + arm, legs], 9 * s, fill=c["base"])
+            cap = [ax + 2 * s, top + 26 * s, ax + arm - 2 * s, top + 36 * s]
+            d.rounded_rectangle(cap, 7 * s, fill=c["cushion"])
+
+    def _plant(self, d, s, cx, contact):
+        pot_h, top_w, bottom_w = 38 * s, 32 * s, 24 * s
+        rim = contact - pot_h
+        leaves = (
+            (62, 95, 16),
+            (74, 118, 18),
+            (66, 72, 15),
+            (58, 140, 14),
+            (70, 52, 13),
+            (50, 160, 12),
+            (56, 30, 11),
+            (80, 100, 17),
+            (60, 84, 14),
+        )  # (długość cm, kąt, szerokość cm)
+        for i, (length, angle, width) in enumerate(leaves):
+            d.polygon(_leaf(cx, rim + 2 * s, length * s, width * s, angle), fill=self.LEAVES[i % 2])
+        body = [
+            (cx - top_w / 2, rim),
+            (cx + top_w / 2, rim),
+            (cx + bottom_w / 2, contact),
+            (cx - bottom_w / 2, contact),
+        ]
+        d.polygon(body, fill=self.POT[0])
+        d.polygon([(cx + 4 * s, rim), body[1], body[2], (cx + 3 * s, contact)], fill=self.POT[1])
+        d.rounded_rectangle(
+            [cx - top_w / 2 - s, rim - 3 * s, cx + top_w / 2 + s, rim + 2 * s], s, fill=self.POT[0]
+        )
+
+    def _lamp(self, d, s, cx, contact):
+        shade_bottom = contact - 140 * s
+        d.ellipse([cx - 13 * s, contact - 3 * s, cx + 13 * s, contact + 1 * s], fill=self.WOOD)
+        d.rectangle([cx - s, shade_bottom, cx + s, contact - 2 * s], fill=self.WOOD)
+        d.polygon(
+            [
+                (cx - 13 * s, shade_bottom - 28 * s),
+                (cx + 13 * s, shade_bottom - 28 * s),
+                (cx + 20 * s, shade_bottom),
+                (cx - 20 * s, shade_bottom),
+            ],
+            fill=(246, 236, 218),
+        )
+
+    def _annotate(self, d, s, W, H, poster, label):
+        """Pasek skali, wymiar plakatu i szerokość sofy, jak na rysunku technicznym."""
+        font = _font(7 * s)
+        px0, py1, pw = poster
+        x0, y = 20 * s, 18 * s
+        d.line([x0, y, x0 + 100 * s, y], fill=self.INK, width=max(s // 2, 1))
+        for x in (x0, x0 + 100 * s):
+            d.line([x, y - 2 * s, x, y + 2 * s], fill=self.INK, width=max(s // 2, 1))
+        d.text((x0 + 50 * s, y - 3 * s), "1 m", fill=self.INK, font=font, anchor="md")
+        d.text((px0 + pw // 2, py1 + 5 * s), label, fill=self.INK, font=font, anchor="mt")
+        sofa_x0 = (W - self.SOFA_W_CM * s) // 2
+        sofa_x1 = sofa_x0 + self.SOFA_W_CM * s
+        y = H - 14 * s
+        text = "200 cm"
+        tw = d.textlength(text, font=font)
+        mid = (sofa_x0 + sofa_x1) // 2
+        for a, b in ((sofa_x0, mid - tw / 2 - 3 * s), (mid + tw / 2 + 3 * s, sofa_x1)):
+            d.line([a, y, b, y], fill=self.INK, width=max(s // 2, 1))
+        for x in (sofa_x0, sofa_x1):
+            d.line([x, y - 2 * s, x, y + 2 * s], fill=self.INK, width=max(s // 2, 1))
+        d.text((mid, y), text, fill=self.INK, font=font, anchor="mm")
 
 
 def render_fragment(asset: Asset, crop: dict, enhanced: bool, out_px: int = 300) -> Image.Image:
